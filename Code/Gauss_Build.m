@@ -1,12 +1,13 @@
 %%%%%%%%%%%%%%% Logic:
 % 0. Initalize
 % 1. Read input data (MaxQuant output)
-% 2. Pre-process each chromatogram
+% 2. Clean the chromatograms
 % 3. On each profile, fit 1-5 Gaussians
 % 4. Write output
 
 %%%%%%%%%%%%%%% Instructions:
 % - Rename maindir for your computer. (Try using the command 'pwd' to find the full path to a folder.)
+% - Add maindir/Code and maindir/Code/Functions to Matlab path.
 
 
 %% 0. Initialize
@@ -18,7 +19,7 @@
 
 % Set folders, i.e. define where everything lives.
 maindir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/'; % where everything lives
-homedir = [maindir 'Code/']; % where this script lives
+codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
 datadir = [maindir 'DataFiles/']; % where data files live
 figdir = [maindir 'Figures/']; % where figures live
@@ -41,11 +42,12 @@ DebugOutputFile{5} = [datadir 'Summary_Proteins_with_Gausians.csv'];
 DebugOutputFile{6} = [datadir 'Proteins_not_fitted_to_gaussian.csv'];
 
 % Define some variables.
-Ite = 500;                          % Number of iterations in crossvalidation
-Start_Fr= 2;                        % The first fraction to be analyzed
-End_Fr =55;                         % The last fraction to be analyzed
-Number_of_experimental_channels=2;  % Defines the number of experiments to be compared
-Protein_number=1:Proteins;
+% Ite = 500;                          % Number of iterations in crossvalidation
+firstfrac= 2;                       % The first fraction to be analyzed
+%lastfrac = 55;                      % The last fraction to be analyzed
+experimental_channels = ['MvsL' 'HvsL'];
+Nchannels = length(experimental_channels);
+%Protein_number=1:Proteins;
 
 
 
@@ -60,20 +62,25 @@ Protein_number=1:Proteins;
 
 
 
-%% 2. Pre-process each chromatogram.
+%% 2. Clean the chromatograms.
 
-experimental_channels = ['MvsL' 'HvsL'];
-Nchannels = length(experimental_channels);
 
 for ci = 1:Nchannels % loop over channels
   
-  
-  for ri = 1:Nproteins % loop over proteines
-    
-    raw_chromatogram = 
-    
+  % choose rawdata, i.e. data for the current channel
+  if ci==1
+    rawdata = num_val_MvsL;
+  elseif ci==2
+    rawdata = num_val_HvsL;
   end
   
+  for ri = 1:Nproteins % loop over proteins
+    
+    raw_chromatogram = rawdata(ri,firstfrac:Nfractions);
+    pause
+    clean_chromatogram = cleanChromatogram(raw_chromatogram);
+    
+  end
 end
 
 
