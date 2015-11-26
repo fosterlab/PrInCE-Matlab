@@ -2,12 +2,16 @@
 % 0. Initalize
 % 1. Read input data (MaxQuant output)
 % 2. Clean the chromatograms
-% 3. On each profile, fit 1-5 Gaussians
+% 3. Fit 1-5 Gaussians on each cleaned chromatogram
 % 4. Write output
 
 %%%%%%%%%%%%%%% Instructions:
 % - Rename maindir for your computer. (Try using the command 'pwd' to find the full path to a folder.)
-% - Add hom
+% - Add maindir/Code and maindir/Code/Functions to Matlab path.
+
+%%%%%%%%%%%%%%% To do:
+% - Include the parfoor loops
+
 
 
 %% 0. Initialize
@@ -42,11 +46,12 @@ DebugOutputFile{5} = [datadir 'Summary_Proteins_with_Gausians.csv'];
 DebugOutputFile{6} = [datadir 'Proteins_not_fitted_to_gaussian.csv'];
 
 % Define some variables.
-Ite = 500;                          % Number of iterations in crossvalidation
+% Ite = 500;                          % Number of iterations in crossvalidation
 firstfrac= 2;                       % The first fraction to be analyzed
-lastfrac = 55;                      % The last fraction to be analyzed
-Number_of_experimental_channels=2;  % Defines the number of experiments to be compared
-Protein_number=1:Proteins;
+%lastfrac = 55;                      % The last fraction to be analyzed
+experimental_channels = ['MvsL' 'HvsL'];
+Nchannels = length(experimental_channels);
+%Protein_number=1:Proteins;
 
 
 
@@ -56,38 +61,68 @@ Protein_number=1:Proteins;
 [num_val_MvsL,txt_MvsL] = xlsread(InputFile{1}); %Import file MvsL
 [num_val_HvsL,txt_HvsL] = xlsread(InputFile{2}); %Import file HvsL
 [SEC_size_alignment]=xlsread(InputFile{3});
+
 % How many proteins and fractions are there?
 [Nproteins, Nfractions]=size(num_val_MvsL);
+
+% Put raw data into a single variable for easy access
+rawdata{1} = num_val_MvsL;
+rawdata{2} = num_val_HvsL;
 
 
 
 %% 2. Clean the chromatograms.
 
-experimental_channels = ['MvsL' 'HvsL'];
-Nchannels = length(experimental_channels);
+% store all clean chromatograms in cleandata
+cleandata = cell(size(rawdata));
 
 for ci = 1:Nchannels % loop over channels
-  
-  % choose which data is the current channel
-  if ci==1
-    rawdata = num_val_MvsL;
-  elseif ci==2
-    rawdata = num_val_HvsL;
-  end
-  
-  for ri = 1:Nproteins % loop over proteines
+  cleandata
+  for ri = 1:Nproteins % loop over proteins
     
-    raw_chromatogram = rawdata(ri,firstfrac:Nfractions);
+    raw_chromatogram = rawdata{ci}(ri,firstfrac:Nfractions);
     clean_chromatogram = cleanChromatogram(raw_chromatogram);
     
+    if length(find((Smo_Out>0.05)==1))<5
+      continue
+    end
+    
   end
-  
 end
 
 
 
+%% 3. Fit the Gaussians on the clean chromatograms
 
+% Define fit type
+ft{1} = fittype('gauss1');
+ft{2} = fittype('gauss2');
+ft{3} = fittype('gauss3');
+ft{4} = fittype('gauss4');
+ft{5} = fittype('gauss5');
 
+% Define fit options
+fo{1} = fitoptions('method','NonlinearLeastSquares','Robust','off','Lower',[0.1 0.1 0.1]);
+fo{2} = fitoptions('method','NonlinearLeastSquares','Robust','off','Lower',[0.1 0.1 0.1 0.1 0.1 0.1]);
+fo{3} = fitoptions('method','NonlinearLeastSquares','Robust','off','Lower',[0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1]);
+fo{4} = fitoptions('method','NonlinearLeastSquares','Robust','off','Lower',[0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1]);
+fo{5} = fitoptions('method','NonlinearLeastSquares','Robust','off','Lower',[0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1]);
+
+% Define a few housekeeping variables
+Try_Fit=zeros(1,Nproteins);
+
+for ci = 1:Nchannels % loop over channels
+  for ri = 1:Nproteins % loop over proteins
+    
+    raw_chromatogram = rawdata{ci}(ri,firstfrac:Nfractions);
+    
+    Try_Fit(1,Prot_nr)=1;
+    
+    ICs = gaussfitICs(raw_chromatogram);
+    clean_chromatogram = cleanChromatogram(raw_chromatogram);
+    
+  end
+end
 
 
 

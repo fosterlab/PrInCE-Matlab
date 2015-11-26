@@ -1,12 +1,14 @@
 function clean_chromatogram = cleanChromatogram(rawchrom)
 
+% Cleans raw chromatograms.
+%
 % This function takes a 'raw' chromatogram, i.e. one row from the Excel tables produced by MQ, and
 % pre-processes it. The pre-processing steps include:
 %   1. Impute (fill in) single missing values (nans) by linear interpolation;
 %   2. Fill in first and last fractions with a 0 if they're missing;
 %   3. Replace values <0.2 with nan;
 %   4. If a value is not part of 5 consecutive values, replace it with 0.05;
-%   5. Add 5 nans to either side of the chromatogram;
+%   5. Add 5 zeros to either side of the chromatogram;
 %   6. Smooth whole chromatogram with a boxcar filter (moving average).
 %
 % Input: nx1 vector, where n is the number of fractions.
@@ -60,7 +62,6 @@ tmpchrom(tmpchrom<0.2) = nan;
 
 
 % 4. Consecutive numbers, if less then 5 consecutive number removes chromogram and replace with 0.05
-%tmpchrom=[nan(1,10) tmpchrom nan(1,10)];
 Nminconsecutive = 5; % minimum number of consecutive non-nan values
 tmp = ones(1,Nminconsecutive); % the pattern to look for: [1 1 1 1 1]
 tmp2 = strfind(~isnan(tmpchrom),tmp); % find the pattern
@@ -72,8 +73,8 @@ end
 tmpchrom = tmpchrom2;
 
 
-% 5. Add 5 nans to either side of the chromatogram
-tmpchrom = [nan(1,5) tmpchrom nan(1,5)];
+% 5. Add 5 zeros to either side of the chromatogram
+tmpchrom = [zeros(1,5) tmpchrom zeros(1,5)];
 
 
 % 6. Smooth whole chromatogram with a boxcar filter (moving average).
