@@ -1,4 +1,4 @@
-function clean_chromatogram = cleanChromatogram(rawchrom)
+function [clean_chromatogram,tmp1,tmp2] = cleanChromatogram(rawchrom)
 
 % Cleans raw chromatograms.
 %
@@ -11,8 +11,12 @@ function clean_chromatogram = cleanChromatogram(rawchrom)
 %   5. Add 5 zeros to either side of the chromatogram;
 %   6. Smooth whole chromatogram with a boxcar filter (moving average).
 %
-% Input: nx1 vector, where n is the number of fractions.
-% Output: nx1 vector.
+% Input: 
+%   rawchrom: nx1 vector, where n is the number of fractions. Raw chromatogram.
+% Output: 
+%   clean_chromatogram: nx1 vector. Cleaned chromatogram.
+%   tmp1: intermediate stage in the cleaning process, outputted for housekeeping.
+%   tmp2: intermediate stage in the cleaning process, outputted for housekeeping.
 %
 % Adapted from Nichollas Scott's Gaus_build_24_1.m.
 % Made by Greg Stacey on Nov 25 2015.
@@ -55,6 +59,7 @@ end
 if isnan(tmpchrom(end))
   tmpchrom(end)=0;
 end
+tmp1=tmpchrom;
 
 
 % 3. Replace values <0.2 with nan
@@ -63,11 +68,11 @@ tmpchrom(tmpchrom<0.2) = nan;
 
 % 4. Consecutive numbers, if less then 5 consecutive number removes chromogram and replace with 0.05
 Nminconsecutive = 5; % minimum number of consecutive non-nan values
-tmp = ones(1,Nminconsecutive); % the pattern to look for: [1 1 1 1 1]
-tmp2 = strfind(~isnan(tmpchrom),tmp); % find the pattern
+a = ones(1,Nminconsecutive); % the pattern to look for: [1 1 1 1 1]
+a2 = strfind(~isnan(tmpchrom),a); % find the pattern
 tmpchrom2 = ones(size(tmpchrom))*0.05; % dummy variable
-for ii = 1:length(tmp2)
-  I = tmp2(ii) : tmp2(ii) + Nminconsecutive-1;
+for ii = 1:length(a2)
+  I = a2(ii) : a2(ii) + Nminconsecutive-1;
   tmpchrom2(I) = tmpchrom(I);
 end
 tmpchrom = tmpchrom2;
@@ -75,6 +80,7 @@ tmpchrom = tmpchrom2;
 
 % 5. Add 5 zeros to either side of the chromatogram
 tmpchrom = [zeros(1,5) tmpchrom zeros(1,5)];
+tmp2=tmpchrom;
 
 
 % 6. Smooth whole chromatogram with a boxcar filter (moving average).
