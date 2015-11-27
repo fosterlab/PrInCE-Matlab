@@ -39,6 +39,11 @@ SEC_fit=polyfit(SEC_size_alignment(1,:),SEC_size_alignment(2,:),1);
 Nchannels = size(Coef,1);
 Nproteins = size(Coef,2);
 
+% Make No_Gaus, i.e. the number of Gaussians selected for each protein
+No_Gaus = zeros(1,Nproteins);
+for ri = 1:Nproteins
+  No_Gaus(ri) = length(Coef{1,ri})/3;
+end
 
 
 %% Make files for individual fits
@@ -124,70 +129,56 @@ end
 
 %% MvsL_Summary_Gausians_identifed.csv
 disp('    Writing MvsL_Summary_Gausians_identifed.csv...')
+fn = strcat([datadir 'MvsL_Summary_Gausians_identifed.csv']);
+
 ci=1;
-
-Proteins = 1:size(rawdata{ci});
 Mean_No_Quant_String = sum(~isnan(rawdata{ci}(:))) / size(rawdata{ci},1);
-Mean_No_After_adding_one_missing_data = sum(~isnan(tmp1{ci}(:))) / size(tmp1{ci},1);
-Mean_No_After_filtering = sum(~isnan(tmp2{ci}(:))) / size(tmp2{ci},1);
+Mean_No_After_adding_one_missing_data = sum(tmp1{ci}(:)>0) / size(tmp1{ci},1);
+Mean_No_After_filtering = sum(tmp2{ci}(:)>.05) / size(tmp2{ci},1);
 
-% Make No_Gaus, i.e. the number of Gaussians selected for each protein
-No_Gaus = zeros(size(Proteins));
-for ri = Proteins
-  No_Gaus(ri) = length(Coef{1,ri})/3;
-end
-
-fileName3 = strcat('MvsL_Summary_Gausians_identifed.csv');
-fid3 = fopen(fileName3,'w');
+fid3 = fopen(fn,'w');
 fprintf (fid3,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',...
   'Number_of_proteins','Mean_No_Quant_String', 'Mean_No_After_adding_one_missing_data',...
   'Mean_No_After_filtering', '0 Gausian', '1 Gausian', '2 Gausians',...
   '3 Gausians', '4 Gausians', '5 Gausians', 'No_try_fit');                      %Write Header
 
 fprintf (fid3,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f\n',...
-  Proteins, Mean_No_Quant_String, Mean_No_After_adding_one_missing_data,Mean_No_After_filtering,...
-  No_Gaus==0 & Try_Fit(ci,:)==1, No_Gaus==1 & Try_Fit(ci,:)==1, No_Gaus==2 & Try_Fit(ci,:)==1,...
-  No_Gaus==3 & Try_Fit(ci,:)==1, No_Gaus==4 & Try_Fit(ci,:)==1, No_Gaus==5, Try_Fit(1,:));
+  Nproteins, Mean_No_Quant_String, Mean_No_After_adding_one_missing_data,Mean_No_After_filtering,...
+  sum(No_Gaus==0 & Try_Fit(ci,:)==1), sum(No_Gaus==1 & Try_Fit(ci,:)==1), sum(No_Gaus==2 & Try_Fit(ci,:)==1),...
+  sum(No_Gaus==3 & Try_Fit(ci,:)==1), sum(No_Gaus==4 & Try_Fit(ci,:)==1), sum(No_Gaus==5& Try_Fit(ci,:)==1), sum(Try_Fit(1,:)));
 fclose(fid3);
 
 
 
 %% HvsL_Summary_Gausians_identifed.csv
 disp('    Writing HvsL_Summary_Gausians_identifed.csv...')
+fn = strcat([datadir 'HvsL_Summary_Gausians_identifed.csv']);
+
 ci=2;
-
-Proteins = 1:size(rawdata{ci});
 Mean_No_Quant_String = sum(~isnan(rawdata{ci}(:))) / size(rawdata{ci},1);
-Mean_No_After_adding_one_missing_data = sum(~isnan(tmp1{ci}(:))) / size(tmp1{ci},1);
-Mean_No_After_filtering = sum(~isnan(tmp2{ci}(:))) / size(tmp2{ci},1);
+Mean_No_After_adding_one_missing_data = sum(tmp1{ci}(:)>0) / size(tmp1{ci},1);
+Mean_No_After_filtering = sum(tmp2{ci}(:)>.05) / size(tmp2{ci},1);
 
-% Make No_Gaus, i.e. the number of Gaussians selected for each protein
-No_Gaus = zeros(size(Proteins));
-for ri = Proteins
-  No_Gaus(ri) = length(Coef{ci,ri})/3;
-end
-
-fileName3 = strcat('HvsL_Summary_Gausians_identifed.csv');
-fid3 = fopen(fileName3,'w');
+fid3 = fopen(fn,'w');
 fprintf (fid3,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',...
   'Number_of_proteins','Mean_No_Quant_String', 'Mean_No_After_adding_one_missing_data',...
   'Mean_No_After_filtering', '0 Gausian', '1 Gausian', '2 Gausians',...
   '3 Gausians', '4 Gausians', '5 Gausians', 'No_try_fit');                      %Write Header
 
 fprintf (fid3,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f\n',...
- Proteins, Mean_No_Quant_String, Mean_No_After_adding_one_missing_data,Mean_No_After_filtering,...
-  No_Gaus==0 & Try_Fit(ci,:)==1, No_Gaus==1 & Try_Fit(ci,:)==1, No_Gaus==2 & Try_Fit(ci,:)==1,...
-  No_Gaus==3 & Try_Fit(ci,:)==1, No_Gaus==4 & Try_Fit(ci,:)==1, No_Gaus==5, Try_Fit(1,:));
+  Nproteins, Mean_No_Quant_String, Mean_No_After_adding_one_missing_data,Mean_No_After_filtering,...
+  sum(No_Gaus==0 & Try_Fit(ci,:)==1), sum(No_Gaus==1 & Try_Fit(ci,:)==1), sum(No_Gaus==2 & Try_Fit(ci,:)==1),...
+  sum(No_Gaus==3 & Try_Fit(ci,:)==1), sum(No_Gaus==4 & Try_Fit(ci,:)==1), sum(No_Gaus==5& Try_Fit(ci,:)==1), sum(Try_Fit(1,:)));
 fclose(fid3);
 
 
 
 %% Proteins_not_fitted_to_gaussian_MvsL.csv
 disp('    Writing Proteins_not_fitted_to_gaussian_MvsL.csv...')
+fn = strcat([datadir 'Proteins_not_fitted_to_gaussian_MvsL.csv']);
 
 ci=1;
-fileName_no_fit = strcat('Proteins_not_fitted_to_gaussian_MvsL.csv');
-fid5 = fopen(fileName_no_fit,'w');
+fid5 = fopen(fn,'w');
 for ri = 1:Nproteins
   if length(Coef{ci,ri})<3 && Try_Fit(ci,ri)==1
     fprintf(fid5,'%6.4f,%s,%6.4f,', replicate(ri),txt_MvsL{(ri+1)},replicate(ri));
@@ -201,11 +192,11 @@ fclose(fid5);
 
 %% Proteins_not_fitted_to_gaussian_HvsL.csv
 disp('    Writing Proteins_not_fitted_to_gaussian_HvsL.csv...')
+fn = strcat([datadir 'Proteins_not_fitted_to_gaussian_HvsL.csv']);
 
 ci=2;
-fileName_no_fit = strcat('Proteins_not_fitted_to_gaussian_HvsL.csv');
-fid5 = fopen(fileName_no_fit,'w');
-for ri = Proteins
+fid5 = fopen(fn,'w');
+for ri = 1:Nproteins
   if length(Coef{ci,ri})<3 && Try_Fit(ci,ri)==1
     fprintf(fid5,'%6.4f,%s,%6.4f,', replicate(ri),txt_HvsL{(ri+1)},replicate(ri));
     fprintf(fid5,'%6.4g,', rawdata{ci}(ri,:));
@@ -218,16 +209,16 @@ fclose(fid5);
 
 %% MvsL_Summary_Gausians_for_individual_proteins.csv
 disp('    Writing MvsL_Summary_Gausians_for_individual_proteins.csv...')
+fn = strcat([datadir 'MvsL_Summary_Gausians_for_individual_proteins.csv']);
 
 ci=1;
-fileName4 = strcat('MvsL_Summary_Gausians_for_individual_proteins.csv');
-fid4 = fopen(fileName4,'w');
+fid4 = fopen(fn,'w');
 fprintf (fid4,'%s,%s,%s,%s,%s\n',...
   'Protein_number', 'Gene_name', 'Number_of_Gausians_detected','Number_of_Gausians_within_defined_boundaries','Number_of_Gausians_filtered');               %Write Header
 for ri=1:Nproteins
   fprintf(fid4, '%s,%s,%s,%s,%s\n', num2str(ri),...
     txt_MvsL{ri+1},...  % Protein_names
-    No_Gaus(ri),...
+    num2str(No_Gaus(ri)),...
     num2str(Gaussians_used_in_analysis_counter(ci,ri)),...
     num2str(Gaussians_excluded_from_analysis_counter(ci,ri)));
 end
@@ -237,16 +228,16 @@ fclose(fid4);
 
 %% HvsL_Summary_Gausians_for_individual_proteins.csv
 disp('    Writing HvsL_Summary_Gausians_for_individual_proteins.csv...')
+fn = strcat([datadir 'HvsL_Summary_Gausians_for_individual_proteins.csv']);
 
 ci=1;
-fileName4 = strcat('HvsL_Summary_Gausians_for_individual_proteins.csv');
-fid4 = fopen(fileName4,'w');
+fid4 = fopen(fn,'w');
 fprintf (fid4,'%s,%s,%s,%s,%s\n',...
   'Protein_number', 'Gene_name', 'Number_of_Gausians_detected','Number_of_Gausians_within_defined_boundaries','Number_of_Gausians_filtered');               %Write Header
 for ri=1:Nproteins
   fprintf(fid4, '%s,%s,%s,%s,%s\n', num2str(ri),...
     txt_HvsL{ri+1},...  % Protein_names
-    No_Gaus(ri),...
+    num2str(No_Gaus(ri)),...
     num2str(Gaussians_used_in_analysis_counter(ci,ri)),...
     num2str(Gaussians_excluded_from_analysis_counter(ci,ri)));
 end
@@ -256,24 +247,24 @@ fclose(fid4);
 
 %% MvsL_Combined_OutputGaus.csv
 disp('    Writing MvsL_Combined_OutputGaus.csv...')
+fn = strcat([datadir 'MvsL_Combined_OutputGaus.csv']);
 
 ci=1;
 Combined_OutputGaus_length = size(protgausI{ci},1);
 
 %Write out Combined process data to csv file
-fileName5 = strcat('MvsL_Combined_OutputGaus.csv');
-fid_combined_Gaus = fopen(fileName5,'w');
+fid_combined_Gaus = fopen(fn,'w');
 fprintf (fid_combined_Gaus,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
   'Guassian index number','Protein_number','Replicate','Protein name', 'Height', 'Center', 'Width', 'SSE', 'adjrsquare','Complex size'); %Write Header
 for kk = 1:Combined_OutputGaus_length
   ri = protgausI{ci}(kk,1);
   gn = protgausI{ci}(kk,2);
   Height = Coef{ci,ri}((gn-1)*3 + 1);
-  Center = Coef{ci,ri}((gn-1)*3 + 2);
+  Center = Coef{ci,ri}((gn-1)*3 + 2) - 5;
   Width = Coef{ci,ri}((gn-1)*3 + 3);
   Size_of_complex=SEC_fit(1)*Center+SEC_fit(2);
   fprintf(fid_combined_Gaus,'%6.4f,%6.4f,%6.4f,',kk,ri,replicate(ri)); % index information
-  fprintf(fid_combined_Gaus,'%s,',txt_HvsL{ri+1}); % protein name
+  fprintf(fid_combined_Gaus,'%s,',txt_MvsL{ri+1}); % protein name
   fprintf(fid_combined_Gaus,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
     Height, Center, Width, SSE(ci,ri), adjrsquare(ci,ri), round(Size_of_complex/10)*10); % Gaussian fitting information
 end
@@ -282,19 +273,20 @@ end
 
 %% HvsL_Combined_OutputGaus.csv
 disp('    Writing HvsL_Combined_OutputGaus.csv...')
+fn = strcat([datadir 'HvsL_Combined_OutputGaus.csv']);
 
 ci=2;
 Combined_OutputGaus_length = size(protgausI{ci},1);
 
 %Write out Combined process data to csv file
-fileName5 = strcat('HvsL_Combined_OutputGaus.csv');
-fid_combined_Gaus = fopen(fileName5,'w');
+fid_combined_Gaus = fopen(fn,'w');
 fprintf (fid_combined_Gaus,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
   'Guassian index number','Protein_number','Replicate','Protein name', 'Height', 'Center', 'Width', 'SSE', 'adjrsquare','Complex size'); %Write Header
 for kk = 1:Combined_OutputGaus_length
-  [ri, gn] = protgausI{ci}(kk,:);
+  ri = protgausI{ci}(kk,1);
+  gn = protgausI{ci}(kk,2);
   Height = Coef{ci,ri}((gn-1)*3 + 1);
-  Center = Coef{ci,ri}((gn-1)*3 + 2);
+  Center = Coef{ci,ri}((gn-1)*3 + 2) - 5;
   Width = Coef{ci,ri}((gn-1)*3 + 3);
   Size_of_complex=SEC_fit(1)*Center+SEC_fit(2);
   fprintf(fid_combined_Gaus,'%6.4f,%6.4f,%6.4f,',kk,ri,replicate(ri)); % index information
@@ -302,4 +294,23 @@ for kk = 1:Combined_OutputGaus_length
   fprintf(fid_combined_Gaus,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
     Height, Center, Width, SSE(ci,ri), adjrsquare(ci,ri), round(Size_of_complex/10)*10); % Gaussian fitting information
 end
+
+
+
+%% MvsL_Combined_Chromatograms.csv
+disp('    Writing MvsL_Combined_Chromatograms.csv...')
+fn = strcat([datadir 'MvsL_Combined_Chromatograms.csv']);
+
+ci=1;
+Combined_OutputGaus_length = size(protgausI{ci},1);
+
+fid_combined_Chromatogram = fopen(fn,'w');
+for kk = 1:Combined_OutputGaus_length
+  ri = protgausI{ci}(kk,1);
+  fprintf(fid_combined_Chromatogram,'%6.4f,%6.4f,%6.4f,',kk,ri,replicate(ri)); %Write out the index information
+  fprintf(fid_combined_Chromatogram,'%s,',txt_MvsL{ri+1}); %Write out protein name
+  fprintf(fid_combined_Chromatogram,'%6.4g,',cleandata{ci}(ri,5:end)); %Chromatogram information
+  fprintf(fid_combined_Chromatogram,'\n');
+end
+fclose(fid_combined_Chromatogram);
 
