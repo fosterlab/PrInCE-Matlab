@@ -20,6 +20,8 @@
 % - Right now the logic is a bit roundabout:
 %       First select a model and then fit that model. This is dangerous because the final fit
 %       could be bad! Better to keep the parameters of the best fit from model selection.
+% - Add 'user defined settings' at the very top of initialize
+% - Fix InputFile, MainOutputFile, and DebugOutputFile which are not currently used.
 
 
 %% 0. Initialize
@@ -34,10 +36,10 @@ maindir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/'; % where e
 codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
 datadir = [maindir 'DataFiles/']; % where data files live
-datadir1 = [datadir 'Output_Chromatograms/'];
-datadir2 = [datadir 'Output_Chromatograms_filtered_out/'];
-datadir3 = [datadir 'OutputGaus/'];
-datadir4 = [datadir 'OutputGaus_filtered_out/'];
+datadir1 = [datadir 'Output/Output_Chromatograms/'];
+datadir2 = [datadir 'Output/Output_Chromatograms_filtered_out/'];
+datadir3 = [datadir 'Output/OutputGaus/'];
+datadir4 = [datadir 'Output/OutputGaus_filtered_out/'];
 figdir = [maindir 'Figures/']; % where figures live
 % Make folders if necessary
 if ~exist(datadir1, 'dir'); mkdir(datadir1); end
@@ -47,9 +49,9 @@ if ~exist(datadir4, 'dir'); mkdir(datadir4); end
 
 
 % List all input files. These contain data that will be read by this script.
-InputFile{1} = [datadir 'Combined_replicates_2014_04_22_contaminates_removed_for_MvsL_scripts.xlsx'];
-InputFile{2} = [datadir 'Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.xlsx'];
-InputFile{3} = [datadir 'SEC_alignment.xlsx'];
+InputFile{1} = [datadir 'Input/Combined_replicates_2014_04_22_contaminates_removed_for_MvsL_scripts.xlsx'];
+InputFile{2} = [datadir 'Input/Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.xlsx'];
+InputFile{3} = [datadir 'Input/SEC_alignment.xlsx'];
 
 % List output files.
 % MainOutputFiles contain data that will be used by a downstream program.
