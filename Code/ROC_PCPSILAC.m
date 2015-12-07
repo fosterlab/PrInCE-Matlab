@@ -19,11 +19,16 @@
 %%%%%%%%%%%%%%% To do:
 % - Get all the input/output files sorted out.
 % - Why is this script pre-processing chromatograms? Shouldn't that have been done earlier?
+% - What happens to the output from the 'Find "Binary" interactions' section?
 %
 %
 %%%%%%%%%%%%%%% Fix the logic:
 % - Normalized Gaussians were wrong. Missing the 2 in the denominator.
 % - 'Look up Major Protein group Information' can be seriously improved with a few findstr
+% - FN and TN are approximated. Instead of looking at all the combinations of Gaussians, it just
+%   treats them all the same. This is for speed reasons: there were too many combinations to go
+%   through individually. A fix is to treat things exactly how we treat TP, that is go through and
+%   assess each Gaussian-Gaussian pair.
 %
 %
 %%%%%%%%%%%%%%% Bugs in my (this) code:
@@ -148,7 +153,7 @@ Dist.Width = squareform(pdist(W,'euclidean'));
 Dist.Gaussian_fits= squareform(pdist(gaussian_fit,'euclidean'));
 
 % Make Dist.R^2
-Dist.R2 = zeros(Nprot,Nprot);
+Dist.R2 = zeros(length(H),length(H));
 for ii=1:length(H)
   for jj=1:length(H)
     R = corrcoef(Chromatograms(ii,:),Chromatograms(jj,:));
@@ -319,17 +324,17 @@ end
 
 % check which individual proteins are in corum
 % Important! Also check whether any member of that protein's group is in corum
-inCorum = zeros(1,Dimensions_Gaus_import);
-isemptyCellArray = ~cellfun('isempty',Protein.MajorID_NoIsoforms);
-for ii = 1:Dimensions_Gaus_import
-  Ngroup = sum(isemptyCellArray(ii,:));
-  for ni = 1:Ngroup
-    if ismember(Protein.MajorID_NoIsoforms{ii,ni},Unique_Corum)
-      inCorum(ii) = inCorum(ii)+1;
-    end
-  end
-end
-inCorum = find(inCorum>0);
+% inCorum = zeros(1,Dimensions_Gaus_import);
+% isemptyCellArray = ~cellfun('isempty',Protein.MajorID_NoIsoforms);
+% for ii = 1:Dimensions_Gaus_import
+%   Ngroup = sum(isemptyCellArray(ii,:));
+%   for ni = 1:Ngroup
+%     if ismember(Protein.MajorID_NoIsoforms{ii,ni},Unique_Corum)
+%       inCorum(ii) = inCorum(ii)+1;
+%     end
+%   end
+% end
+% inCorum = find(inCorum>0);
 %
 % TP_Matrix2 = zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
 % %Multiple_known_interaction_in_proteingroup_Matrix= zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
@@ -356,8 +361,30 @@ inCorum = find(inCorum>0);
 % - Possible interaction matrix
 % - Self interaction matrix
 
+% check which individual proteins are in corum
+% Important! Also check whether any member of that protein's group is in corum
+inCorum = zeros(1,Dimensions_Gaus_import);
+isemptyCellArray = ~cellfun('isempty',Protein.MajorID_NoIsoforms);
+for ii = 1:Dimensions_Gaus_import
+  Ngroup = sum(isemptyCellArray(ii,:));
+  for ni = 1:Ngroup
+    if ismember(Protein.MajorID_NoIsoforms{ii,ni},Unique_Corum)
+      inCorum(ii) = inCorum(ii)+1;
+    end
+  end
+end
+inCorum = find(inCorum>0);
+
+%array with alterative MajorID to check
+Number_MajorIDs=zeros(Dimensions_Gaus_import,1);
+for counter_1=1:Dimensions_Gaus_import
+  for counter_2=1:Dimension_of_Protein_IDs(2)
+    Number_MajorIDs(counter_1)=Number_MajorIDs(counter_1)+ ~isempty(Protein.MajorID_NoIsoforms{counter_1,counter_2});
+  end
+end
+
 % Calculate possible interaction matrix, asks are both proteins in corum
-Int_matrix3 = zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
+Int_matrix = zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
 % Make matrix of protein group with multiple possible positive interactions
 Multiple_matches_within_protein_group_Matrix = zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
 for i=inCorum
@@ -367,7 +394,7 @@ for i=inCorum
       for ii=inCorum
         for ii_counter=1:Number_MajorIDs(ii)
           if ismember(Protein.MajorID_NoIsoforms{ii,ii_counter}, Pos_Corum_proteins)
-            Int_matrix3(i,ii) = Int_matrix3(i,ii)+1;
+            Int_matrix(i,ii) = Int_matrix(i,ii)+1;
           end
         end
       end
@@ -501,11 +528,10 @@ end
 
 
 
-%% 8.
+%% 8. Calculate precision as a function of Euc, Center
 
+% i. Make interactions_based_only_Ecldian_distance at 80% precision
 xDist = linspace(0,max(Dist.Euc(:)),nr);
-
-% Make interactions_based_only_Ecldian_distance at 80% precision
 prec_thresh = 0.80;
 Precision = Precision_out.Euc; % Precision_out.Euc
 
@@ -522,21 +548,21 @@ Interactions_Based_only_Eucldian_distance = (Interactions_detected_due_to_High_E
 Final_Interactions_Based_only_Eucldian_distance = Interactions_Based_only_Eucldian_distance;
 
 
-% Make optimisation_matrix_precision
+% ii. Make optimisation_matrix_precision
+Height_Distance = 20.0; % As height has very little effect on interaction determination, this has been set very large
+Width_Distangce = 20.0; % As width has very little effect on interaction determination, this has been set very large
+MatrixHeight = Dist.Height < Height_Distance;
+MatrixWidth = Dist.Width < Width_Distangce;
+%Determine interactions for a FPR of 0.5%
+[~, idx] = min(abs(FPR_out.Euc - 0.05)); %determines the postion which gives a FPR of 0.5%
+Eucldian_distance_with_0_05FPR = ceil(xDist(idx)); %determines the Eucldian distance which gives a FPR of 0.5%
+%Define number of data points
+Optimisation_Dimension = Eucldian_distance_with_0_05FPR/0.025;
+optimisation_matrix_number_interaction = zeros(Optimisation_Dimension,Optimisation_Dimension);
+optimisation_matrix_precision = zeros(Optimisation_Dimension,Optimisation_Dimension);
+Euclidian_Distance_optimisation = 0.025:0.025:Eucldian_distance_with_0_05FPR;
+Gaussian_fit_Distance_optimisation = 0.025:0.025:Eucldian_distance_with_0_05FPR;
 if 0
-  Height_Distance = 20.0; % As height has very little effect on interaction determination, this has been set very large
-  Width_Distangce = 20.0; % As width has very little effect on interaction determination, this has been set very large
-  MatrixHeight = Dist.Height < Height_Distance;
-  MatrixWidth = Dist.Width < Width_Distangce;
-  %Determine interactions for a FPR of 0.5%
-  [~, idx] = min(abs(FPR_out.Euc - 0.05)); %determines the postion which gives a FPR of 0.5%
-  Eucldian_distance_with_0_05FPR = ceil(xDist(idx)); %determines the Eucldian distance which gives a FPR of 0.5%
-  %Define number of data points
-  Optimisation_Dimension = Eucldian_distance_with_0_05FPR/0.025;
-  optimisation_matrix_number_interaction = zeros(Optimisation_Dimension,Optimisation_Dimension);
-  optimisation_matrix_precision = zeros(Optimisation_Dimension,Optimisation_Dimension);
-  Euclidian_Distance_optimisation = 0.025:0.025:Eucldian_distance_with_0_05FPR;
-  Gaussian_fit_Distance_optimisation = 0.025:0.025:Eucldian_distance_with_0_05FPR;
   for iii=1:Optimisation_Dimension
     for iv=1:Optimisation_Dimension
       NS1 = Euclidian_Distance_optimisation(iii); % e-6
@@ -560,6 +586,429 @@ if 0
   end
 else
   % Takes a while! Just load it for now
-  b = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Replicate4/ROC analysis data/';
-
+  a = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Replicate4/ROC analysis data/optimisation_matrix_interaction_numbers_replicate4.csv';
+  optimisation_matrix_number_interaction = importdata(a);
+  
+  b = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Replicate4/ROC analysis data/optimisation_matrix_precision_numbers_replicate4.csv';
+  optimisation_matrix_precision = importdata(b);
 end
+
+
+% iii. Make Precision_replicate_level
+minimum_precision=(ceil(min(min(optimisation_matrix_precision))*100))/100;
+test_precision = fliplr(minimum_precision:0.01:1);
+number_test_precisions = length(test_precision);
+
+Recall_replicate_level = zeros(1,number_test_precisions);
+Precision_replicate_level = zeros(1,number_test_precisions);
+TPR_replicate_level = zeros(1,number_test_precisions);
+FPR_replicate_level = zeros(1,number_test_precisions);
+No_Int_replicate_level = zeros(1,number_test_precisions);
+for test_precision_counter=1:number_test_precisions
+  test_precision_counter
+  Centre_Euc_require_precision = optimisation_matrix_precision > test_precision(test_precision_counter);
+  precision_matrix = nan(size(optimisation_matrix_number_interaction));
+  I = optimisation_matrix_precision > test_precision(test_precision_counter);
+  precision_matrix(I) = optimisation_matrix_number_interaction(I);
+  
+  maximum_counter=Optimisation_Dimension; %define based on the optimisation_matrix number
+  Interactions_based_one_summed_precisions = zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
+  parfor vi=1:maximum_counter   % scan down the Euc row and find which values results the required precision and maximum number of interactions
+    Maximum_interactions_at_given_Center = max(precision_matrix(vi,:));
+    if ~isnan(Maximum_interactions_at_given_Center)
+      inds = find(precision_matrix(vi,:)==Maximum_interactions_at_given_Center);
+      [col] = inds(1); %this takes the first number of inds thus ensure the most conservative Center will be used
+      optimised_center = Gaussian_fit_Distance_optimisation(vi);
+      optimised_Euc = Euclidian_Distance_optimisation(col);
+      
+      %use optimisation code to maximum out
+      MatrixGaussian = Dist.Gaussian_fits < optimised_center;
+      Matrix_Distance = Dist.Euc < optimised_Euc;
+      
+      % determine final interaction matrices
+      Interactions__precisions = (MatrixGaussian & MatrixHeight & MatrixWidth & Matrix_Distance & inverse_self);
+      Interactions_based_one_summed_precisions = (Interactions_based_one_summed_precisions | Interactions__precisions);
+    end
+  end
+  
+  % determine final interaction matrices
+  Final_interactions = (Final_Interactions_Based_only_Eucldian_distance | Interactions_based_one_summed_precisions); %test just interactions on Euc dist
+  
+  % Calculate True possitives
+  TP_Matrix_Int = (Final_interactions & TP_Matrix);
+  TP= length(find(TP_Matrix_Int==1));
+  
+  % Calculate false negatives
+  MaxTP = length(find(TP_Matrix==1));
+  FN = MaxTP-TP;
+  
+  % Calculate false positives
+  Int2_matrix = (Final_interactions & Int_matrix);
+  Int3_matrix = (Int2_matrix & inverse_self);
+  FP = length(find(Int3_matrix==1))-TP;
+  
+  % Find True negatives
+  TN = (length(find(Int_matrix==1)))-FP;
+  
+  Recall_replicate_level(test_precision_counter) = TP/(TP+FN);
+  Precision_replicate_level(test_precision_counter) = TP/(TP+FP);
+  TPR_replicate_level(test_precision_counter) = TP/(TP+FN);
+  FPR_replicate_level(test_precision_counter) =FP/(FP+TN);
+  No_Int_replicate_level(test_precision_counter) = length(find(triu(Final_interactions==1)));
+end
+
+
+
+
+%% 8. Determine interactions at a pre-set precision
+
+%Determine interactions within precision of >0.70 based on Eu distance
+prec_thresh = 0.70;
+[~, idx] = min(abs(Precision_replicate_level - prec_thresh)); %determines the postion which gives a precision closest to 0.7
+distance_with_precision_abover_0_7= test_precision(1,idx); %determines the point precision which gives a precision closest to 0.7
+
+% Define precision required
+%note This module has been to designed to use the settings which give the highest number of high precision interactions with the widest Euc
+Result_matrix = nan(size(optimisation_matrix_number_interaction));
+I = Centre_Euc_with_require_precision==1;
+Result_matrix(I) = optimisation_matrix_number_interaction(I);
+
+%determine the Euc and Center which give the user defined precision
+maximum_counter=Optimisation_Dimension; %define based on the optimisation_matrix number
+Interactions_based_one_summed_precisions = zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
+parfor vi=1:maximum_counter   % scan down the Euc row and find which values results the required precision and maximum number of interactions
+  vi
+  Maximum_interactions_at_given_Center = max(Result_matrix(vi,:));
+  if ~isnan(Maximum_interactions_at_given_Center)
+    inds =find(Result_matrix(vi,:)==Maximum_interactions_at_given_Center);
+    [col] = inds(1); %this takes the first number of inds thus ensure the most conservative Center will be used
+    optimised_center = Gaussian_fit_Distance_optimisation(vi);
+    optimised_Euc = Euclidian_Distance_optimisation(col);
+    
+    %use optimisation code to maximum out
+    MatrixGaussian = Dist.Gaussian_fits < optimised_center;
+    Matrix_Distance = Dist.Euc < optimised_Euc;
+    
+    % determine final interaction matrices
+    Interactions__precisions = (MatrixGaussian & MatrixHeight & MatrixWidth & Matrix_Distance & inverse_self);
+    Interactions_based_one_summed_precisions = (Interactions_based_one_summed_precisions | Interactions__precisions);
+  end
+end
+
+% determine final interaction matrices
+Final_interactions = (Final_Interactions_Based_only_Eucldian_distance | Interactions_based_one_summed_precisions); %test just interactions on Euc dist
+
+% Calculate True possitives
+TP_Matrix_Int = (Final_interactions & TP_Matrix);
+TP= length(find(TP_Matrix_Int==1));
+
+% Calculate false negatives
+MaxTP= length(find(TP_Matrix==1));
+FN= MaxTP-TP;
+
+% Calculate false positives
+Int2_matrix= (Final_interactions & Int_matrix);
+Int3_matrix= (Int2_matrix & inverse_self);
+FP= length(find(Int3_matrix==1))-TP;
+
+% Find True negatives
+TN= (length(find(Int_matrix==1)))-FP;
+
+%Generate negative matrix for final interaction analysis
+Negative1_matrix=(Int_matrix  & ~Final_interactions);
+Negative2_matrix=(Negative1_matrix & inverse_self);
+
+
+
+% final results
+Recall = TP/(TP+FN)
+Precision = TP/(TP+FP)
+TPR = TP/(TP+FN)
+FPR =FP/(FP+TN)
+No_Int= length(find(triu(Final_interactions==1)))
+
+
+
+%% Find "Binary" interactions
+% G: A-B, A-C, B-C, B-Q, ...
+
+% G: What happens with this output?
+% G: It's read in after the replicate loop and combined
+
+Protein_elution= strcat(num2str(C),'*',Protein.Isoform);
+[n,m]=size(Dist.Euc);
+Interactions =cell(1,1);
+
+Protein_interactions=cell(1,2);
+Protein_interactions_center=zeros(1,2);
+Delta_EucDist=zeros(1,1);
+Delta_Center=zeros(1,1);
+Delta_Height=zeros(1,1);
+Delta_Width=zeros(1,1);
+Both_proteins_Corum=zeros(1,1);
+Interaction_in_Corum=zeros(1,1);
+final_count=0;
+U = triu(Final_interactions);    %Take half of matrix therefor unique interactions
+for vii=1:n
+  for viii= 1:m
+    if U(vii,viii)==1
+      Int1=Protein_elution(vii);
+      Int2=Protein_elution(viii);
+      if strcmp(Int1, Int2)
+      else
+        final_count=1+final_count;
+        Interactions{final_count,1}= strcat(Int1,'-',Int2);
+        Delta_EucDist(final_count,1)= Dist.Euc(vii,viii);
+        Delta_Center(final_count,1)= abs(C(vii)-C(viii));
+        Delta_Height(final_count,1)= abs(H(vii)-H(viii));
+        Delta_Width(final_count,1)= abs(W(vii)-W(viii));
+        Both_proteins_Corum(final_count,1)= Int_matrix(vii,viii);
+        Interaction_in_Corum(final_count,1)= TP_Matrix(vii,viii);
+        Protein_interactions(final_count,1)=Protein.Isoform(vii);
+        Protein_interactions(final_count,2)=Protein.Isoform(viii);
+        Protein_interactions_center(final_count,1)=C(vii);
+        Protein_interactions_center(final_count,2)=C(viii);
+      end
+    else
+    end
+  end
+end
+
+
+%% Create list of predicted negative interactions (FN +TN)
+%Determine the false "binary" interaction list
+U1=triu(Negative2_matrix); %Take half of matrix therefor unique interactions
+
+%change directory
+parfor vii=1:n
+  for viii= 1:m
+    if U1(vii,viii)==1
+      Int1=Protein_elution(vii);
+      Int2=Protein_elution(viii);
+      if strcmp(Int1, Int2)
+      else
+        FN_Interactions= {strcat(Int1,'-',Int2)};
+        FN_Delta_EucDist= Dist.Euc(vii,viii);
+        FN_Delta_Center= abs(C(vii)-C(viii));
+        FN_Delta_Height= abs(H(vii)-H(viii));
+        FN_Delta_Width= abs(W(vii)-W(viii));
+        FN_Both_proteins_Corum= Int_matrix(vii,viii);
+        FN_Interaction_in_Corum= TP_Matrix(vii,viii);
+        FN_Protein_interactions1=Protein.Isoform(vii);
+        FN_Protein_interactions2=Protein.Isoform(viii);
+        FN_Protein_interactions_center1=C(vii);
+        FN_Protein_interactions_center2=C(viii);
+      end
+    else
+    end
+  end
+end
+
+
+%%
+%read dictory and concatinate negative interactions into a single file
+dirData2 = dir(name_negative_file);      %# Get directory contents
+dirData2 = dirData2(~[dirData2.isdir]);  %# Use only the file data
+negative_fileNames = {dirData2.name};           %# Get file names
+
+ExpName1 = strcat('^(\d+)\_(\d+)\','_Interaction','.csv');
+Incorum_Neg_fileData = regexp(negative_fileNames,ExpName1,'tokens');  %# Find tokens
+index1 = ~cellfun('isempty',Incorum_Neg_fileData);        %# Find index of matches
+negative_fileNames = negative_fileNames(index1);        %# remove empty cells
+Incorum_Neg_fileData = [Incorum_Neg_fileData{index1}];                %# Remove non-matches
+Incorum_Neg_fileData = vertcat(Incorum_Neg_fileData{:});             %# Format token data
+
+%sorting protein interactions in Corum in correct numerical order
+nFiles1 = size(Incorum_Neg_fileData,1);              %# Number of files matching format
+Incorum_Neg_fileData = str2double(Incorum_Neg_fileData);        %# Convert from strings to numbers
+[Incorum_Neg_fileData,index1] = sortrows(Incorum_Neg_fileData,1:2);  %# Sort numeric values
+negative_fileNames =  negative_fileNames(index1);               %# Apply sort to file names
+
+Number_of_Neg_interactions = length(negative_fileNames);
+Combined_Neg_interactions_data=cell(Number_of_Neg_interactions,11);
+
+for xiv = 1:Number_of_Neg_interactions
+  %load file of interest
+  fileName7 = strcat(name_negative_file,'\',negative_fileNames(xiv));
+  File_to_be_read = fileName7{1};
+  
+  %import data files
+  f = fopen (File_to_be_read);
+  Processed_data = textscan(f, '%s %s %s %s %s %s %s %s %s %s %s %s %s', 'Delimiter', ',');
+  fclose(f);
+  
+  %Copy values to arrays to use in downstream analysis
+  %Value 1, As the first value is the replicate there is not need to save
+  %value
+  
+  %Value 2
+  prot1_protein_names_entry=Processed_data{2};
+  Neg_Corum_prot1_protein_names{xiv}=prot1_protein_names_entry{1};
+  %Value 3
+  prot2_protein_names_entry=Processed_data{3};
+  Neg_Corum_prot2_protein_names{xiv}=prot2_protein_names_entry{1};
+  %Value 4
+  prot1_center=Processed_data{4};
+  Neg_Corum_prot1_center(xiv)=str2double(prot1_center(1));
+  %Value 5
+  prot2_center=Processed_data{5};
+  Neg_Corum_prot2_center(xiv)=str2double(prot2_center{1});
+  %Value 6
+  Neg_Delta_height_value=Processed_data{6};
+  Neg_Delta_height(xiv)=str2double(Neg_Delta_height_value{1});
+  %Value 7
+  Neg_Center_value=Processed_data{7};
+  Neg_Center(xiv)=str2double(Neg_Center_value(1));
+  %Value 8
+  Neg_Width_value=Processed_data{8};
+  Neg_Width(xiv)=str2double(Neg_Width_value(1));
+  %Value 9
+  Neg_Euc_value=Processed_data{9};
+  Neg_Euc(xiv)=str2double(Neg_Euc_value{1});
+  %Value 10
+  Neg_both_in_corum_value=Processed_data{10};
+  Neg_both_in_corum(xiv)=str2double(Neg_both_in_corum_value{1});
+  %Value 11
+  Neg_interaction_in_corum_value=Processed_data{11};
+  Neg_interaction_in_corum(xiv)=str2double(Neg_interaction_in_corum_value(1));
+end
+
+
+
+%% List of interactions
+% A - B,C,Q; B - A;, C - A,Q,D; ...
+
+% G: What happens with this output?
+% G: Just written to file.
+
+List_of_final_interactions = Final_interactions;    %As we want the complete list do not use triu
+Protein_elution_1= strcat(num2str(C),'*',Protein.Isoform);
+[n,m]=size(Dist.Euc);
+row_counter=0;
+empty_cell=cell(1,1);
+for vii=1:n
+  List_of_final_interactions_Protein.Guassian(vii,1)= Protein_elution_1(vii);
+  List_of_final_interactions_Protein.Protein(vii,1)= Protein.Isoform(vii);
+  List_of_final_interactions_Protein.Protein_NoIsoform(vii,1)= Protein.NoIsoform(vii);
+  for MajorID_protein_counter = 1:dimension_Protein_MajorID_NoIsoforms(2)
+    List_of_final_interactions_Protein.Protein_MajorID_NoIsoforms(vii,MajorID_protein_counter)= Protein.MajorID_NoIsoforms(vii,MajorID_protein_counter);
+  end
+  List_of_final_interactions_Protein.Center(vii,1)= C(vii);
+  final_count=0;
+  for viii= 1:m
+    if List_of_final_interactions(vii,viii)== 1 %Determine if proteins interact
+      final_count=1+final_count;
+      List_of_final_interactions_Protein.Interaction_Gaussian(vii,final_count)=Protein_elution_1(viii);
+      List_of_final_interactions_Protein.Interaction_Protein(vii,final_count)=Protein.Isoform(viii);
+      List_of_final_interactions_Protein.Interaction_Protein_NoIsoform(vii,final_count)=Protein.NoIsoform(viii);
+      List_of_final_interactions_Protein.Interaction_Center(vii,final_count)=C(viii);
+      if  TP_Matrix(vii,viii)== 1 %Determine if interaction is known in Corum
+        List_of_final_interactions_Protein.Interaction_known_in_corum(vii,final_count)= 1;
+      else
+        List_of_final_interactions_Protein.Interaction_known_in_corum(vii,final_count)= 0;
+      end
+    end
+  end
+  if final_count == 0
+    List_of_final_interactions_Protein.Interaction_Gaussian(vii,1)= {NaN};
+    List_of_final_interactions_Protein.Interaction_Protein(vii,1)={NaN};
+    List_of_final_interactions_Protein.Interaction_Center(vii,1)= 0;
+    List_of_final_interactions_Protein.Interaction_known_in_corum(vii,1)=0;
+  end
+end
+
+%Remove values in List of final with NaN
+List_of_final_interactions_Protein.Interaction_Gaussian(cellfun(@(x) any(isnan(x)),List_of_final_interactions_Protein.Interaction_Gaussian)) = {''};
+List_of_final_interactions_Protein.Interaction_Protein(cellfun(@(x) any(isnan(x)),List_of_final_interactions_Protein.Interaction_Protein)) = {''};
+
+%Determine the dimension of List_of_final_interactions_Protein.Interaction_Protein array
+Maximum_observed_interactions=size(List_of_final_interactions_Protein.Interaction_Protein); % determine the dimension of the interaction array in structure
+
+%Count number of corum interactions and total interactions
+List_of_final_interactions_Protein.List_Interaction_Gaussians=cell(Maximum_observed_interactions(1),1);
+List_of_final_interactions_Protein.Total_Interaction=cell(Maximum_observed_interactions(1),1);
+for Interaction_number_counter1=1:Maximum_observed_interactions(1)
+  Interaction_counter_for_protein=0;
+  for Interaction_number_counter2=1:Maximum_observed_interactions(2)
+    Guassian_to_combine(Interaction_number_counter2)=List_of_final_interactions_Protein.Interaction_Gaussian(Interaction_number_counter1,Interaction_number_counter2);
+    if any(Guassian_to_combine{Interaction_number_counter2})== 1 % test if value is not zero
+      String_name= strcat(Guassian_to_combine{Interaction_number_counter2},' ; ');
+      List_of_final_interactions_Protein.List_Interaction_Gaussians{Interaction_number_counter1}=...
+        strcat(String_name,List_of_final_interactions_Protein.List_Interaction_Gaussians{Interaction_number_counter1});
+      Interaction_counter_for_protein=Interaction_counter_for_protein+1;
+    end
+  end
+  List_of_final_interactions_Protein.Total_Interaction{Interaction_number_counter1,1}=Interaction_counter_for_protein;
+end
+
+%Sum number of known interactions in corum for protein
+for Interaction_number_counter1=1:Maximum_observed_interactions(1)
+  for Interaction_number_counter2=1:Maximum_observed_interactions(2)
+    Detected_Center_Interaction_known_in_corum(Interaction_number_counter2)= List_of_final_interactions_Protein.Interaction_known_in_corum(Interaction_number_counter1,Interaction_number_counter2);
+  end
+  List_of_final_interactions_Protein.Number_Interaction_known_in_corum(Interaction_number_counter1,1)= sum(Detected_Center_Interaction_known_in_corum);
+end
+
+%Protein list of interactions
+List_of_final_interactions_Protein.List_Interaction_Protein=cell(Maximum_observed_interactions(1),1);
+for protein_table1=1:Maximum_observed_interactions(1)
+  for protein_table2=1:Maximum_observed_interactions(2)
+    Proteins_to_combine(protein_table2)=List_of_final_interactions_Protein.Interaction_Protein(protein_table1,protein_table2);
+    if any(Proteins_to_combine{protein_table2})== 1 % test if value is not zero
+      String_name= strcat(Proteins_to_combine{protein_table2},' ; ');
+      List_of_final_interactions_Protein.List_Interaction_Protein{protein_table1,1}=strcat(String_name,List_of_final_interactions_Protein.List_Interaction_Protein{protein_table1});
+    end
+  end
+end
+
+%Copy List_of_final_interactions_Protein_70pc to use for other experiuments
+List_of_final_interactions_Protein_70pc=List_of_final_interactions_Protein;
+
+%Sort structure by Center/Gaussian write out table
+[~,location2]=sort([List_of_final_interactions_Protein.Center]); %Sort strcuture based on protein name
+for sort_counter1=1:Maximum_observed_interactions(1)
+  Sorted_of_final_interactions_Center_70pc.Guassian{sort_counter1,1} = List_of_final_interactions_Protein.Guassian{location2(sort_counter1)};
+  Sorted_of_final_interactions_Center_70pc.Protein{sort_counter1,1}= List_of_final_interactions_Protein.Protein{location2(sort_counter1)};
+  Sorted_of_final_interactions_Center_70pc.Protein_NoIsoform{sort_counter1,1}=List_of_final_interactions_Protein.Protein_NoIsoform{location2(sort_counter1)};
+  for MajorID_protein_counter = 1:dimension_Protein_MajorID_NoIsoforms(2)
+    Sorted_of_final_interactions_Center_70pc.Protein_MajorID_NoIsoforms{sort_counter1,MajorID_protein_counter}=...
+      List_of_final_interactions_Protein.Protein_MajorID_NoIsoforms{location2(sort_counter1),MajorID_protein_counter};
+  end
+  Sorted_of_final_interactions_Center_70pc.Center{sort_counter1,1}= List_of_final_interactions_Protein.Center(location2(sort_counter1));
+  for sort_counter2=1:Maximum_observed_interactions(2)
+    Sorted_of_final_interactions_Center_70pc.Interaction_Gaussian{sort_counter1,sort_counter2}= List_of_final_interactions_Protein.Interaction_Gaussian{location2(sort_counter1),sort_counter2};
+    Sorted_of_final_interactions_Center_70pc.Interaction_Protein{sort_counter1,sort_counter2}=List_of_final_interactions_Protein.Interaction_Protein{location2(sort_counter1),sort_counter2};
+    Sorted_of_final_interactions_Center_70pc.Interaction_Center{sort_counter1,sort_counter2}=List_of_final_interactions_Protein.Interaction_Center(location2(sort_counter1),sort_counter2);
+    Sorted_of_final_interactions_Center_70pc.Interaction_known_in_corum{sort_counter1,sort_counter2}=List_of_final_interactions_Protein.Interaction_known_in_corum(location2(sort_counter1),sort_counter2);
+  end
+  Sorted_of_final_interactions_Center_70pc.Number_Interaction_known_in_corum(sort_counter1,1)= List_of_final_interactions_Protein.Number_Interaction_known_in_corum(location2(sort_counter1));
+  Sorted_of_final_interactions_Center_70pc.Total_Interaction(sort_counter1,1)=List_of_final_interactions_Protein.Total_Interaction(location2(sort_counter1));
+  Sorted_of_final_interactions_Center_70pc.List_Interaction_Gaussians(sort_counter1,1)=List_of_final_interactions_Protein.List_Interaction_Gaussians(location2(sort_counter1));
+  Sorted_of_final_interactions_Center_70pc.List_Interaction_Protein(sort_counter1,1)=List_of_final_interactions_Protein.List_Interaction_Protein(location2(sort_counter1));
+end
+
+
+%Sort strcuture by Protein name
+[~,location]=sort([List_of_final_interactions_Protein.Protein]); %Sort strcuture based on protein name
+for sort_counter1=1:Maximum_observed_interactions(1)
+  Sorted_of_final_interactions_Protein_70pc.Guassian{sort_counter1,1} = List_of_final_interactions_Protein.Guassian{location(sort_counter1)};
+  Sorted_of_final_interactions_Protein_70pc.Protein{sort_counter1,1}= List_of_final_interactions_Protein.Protein{location(sort_counter1)};
+  Sorted_of_final_interactions_Protein_70pc.Protein_NoIsoform{sort_counter1,1}=List_of_final_interactions_Protein.Protein_NoIsoform{location(sort_counter1)};
+  for MajorID_protein_counter = 1:dimension_Protein_MajorID_NoIsoforms(2)
+    Sorted_of_final_interactions_Protein_70pc.Protein_MajorID_NoIsoforms{sort_counter1,MajorID_protein_counter}=...
+      List_of_final_interactions_Protein.Protein_MajorID_NoIsoforms{location(sort_counter1),MajorID_protein_counter};
+  end
+  Sorted_of_final_interactions_Protein_70pc.Center{sort_counter1,1}= List_of_final_interactions_Protein.Center(location(sort_counter1));
+  for sort_counter2=1:Maximum_observed_interactions(2)
+    Sorted_of_final_interactions_Protein_70pc.Interaction_Gaussian{sort_counter1,sort_counter2}= List_of_final_interactions_Protein.Interaction_Gaussian{location(sort_counter1),sort_counter2};
+    Sorted_of_final_interactions_Protein_70pc.Interaction_Protein{sort_counter1,sort_counter2}=List_of_final_interactions_Protein.Interaction_Protein{location(sort_counter1),sort_counter2};
+    Sorted_of_final_interactions_Protein_70pc.Interaction_Center{sort_counter1,sort_counter2}=List_of_final_interactions_Protein.Interaction_Center(location(sort_counter1),sort_counter2);
+    Sorted_of_final_interactions_Protein_70pc.Interaction_known_in_corum{sort_counter1,sort_counter2}=List_of_final_interactions_Protein.Interaction_known_in_corum(location(sort_counter1),sort_counter2);
+  end
+  Sorted_of_final_interactions_Protein_70pc.Number_Interaction_known_in_corum(sort_counter1,1)= List_of_final_interactions_Protein.Number_Interaction_known_in_corum(location(sort_counter1));
+  Sorted_of_final_interactions_Protein_70pc.Total_Interaction(sort_counter1,1)=List_of_final_interactions_Protein.Total_Interaction(location(sort_counter1));
+  Sorted_of_final_interactions_Protein_70pc.List_Interaction_Gaussians(sort_counter1,1)=List_of_final_interactions_Protein.List_Interaction_Gaussians(location(sort_counter1));
+  Sorted_of_final_interactions_Protein_70pc.List_Interaction_Protein(sort_counter1,1)=List_of_final_interactions_Protein.List_Interaction_Protein(location(sort_counter1));
+end
+
+
