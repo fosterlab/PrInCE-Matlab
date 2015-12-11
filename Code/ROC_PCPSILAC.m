@@ -38,7 +38,7 @@
 
 %% 0. Initialize
 
-% user defined settings
+% user defined variables
 number_of_replicates=3;
 number_of_channels=2;
 replicate_counter = 4; % Do a single replicate. This is Nick's loop index.

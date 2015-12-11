@@ -25,21 +25,21 @@
 
 
 %% 0. Initialize
-% - Set home folder (homedir), folder for subfunctions (funcdir), folder containing data files
-%   (datdir), folder for figures (figdir), and finally the folder containing everything (maindir).
-% - List all input files.
-% - List all output files as either DebugOutputFiles or MainOutputFiles.
-% - Define some variables.
+
+% User defined variables
+MaxIter = 500;                          % Number of iterations in holdout analysis
+experimental_channels = {'MvsL' 'HvsL'};
+Nchannels = length(experimental_channels);
 
 % Define folders, i.e. define where everything lives.
 maindir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/'; % where everything lives
 codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
-datadir = [maindir 'DataFiles/']; % where data files live
-datadir1 = [datadir 'Output/Output_Chromatograms/'];
-datadir2 = [datadir 'Output/Output_Chromatograms_filtered_out/'];
-datadir3 = [datadir 'Output/OutputGaus/'];
-datadir4 = [datadir 'Output/OutputGaus_filtered_out/'];
+datadir = [maindir 'Data/']; % where data files live
+datadir1 = [datadir 'GaussBuild/Output_Chromatograms/'];
+datadir2 = [datadir 'GaussBuild/Output_Chromatograms_filtered_out/'];
+datadir3 = [datadir 'GaussBuild/OutputGaus/'];
+datadir4 = [datadir 'GaussBuild/OutputGaus_filtered_out/'];
 figdir = [maindir 'Figures/']; % where figures live
 % Make folders if necessary
 if ~exist(datadir1, 'dir'); mkdir(datadir1); end
@@ -68,11 +68,6 @@ DebugOutputFile{5} = [datadir 'Summary_Proteins_with_Gausians.csv'];
 DebugOutputFile{6} = [datadir 'Proteins_not_fitted_to_gaussian_Hvsl.csv'];
 DebugOutputFile{7} = [datadir 'Proteins_not_fitted_to_gaussian_Mvsl.csv'];
 
-% Define some variables.
-MaxIter = 500;                          % Number of iterations in holdout analysis
-experimental_channels = {'MvsL' 'HvsL'};
-Nchannels = length(experimental_channels);
-
 
 
 %% 1. Read input data
@@ -97,6 +92,12 @@ rawdata{2} = num_val_HvsL;
 
 
 %% 2. Clean the chromatograms.
+%   1. Impute (fill in) single missing values (nans) by linear interpolation;
+%   2. Fill in first and last fractions with a 0 if they're missing;
+%   3. Replace values <0.2 with nan;
+%   4. If a value is not part of 5 consecutive values, replace it with 0.05;
+%   5. Add 5 zeros to either side of the chromatogram;
+%   6. Smooth whole chromatogram with a boxcar filter (moving average).
 
 % store all clean chromatograms in cleandata
 cleandata = cell(size(rawdata));

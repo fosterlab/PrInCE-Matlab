@@ -4,6 +4,15 @@
 %%%%%%%%%%%%%%% Logic:
 % This script just makes figures (at least for now). It fills in the gap between raw instrument data
 % and identified proteins; it looks at "what's going on with the peptides?"
+% for each isotope channel
+%   for each protein group
+%       - find every peptide in that group
+%       for each replicate
+%           - clean the chromatogram
+%           - get a "chromatogram" for each peptide
+%           for each peptide
+%               make a bunch of summary stuff
+%           - create figures
 %
 %
 %%%%%%%%%%%%%%% Custom functions called by Gauss_build.m:
