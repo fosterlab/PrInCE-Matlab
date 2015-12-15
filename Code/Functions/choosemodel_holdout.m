@@ -84,8 +84,8 @@ for ii=1:5
   holdoutSSE{ii} = zeros(1,MaxIter);
   while jj < MaxIter
     try %attempt the hold out analysis
-      jj=jj+1;
-      train = crossvalind('HoldOut',N, 0.1);
+      jj=jj+1
+      train = crossvalind('HoldOut', N, 0.1);
       curveFit = fit(x(train),cleanchrom(train),ft{ii},fo{ii});
       yhat = feval(curveFit,x);
       holdoutSSE{ii}(jj) =  sum((yhat - cleanchrom).^2);

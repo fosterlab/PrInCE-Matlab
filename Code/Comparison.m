@@ -34,8 +34,7 @@
 %
 %
 %%%%%%%%%%%%%%% Big changes:
-% 1. Impute multiple values. (#! Nope! This has been removed. We already cleaned the chroms!)
-% 2. Make the code able to handle any number of replicates. Automation!
+% 1. Make the code able to handle any number of replicates. Automation!
 %
 %
 %%%%%%%%%%%%%%% Questions:
@@ -47,29 +46,10 @@
 %     as excel table, Nick says because he was playing around with how to read in data. I could
 %     probably just ignore the excel and use the original csv file..?
 % 3. What is 2408? 7443?
-%
-%
-%
-%%%%%%%%%%%%%%% Rough notes:
-% - Identify which proteins between replicates were detected with Gaussians.
-% - Comparison 1: Compare between replicates and channels
-%
-% - Compare the Gaussians across replicates.
-% - 2A: Compare between channels of the same replicate to determine which Gaussians are unique to each channel.
-% - 2B: Determine if complexes change using the Gaussian apex
-% 	- I think this is testing whether the apex more than doubled (increase) or is less than half (decrease)
-% 	- No stats
-% - 2C: Determine the trends of Gaussian curves. Aim: Look at the determined Gaussians within single replicate and compare if all the Gaussians change, some change, or none of them change.
-%
-% - Comparison 3A: Determine which Gaussians are shared across the replicates. Aim: Determine which Gaussians are shared.
-% - Comparison 3B: Determine if complexes change using the Gaussian apex. Aim: Identify changes by using the master list and comparing if a Gaussian is observed within two fractions, if so use the centre of that Gaussian.
-%
-% - Write out tables
-%
-% - Write out figures
-%
-% -
-%
+% 4. What's shown in the top Gaussian plot? How are those Gaussian picked?
+% 5. What Gaussians "represent" all the replicated? How are these picked?
+% 6. What happens to a Gaussian that's only in one replicate?
+
 
 disp('Comparison.m')
 tic
@@ -240,6 +220,13 @@ Standard_area=fraction_number(2)*1*(1/Diltuion_factor_master_mix);
 %Copy data to be used for plotting
 num_val_MvsL_for_figures = num_val_MvsL;
 num_val_HvsL_for_figures = num_val_HvsL;
+
+% Clean chromatograms
+for ri = 1:Proteins % loop over proteins
+  num_val_MvsL(ri,:) = cleanChromatogram(num_val_MvsL(ri,:),[1 3]);
+  num_val_HvsL(ri,:) = cleanChromatogram(num_val_HvsL(ri,:),[1 3]);
+  num_val_HvsM(ri,:) = cleanChromatogram(num_val_HvsM(ri,:),[1 3]);
+end
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)

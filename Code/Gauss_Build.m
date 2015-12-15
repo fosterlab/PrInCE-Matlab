@@ -24,10 +24,14 @@
 % - Fix InputFile, MainOutputFile, and DebugOutputFile which are not currently used.
 
 
+disp('Gauss_Build.m')
+
 %% 0. Initialize
+tic
+fprintf('\n    0. Initialize')
 
 % User defined variables
-MaxIter = 500;                          % Number of iterations in holdout analysis
+MaxIter = 5;                          % Number of iterations in holdout analysis
 experimental_channels = {'MvsL' 'HvsL'};
 Nchannels = length(experimental_channels);
 
@@ -35,13 +39,16 @@ Nchannels = length(experimental_channels);
 maindir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/'; % where everything lives
 codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
-datadir = [maindir 'Data/']; % where data files live
-datadir1 = [datadir 'GaussBuild/Output_Chromatograms/'];
-datadir2 = [datadir 'GaussBuild/Output_Chromatograms_filtered_out/'];
-datadir3 = [datadir 'GaussBuild/OutputGaus/'];
-datadir4 = [datadir 'GaussBuild/OutputGaus_filtered_out/'];
+datadir0 = [maindir 'Data/']; % where data files live
+datadir = [maindir 'Data/GaussBuild/']; % where data files live
+datadir1 = [maindir 'Data/GaussBuild/Output_Chromatograms/'];
+datadir2 = [maindir 'Data/GaussBuild/Output_Chromatograms_filtered_out/'];
+datadir3 = [maindir 'Data/GaussBuild/OutputGaus/'];
+datadir4 = [maindir 'Data/GaussBuild/OutputGaus_filtered_out/'];
 figdir = [maindir 'Figures/']; % where figures live
 % Make folders if necessary
+if ~exist(datadir0, 'dir'); mkdir(datadir0); end
+if ~exist(datadir, 'dir'); mkdir(datadir); end
 if ~exist(datadir1, 'dir'); mkdir(datadir1); end
 if ~exist(datadir2, 'dir'); mkdir(datadir2); end
 if ~exist(datadir3, 'dir'); mkdir(datadir3); end
@@ -49,28 +56,17 @@ if ~exist(datadir4, 'dir'); mkdir(datadir4); end
 
 
 % List all input files. These contain data that will be read by this script.
-InputFile{1} = [datadir 'Input/Combined_replicates_2014_04_22_contaminates_removed_for_MvsL_scripts.xlsx'];
-InputFile{2} = [datadir 'Input/Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.xlsx'];
-InputFile{3} = [datadir 'Input/SEC_alignment.xlsx'];
+InputFile{1} = [datadir0 'Combined_replicates_2014_04_22_contaminates_removed_for_MvsL_scripts.xlsx'];
+InputFile{2} = [datadir0 'Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.xlsx'];
+InputFile{3} = [datadir0 'SEC_alignment.xlsx'];
 
-% List output files.
-% MainOutputFiles contain data that will be used by a downstream program.
-% DebugOutputFiles are not used by another program.
-MainOutputFile{1} = [datadir 'HvsL_Combined_OutputGaus.csv'];
-MainOutputFile{2} = [datadir 'MvsL_Combined_OutputGaus.csv'];
-MainOutputFile{3} = [datadir 'HvsL_Summary_Gausians_for_individual_proteins.csv'];
-MainOutputFile{4} = [datadir 'MvsL_Summary_Gausians_for_individual_proteins.csv'];
-DebugOutputFile{1} = [datadir 'Combined_Chromatograms.csv'];
-DebugOutputFile{2} = [datadir 'Combined_Chromatograms_filtered_out.csv'];
-DebugOutputFile{3} = [datadir 'Combined_OutputGaus_filtered_out.csv'];
-DebugOutputFile{4} = [datadir 'Summary_Gausians_identifed.csv'];
-DebugOutputFile{5} = [datadir 'Summary_Proteins_with_Gausians.csv'];
-DebugOutputFile{6} = [datadir 'Proteins_not_fitted_to_gaussian_Hvsl.csv'];
-DebugOutputFile{7} = [datadir 'Proteins_not_fitted_to_gaussian_Mvsl.csv'];
-
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
 %% 1. Read input data
+tic
+fprintf('\n    1. Read input data')
 
 % Import data from all input files
 [num_val_MvsL,txt_MvsL] = xlsread(InputFile{1}); %Import file MvsL
@@ -89,15 +85,19 @@ num_val_HvsL = num_val_HvsL(:,2:end);
 rawdata{1} = num_val_MvsL;
 rawdata{2} = num_val_HvsL;
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
-%% 2. Clean the chromatograms.
+%% 2. Clean the chromatograms
 %   1. Impute (fill in) single missing values (nans) by linear interpolation;
 %   2. Fill in first and last fractions with a 0 if they're missing;
 %   3. Replace values <0.2 with nan;
 %   4. If a value is not part of 5 consecutive values, replace it with 0.05;
 %   5. Add 5 zeros to either side of the chromatogram;
 %   6. Smooth whole chromatogram with a boxcar filter (moving average).
+tic
+fprintf('\n    2. Clean the chromatograms')
 
 % store all clean chromatograms in cleandata
 cleandata = cell(size(rawdata));
@@ -122,9 +122,13 @@ for ci = 1:Nchannels % loop over channels
   end
 end
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
 %% 3. Fit 1-5 Gaussians on each cleaned chromatogram
+tic
+fprintf('\n    3. Fit 1-5 Gaussians on each cleaned chromatogram')
 
 % pre-allocate some variables
 Coef = cell(Nchannels, Nproteins);
@@ -133,7 +137,10 @@ adjrsquare = nan(size(Coef));
 fit_flag = nan(size(Coef));
 Try_Fit = zeros(size(Coef));
 
+gausscount = 0;
+protgausI = cell(Nchannels,1); % just an indexing variable. matches up gaussians to protein number
 for ci = 1:Nchannels % loop over channels
+  protgausI{ci} = zeros(100,2);
   for ri = 1:Nproteins % loop over proteins
     
     % get a single clean chromatogram
@@ -147,20 +154,29 @@ for ci = 1:Nchannels % loop over channels
     
     % choose the best model to fit
     model = choosemodel_holdout(clean_chromatogram,MaxIter);
-    disp(['    fit protein number ' num2str(ri) ' with ' num2str(model.Ngauss) ' Gaussians...'])
+    disp(['    fit protein number ' num2str(ri) ' (' txt_HvsL{ri+1} ') with ' num2str(model.Ngauss) ' Gaussians...'])
     
     % fit that model
     [Coef{ci,ri},SSE(ci,ri),adjrsquare(ci,ri),fit_flag(ci,ri)] = fitgaussmodel(clean_chromatogram,model);
-
+    
+    % make protgausI{ci}, where each row is for a Gaussian: [protein number, gaussian number]
+    for gi = 1:model.Ngauss
+      gausscount = gausscount+1;
+      protgausI{ci}(gausscount,:) = [ri,gi];
+    end
+    
   end
 end
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
 %% 4. Write output
 
-writeOutput_gaussbuild(datadir,MainOutputFile,DebugOutputFile,...
+writeOutput_gaussbuild(datadir,datadir1,datadir2,datadir3,datadir4,...
   Coef,SSE,adjrsquare,Try_Fit,...
   txt_MvsL,txt_HvsL,replicate,SEC_size_alignment,experimental_channels,...
-  cleandata,rawdata,tmp1,tmp2);
+  cleandata,rawdata,tmp1,tmp2,...
+  protgausI);
 
