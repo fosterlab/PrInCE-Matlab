@@ -10,6 +10,7 @@ function [clean_chromatogram,tmp1,tmp2] = cleanChromatogram(rawchrom,steps)
 %   4. If a value is not part of 5 consecutive values, replace it with 0.05;
 %   5. Add 5 zeros to either side of the chromatogram;
 %   6. Smooth whole chromatogram with a boxcar filter (moving average).
+%   7. Replace nan with zero.
 %
 % Input:
 %   rawchrom: nx1 vector, where n is the number of fractions. Raw chromatogram.
@@ -105,6 +106,12 @@ end
 % 6. Smooth whole chromatogram with a boxcar filter (moving average).
 if ismember(6,steps)
   tmpchrom= smooth(tmpchrom,4);
+end
+
+
+% 7. Replace nan with 0.
+if ismember(7,steps)
+  tmpchrom(isnan(tmpchrom)) = 0;
 end
 
 

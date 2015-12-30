@@ -31,6 +31,11 @@
 %    values. Should we do more?
 
 
+%%%%%%%%%%%%%%% To do:
+% 1. Check that the cleaning steps here match with Nick's. e.g. Replace missing values with nan or
+%   zero?
+
+
 %%%%%%%%%%%%%%% Questions:
 % 1. Why do the chromatograms have 5 extra points on either side?
 %
@@ -77,7 +82,7 @@ InputFile{2} = [datadir 'Combined_replicates_2014_04_22_contaminates_removed_for
 InputFile{3} = [datadir 'Combined_replicates_2014_04_22_contaminates_removed_for_HvsM_scripts.xlsx'];
 InputFile{4} = [datadir 'SEC_alignment.xlsx'];
 
-% for now, read these in from Nick's data
+% for now, read files in from Nick's data
 % in the future read them in from my data
 if 1 %nick's output
   pw = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/MvsL/';
@@ -94,7 +99,6 @@ if 1 %nick's output
       GassSumInputFile{ei,replicates} = ['/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/' tmp '_alignment/Processed Gaussian/' tmp '_Summary_Gausians_for_individual_proteins_rep' num2str(replicates) '.csv'];
     end
   end
-  
 else %my output
   InputFile{5} = [datadir 'MvsL_Combined_OutputGaus.csv'];                        % From Gauss_build
   InputFile{6} = [datadir 'MvsL_Summary_Gausians_for_individual_proteins.csv'];   % ''
@@ -108,7 +112,6 @@ else %my output
       GassSumInputFile{ei,replicates} = [datadir2 Experimental_channels{ei} '_Summary_Gausians_for_individual_proteins_rep' num2str(replicates) '.csv'];
     end
   end
-  
 end
 % *vsL_Combined_OutputGaus.csv: data on all the fitted Gaussians
 % *vsL_Summary_Gausians_for_individual_proteins.csv: how many Gaussians were fitted per protein
@@ -127,7 +130,7 @@ fprintf('    1. Read input')
 [num_val_MvsL,txt_MvsL] = xlsread(InputFile{1}); %Import file raw Maxqaunt output
 [num_val_HvsL,txt_HvsL] = xlsread(InputFile{2}); %Import file raw Maxqaunt output
 [num_val_HvsM,txt_HvsM] = xlsread(InputFile{3}); %Import file raw Maxqaunt output
-[SEC_size_alignment]=xlsread(InputFile{4});
+[SEC_size_alignment] = xlsread(InputFile{4});
 
 % Import Gaussian fits
 f1 = fopen(InputFile{5});
@@ -155,6 +158,17 @@ for ci = 1:Number_of_experimental_channels
   end
 end
 
+% make protgausI
+protgausI = cell(Number_of_experimental_channels, Nreplicates);
+for ci = 1:Number_of_experimental_channels
+  for rr = 1:Nreplicates
+    protgausI{ci,rr} = nan(size(Gaus_import{ci,rr}.textdata,1)-1);
+    for gi = 1:size(Gaus_import{ci,rr}.textdata,1)-1
+      protgausI{ci,rr}(gi) = str2num(Gaus_import{ci,rr}.textdata{gi+1,3});
+    end
+  end
+end
+
 % Calibration
 SEC_fit=polyfit(SEC_size_alignment(1,:),SEC_size_alignment(2,:),1);
 
@@ -165,11 +179,20 @@ fraction_number(2) = fraction_number(2)-1;
 % number of fractions,equal to # fractions + 10
 Chromatograms_axis = fraction_number(2)+10;
 
+% replicates
+replicates =  num_val_MvsL(:,1);
+
 % Clean chromatograms
+cleandata{1} = nan(size(num_val_MvsL,1),size(num_val_MvsL,2)+10);
+cleandata{2} = nan(size(num_val_HvsL,1),size(num_val_HvsL,2)+10);
+cleandata{3} = nan(size(num_val_HvsM,1),size(num_val_HvsM,2)+10);
+cleandata{1}(:,1) = num_val_MvsL(:,1);
+cleandata{2}(:,2) = num_val_HvsL(:,1);
+cleandata{3}(:,3) = num_val_HvsM(:,1);
 for ri = 1:size(num_val_MvsL,1) % loop over proteins
-  num_val_MvsL(ri,:) = cleanChromatogram(num_val_MvsL(ri,:),[1 3]);
-  num_val_HvsL(ri,:) = cleanChromatogram(num_val_HvsL(ri,:),[1 3]);
-  num_val_HvsM(ri,:) = cleanChromatogram(num_val_HvsM(ri,:),[1 3]);
+  cleandata{1}(ri,2:end) = cleanChromatogram(num_val_MvsL(ri,2:end),[1 3 5 7]);
+  cleandata{2}(ri,2:end) = cleanChromatogram(num_val_HvsL(ri,2:end),[1 3 5 7]);
+  cleandata{3}(ri,2:end) = cleanChromatogram(num_val_HvsM(ri,2:end),[1 3 5 7]);
 end
 
 tt = toc;
@@ -181,6 +204,8 @@ fprintf('  ...  %.2f seconds\n',tt)
 % i) Find names of proteins with a single Gaussian
 % ii) Find the overlap in single Gaussians b/w replicates
 % iii) Choose the replicate with maximum overlap
+tic
+fprintf('    2. Find the best replicates to align to')
 
 replicate_to_align_against = nan(Number_of_experimental_channels,1);
 summerised_names_G1 = cell(Number_of_experimental_channels,Nreplicates); % proteins with 1 Gaussian
@@ -212,12 +237,17 @@ for ci = 1:Number_of_experimental_channels
   [~,replicate_to_align_against(ci)] = max(Nintersect); % ding ding ding!
 end
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
+
 
 
 %% 3. Calculate best fit lines for adjustment
 % i) Find the overlapping proteins
 % ii) Find the Centers of these proteins
 % iii) Fit a line
+tic
+fprintf('    3. Calculate best fit lines for adjustment')
 
 pfit = nan(Number_of_experimental_channels,Nreplicates,2);
 
@@ -249,12 +279,16 @@ for ci = 1:Number_of_experimental_channels
   end
 end
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
 
 %% 4. Using fitted curves, adjust replicate data
 % i) Gaussian fits: shift Center
 % ii) Chromatograms: shift data points
+tic
+fprintf('    4. Using fitted curves, adjust replicate data')
 
 Adjusted_Gaus_import = Gaus_import;
 
@@ -272,25 +306,96 @@ for ci = 1:Number_of_experimental_channels
 end
 
 % ii) Chromatograms: shift data points
-
-% MvsL
-x = 1:55;
-adjusted_raw_data{1} = nan(size(num_val_MvsL));
+x = -4:60;
+adjusted_raw_data{1} = nan(size(cleandata{1}));
+adjusted_raw_data{2} = nan(size(cleandata{2}));
 for ri=1:size(num_val_MvsL)
-  y = num_val_MvsL(ri,2:end);
-  
+  % MvsL
+  y = cleandata{1}(ri,2:end);
   rr = num_val_MvsL(ri,1);
   b = pfit(ci,rr,1); % intercept
   m = pfit(ci,rr,2); % slope
-  
   x2 = (x-b)/m;
+  y2 = interp1(x,y,x2);
+  y2(y2<.2) = nan;
+  adjusted_raw_data{1}(ri,2:end) = y2;
   
-  adjusted_raw_data{1}(ri,2:end) = interp1(x,y,x2);
+  % HvsL
+  y = cleandata{2}(ri,2:end);
+  rr = num_val_HvsL(ri,1);
+  b = pfit(ci,rr,1); % intercept
+  m = pfit(ci,rr,2); % slope
+  x2 = (x-b)/m;
+  y2 = interp1(x,y,x2);
+  y2(y2<.2) = nan;
+  adjusted_raw_data{2}(ri,2:end) = y2;
 end
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
-%% 5. Write output
+
+%% 5. Make some summary statistics
+% Delta_Center
+% Delta_Height
+% Delta_Width
+% EuDist
+% Divergence
+
+tic
+fprintf('    5. Make some summary statistics')
+
+ci = 1;
+
+Delta_center = cell(Number_of_experimental_channels,Nreplicates,Nreplicates);
+Delta_height = cell(Number_of_experimental_channels,Nreplicates,Nreplicates);
+Delta_width = cell(Number_of_experimental_channels,Nreplicates,Nreplicates);
+EuDis = cell(Number_of_experimental_channels,Nreplicates,Nreplicates);
+
+x = 1:65;
+
+for ci = 1:Number_of_experimental_channels,
+  for rr1 = 1:Nreplicates
+    for rr2 = 1:Nreplicates
+      
+      % i) Find the overlapping proteins
+      overlap = intersect(summerised_names_G1{ci,rr1},summerised_names_G1{ci,rr2});
+      overlap([1 2]) = [];
+      Ia = find(ismember(Gaus_import{ci,rr1}.textdata(:,4),overlap));
+      Ib = find(ismember(Gaus_import{ci,rr2}.textdata(:,4),overlap));
+      
+      % ii) Calculate Gaussian curves
+      G1 = zeros(65,length(overlap));
+      G2 = zeros(65,length(overlap));
+      for ri = 1:length(overlap)
+        c1 = Gaus_import{ci,rr1}.data(Ia(ri)-1,1:3);
+        c2 = Gaus_import{ci,rr2}.data(Ib(ri)-1,1:3);
+        G1(:,ri) = c1(1)*exp( -(x-(c1(2)+5)).^2 /c1(3).^2 /2);
+        G2(:,ri) = c2(1)*exp( -(x-(c2(2)+5)).^2 /c2(3).^2 /2);
+      end
+      
+      % ii3) Calculate statistics
+      Delta_center{ci,rr1,rr2} = abs(Gaus_import{ci,rr1}.data(Ia-1,2) - Gaus_import{ci,rr2}.data(Ib-1,2));
+      Delta_height{ci,rr1,rr2} = abs(Gaus_import{ci,rr1}.data(Ia-1,1) - Gaus_import{ci,rr2}.data(Ib-1,1));
+      Delta_width{ci,rr1,rr2} = abs(Gaus_import{ci,rr1}.data(Ia-1,3) - Gaus_import{ci,rr2}.data(Ib-1,3));
+      EuDis{ci,rr1,rr2} = sqrt(sum((G1 - G2) .^ 2));
+      
+      % quality control...
+      if length(overlap)~=length(Ia) || length(overlap)~=length(Ib)
+        error('Error: Alignment.m: uhhhh 2')
+      end
+      
+    end
+  end
+end
+
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
+
+
+
+%% 6. Write output
 %    fid9_Name = strcat('Adjusted_',Experimental_channel,'_Raw_data_maxquant_rep',mat2str(alignment_counter),'.csv');
 %    fid9B_Name = strcat('Adjusted_',Experimental_channel,'_Raw_for_ROC_analysis_rep',mat2str(alignment_counter),'.csv');
 %    fid9B_Name = strcat('Adjusted_HvsM_Raw_data_maxquant_rep',mat2str(alignment_counter),'.csv');
@@ -298,35 +403,27 @@ end
 %    fid7_Name = strcat('Adjusted_Combined_OutputGaus_rep',mat2str(alignment_counter),'.csv');
 %  fid10_Name = strcat('Adjusted_',Experimental_channel,'_Combined_OutputGaus.csv');
 %  fid11_Name = strcat('Adjusted_',Experimental_channel,'_Raw_data_maxquant.csv');
+tic
+fprintf('    6. Write output')
+
+writeOutput_alignment(Experimental_channels,Nreplicates,...
+  datadir1,...
+  replicates,cleandata,txt_MvsL,txt_HvsL,txt_HvsM,Gaus_import,Summary_gausian_infomration,...
+  Adjusted_Gaus_import,adjusted_raw_data)
+
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
 
+%% 7. Make figures
 
-%% 6. Make figures
+tic
+fprintf('    7. Make figures')
 
+makeFigures_alignment
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
-%% Is each G1 name really a G1?
-
-clear A1 A2 N1 N2
-
-listofnames = Summary_gausian_infomration{ci,rr}.textdata(:,2);
-kk=0;
-overlap = intersect(summerised_names_G1{1,2},summerised_names_G1{1,3});
-for ri = 2:length(overlap)
-  
-  protname = overlap{ri};
-  if strmatch('-1',protname);continue;end
-  kk = kk+1;
-
-  % how many G?
-  I = strmatch(protname,listofnames,'exact');
-  A1(kk,:) = Summary_gausian_infomration{1,2}.data(I-1,:);
-  A2(kk,:) = Summary_gausian_infomration{1,3}.data(I-1,:);
-  
-  % how many times does this name show up in Gaus_import?
-  N1(kk) = length(strmatch(protname,Gaus_import{1,2}.textdata(:,4),'exact'));
-  N2(kk) = length(strmatch(protname,Gaus_import{1,3}.textdata(:,4),'exact'));
-  
-end
 

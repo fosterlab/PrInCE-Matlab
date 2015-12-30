@@ -58,7 +58,7 @@ end
 % 1_1_MvsL_Output_Chromatograms.csv
 % 1_1_MvsL_OutputGaus_filtered_out.csv
 % 1_1_MvsL_Output_Chromatograms_filtered_out.csv
-disp('    Writing individual fit files...')
+disp('        Writing individual fit files...')
 
 Gaussians_used_in_analysis_counter = nan(Nchannels, Nproteins);
 Gaussians_excluded_from_analysis_counter = nan(Nchannels, Nproteins);
@@ -125,7 +125,7 @@ end
 
 
 %% MvsL_Summary_Gausians_identifed.csv
-disp('    Writing MvsL_Summary_Gausians_identifed.csv...')
+disp('        Writing MvsL_Summary_Gausians_identifed.csv...')
 fn = strcat([datadir 'MvsL_Summary_Gausians_identifed.csv']);
 
 ci=1;
@@ -148,7 +148,7 @@ fclose(fid3);
 
 
 %% HvsL_Summary_Gausians_identifed.csv
-disp('    Writing HvsL_Summary_Gausians_identifed.csv...')
+disp('        Writing HvsL_Summary_Gausians_identifed.csv...')
 fn = strcat([datadir 'HvsL_Summary_Gausians_identifed.csv']);
 
 ci=2;
@@ -171,7 +171,7 @@ fclose(fid3);
 
 
 %% Proteins_not_fitted_to_gaussian_MvsL.csv
-disp('    Writing Proteins_not_fitted_to_gaussian_MvsL.csv...')
+disp('        Writing Proteins_not_fitted_to_gaussian_MvsL.csv...')
 fn = strcat([datadir 'Proteins_not_fitted_to_gaussian_MvsL.csv']);
 
 ci=1;
@@ -188,7 +188,7 @@ fclose(fid5);
 
 
 %% Proteins_not_fitted_to_gaussian_HvsL.csv
-disp('    Writing Proteins_not_fitted_to_gaussian_HvsL.csv...')
+disp('        Writing Proteins_not_fitted_to_gaussian_HvsL.csv...')
 fn = strcat([datadir 'Proteins_not_fitted_to_gaussian_HvsL.csv']);
 
 ci=2;
@@ -205,7 +205,7 @@ fclose(fid5);
 
 
 %% MvsL_Summary_Gausians_for_individual_proteins.csv
-disp('    Writing MvsL_Summary_Gausians_for_individual_proteins.csv...')
+disp('        Writing MvsL_Summary_Gausians_for_individual_proteins.csv...')
 fn = strcat([datadir 'MvsL_Summary_Gausians_for_individual_proteins.csv']);
 
 ci=1;
@@ -224,7 +224,7 @@ fclose(fid4);
 
 
 %% HvsL_Summary_Gausians_for_individual_proteins.csv
-disp('    Writing HvsL_Summary_Gausians_for_individual_proteins.csv...')
+disp('        Writing HvsL_Summary_Gausians_for_individual_proteins.csv...')
 fn = strcat([datadir 'HvsL_Summary_Gausians_for_individual_proteins.csv']);
 
 ci=1;
@@ -243,7 +243,7 @@ fclose(fid4);
 
 
 %% MvsL_Combined_OutputGaus.csv
-disp('    Writing MvsL_Combined_OutputGaus.csv...')
+disp('        Writing MvsL_Combined_OutputGaus.csv...')
 fn = strcat([datadir 'MvsL_Combined_OutputGaus.csv']);
 
 ci=1;
@@ -270,7 +270,7 @@ fclose(fn);
 
 
 %% HvsL_Combined_OutputGaus.csv
-disp('    Writing HvsL_Combined_OutputGaus.csv...')
+disp('        Writing HvsL_Combined_OutputGaus.csv...')
 fn = strcat([datadir 'HvsL_Combined_OutputGaus.csv']);
 
 ci=2;
@@ -296,7 +296,7 @@ end
 
 
 %% MvsL_Combined_Chromatograms.csv
-disp('    Writing MvsL_Combined_Chromatograms.csv...')
+disp('        Writing MvsL_Combined_Chromatograms.csv...')
 fn = strcat([datadir 'MvsL_Combined_Chromatograms.csv']);
 
 ci=1;
@@ -315,7 +315,7 @@ fclose(fid_combined_Chromatogram);
 
 
 %% HvsL_Combined_Chromatograms.csv
-disp('    Writing HvsL_Combined_Chromatograms.csv...')
+disp('        Writing HvsL_Combined_Chromatograms.csv...')
 fn = strcat([datadir 'HvsL_Combined_Chromatograms.csv']);
 
 ci=2;
@@ -335,7 +335,7 @@ fclose(fid_combined_Chromatogram);
 
 %% MvsL_Combined_OutputGaus_rep*.csv
 % Divide up MvsL_Combined_OutputGaus.csv
-disp('    Writing MvsL_Combined_OutputGaus_rep*.csv and HvsL_Combined_OutputGaus_rep*.csv...')
+disp('        Writing MvsL_Combined_OutputGaus_rep*.csv and HvsL_Combined_OutputGaus_rep*.csv...')
 
 Experimental_channels = ['MvsL' 'HvsL' 'HvsM'];
 Unique_replicate = unique(replicate);
@@ -373,7 +373,7 @@ end
 
 %% MvsL_Summary_Gausians_for_individual_proteins_rep*.csv
 % Divide up MvsL_Summary_Gausians_for_individual_proteins.csv
-disp('    Writing MvsL_Summary_Gausians_for_individual_proteins_rep*.csv and MvsL_Summary_Gausians_for_individual_proteins_rep*.csv...')
+disp('        Writing MvsL_Summary_Gausians_for_individual_proteins_rep*.csv and MvsL_Summary_Gausians_for_individual_proteins_rep*.csv...')
 
 Experimental_channels = ['MvsL' 'HvsL' 'HvsM'];
 Unique_replicate = unique(replicate);
@@ -408,7 +408,7 @@ end
 
 %% MvsL_Raw_data_maxquant_rep*.csv
 % Divide up MvsL_Raw_data_maxquant.csv
-disp('    Writing MvsL_Raw_data_maxquant_rep*.csv...')
+disp('        Writing MvsL_Raw_data_maxquant_rep*.csv...')
 
 ci = 1;
 
@@ -437,7 +437,7 @@ end
 
 %% HvsL_Raw_data_maxquant_rep*.csv
 % Divide up HvsL_Raw_data_maxquant.csv
-disp('    Writing HvsL_Raw_data_maxquant_rep*.csv...')
+disp('        Writing HvsL_Raw_data_maxquant_rep*.csv...')
 
 ci = 2;
 
@@ -466,7 +466,7 @@ end
 
 %% HvsM_Raw_data_maxquant_rep*.csv
 % Divide up HvsM_Raw_data_maxquant.csv
-disp('    Writing HvsM_Raw_data_maxquant_rep*.csv...')
+disp('        Writing HvsM_Raw_data_maxquant_rep*.csv...')
 
 ci = 3;
 HvsM_filename=[datadir 'Combined_replicates_2014_04_22_contaminates_removed_for_HvsM_scripts.xlsx'];

@@ -35,8 +35,13 @@
 % - My Corum_Dataset is 11516x1. Nick's Corum_Dataset is 1x16393. Why are they different sizes?
 
 
+disp('ROC_PCPSILAC.m')
+
+
 
 %% 0. Initialize
+tic
+fprintf('\n    0. Initialize')
 
 % user defined variables
 number_of_replicates=3;
@@ -47,15 +52,22 @@ replicate_counter = 4; % Do a single replicate. This is Nick's loop index.
 maindir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/'; % where everything lives
 codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
-datadir = [maindir 'DataFiles/']; % where data files live
-figdir = [maindir 'Figures/']; % where figures live
+datadir = [maindir 'Data/']; % where data files live
+datadir1 = [datadir 'ROC/']; % where data files live
+figdir1 = [maindir 'Figures/ROC/']; % where figures live
 tmpdir = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/';
+% Make folders if necessary
+if ~exist(codedir, 'dir'); mkdir(codedir); end
+if ~exist(funcdir, 'dir'); mkdir(funcdir); end
+if ~exist(datadir, 'dir'); mkdir(datadir); end
+if ~exist(datadir1, 'dir'); mkdir(datadir1); end
+if ~exist(figdir1, 'dir'); mkdir(figdir1); end
 
 % List all input files. These contain data that will be read by this script.
-InputFile{1} = [datadir 'Input/Major_protein_groups.xlsx'];
-InputFile{2} = [datadir 'Input/Corum_correctly_formated_Uniprot_IDs.csv'];
+InputFile{1} = [datadir '/Major_protein_groups.xlsx'];
+InputFile{2} = [datadir '/Corum_correctly_formated_Uniprot_IDs.csv'];
 %InputFile{3} = [datadir 'Input/Corum_2012_human.xlsx'];
-InputFile{4} = [datadir 'Input/Master_guassian_list.csv'];
+InputFile{4} = [datadir '/Master_guassian_list.csv'];
 
 %define Raw SILAC ratios data, This is the output from the alignment script
 MvsL_filename_Raw_rep1=[tmpdir 'MvsL_alignment/Realignment/Adjusted_MvsL_Raw_for_ROC_analysis_rep1.csv'];
@@ -75,9 +87,14 @@ List_of_Raw_filename={MvsL_filename_Raw_rep1,MvsL_filename_Raw_rep2,MvsL_filenam
 List_of_Gaus_filename={MvsL_filename_gaus_rep1,MvsL_filename_gaus_rep2,MvsL_filename_gaus_rep3,...
   HvsL_filename_gaus_rep1,HvsL_filename_gaus_rep2,HvsL_filename_gaus_rep3};
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
+
 
 
 %% 1. Read input data
+tic
+fprintf('    1. Read input data')
 
 [~, Protein_IDs] = xlsread(InputFile{1});
 
@@ -115,12 +132,17 @@ fclose(Gaus_import_name);
 Gaus_import_Dimension=size(Gaus_import{:});
 Gaus_import_reshaped=reshape(Gaus_import{:},7,(Gaus_import_Dimension(1)/7))';
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
+
 
 
 %% 2. Pre-process gaussians, chromatograms. Get Dist
 % - In chromatograms, replaces nans with 0.05
 % - Remove gaussians and chromatograms with C<5
 % - Make normalized gaussians, i.e. set height to 1
+tic
+fprintf('    2. Pre-process gaussians, chromatograms. Get Dist')
 
 % Pre-process data to remove Gaussian above fraction five
 % Create array to use for comparsions
@@ -161,10 +183,15 @@ for ii=1:length(H)
   end
 end
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
+
 
 
 %% 3. Make Protein structure
 % This summarizes the proteins in our sample
+tic
+fprintf('    3. Make Protein structure')
 
 % Combine Majority Protein ID with Proteins Identified in replicate
 Protein.Isoform=Gaus_import_reshaped(2:end,1);
@@ -226,9 +253,11 @@ end
 %   Store all protein names from that row of Protein_IDs
 Protein.MajorIDs=cell(Dimensions_Gaus_import,Dimension_of_Protein_IDs(2));
 Protein.MajorID_NoIsoforms=cell(Dimensions_Gaus_import,Dimension_of_Protein_IDs(2));
+f = 0;
 for Gaus_import_counter1 = 1:Dimensions_Gaus_import(1)
-  Lookup_protein_name=Protein.Isoform(Gaus_import_counter1);
-  disp(Lookup_protein_name)
+  
+  %disp(Lookup_protein_name)
+  Lookup_protein_name = Protein.Isoform(Gaus_import_counter1);
   
   tmp = find(strcmp(Lookup_protein_name,Protein_IDs));
   [Check_counter1, Check_counter2] = ind2sub(size(Protein_IDs),tmp);
@@ -237,7 +266,7 @@ for Gaus_import_counter1 = 1:Dimensions_Gaus_import(1)
   Array_to_check1 = Protein_IDs(Check_counter1,:);
   Array_to_check_empty1 = cellfun(@isempty,Array_to_check1);
   for Check_counter3 = 1:nnz(~Array_to_check_empty1)
-    Protein.MajorIDs{Gaus_import_counter1,Check_counter3}={Protein_IDs{Check_counter1,Check_counter3}};
+    Protein.MajorIDs{Gaus_import_counter1,Check_counter3} = {Protein_IDs{Check_counter1,Check_counter3}};
   end
   
   %copy names to MajorID_NoIsoforms from Protein_IDS_no_isoform_no_dup_processed
@@ -249,10 +278,14 @@ for Gaus_import_counter1 = 1:Dimensions_Gaus_import(1)
   end
 end
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
 
 %% 4. Make true positive matrix
+tic
+fprintf('    4. Make true positive matrix')
 
 % Make Pos_Corum_proteins, which is all individual proteins that are in corum and our dataset
 Unique_MajorProteinIDs = unique(vertcat(Protein.MajorID_NoIsoforms{:}),'rows');
@@ -318,6 +351,9 @@ end
 %I = unique(cell2mat(Corum_Dataset_expanded),'rows');
 %Corum_Dataset_expanded = unique(Corum_Dataset_expanded{ii});
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
+
 
 
 %% 5. Make True Positive matrix
@@ -357,9 +393,10 @@ end
 
 
 
-%% 6. Make other matrices
+%% 5. Make other matrices
 % - Possible interaction matrix
 % - Self interaction matrix
+fprintf('    5. Make other matrices')
 
 % check which individual proteins are in corum
 % Important! Also check whether any member of that protein's group is in corum
@@ -420,12 +457,15 @@ inverse_self=~Self_Int_matrix; %creation of inverse of self interactions
 Inverse_TP_matrix=~TP_Matrix;
 FP_Matrix= (Int_matrix & Inverse_TP_matrix);
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
-%% 7. Make ROC curves for different Dist fieldnames
+
+
+%% 6. Make ROC curves for different Dist fieldnames
+fprintf('    6. Make ROC curves for different Dist fieldnames')
 
 fn = fieldnames(Dist);
-
-
 %cd('ROC analysis related Figures');
 for i=1:length(fn)
   i
@@ -526,9 +566,13 @@ if 1
   ylabel('Precision')
 end
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
-%% 8. Calculate precision as a function of Euc, Center
+
+%% 7. Calculate precision as a function of Euc, Center
+fprintf('    7. Calculate precision as a function of Euc, Center')
 
 % i. Make interactions_based_only_Ecldian_distance at 80% precision
 xDist = linspace(0,max(Dist.Euc(:)),nr);
@@ -657,6 +701,8 @@ for test_precision_counter=1:number_test_precisions
   No_Int_replicate_level(test_precision_counter) = length(find(triu(Final_interactions==1)));
 end
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
 
@@ -726,6 +772,9 @@ Precision = TP/(TP+FP)
 TPR = TP/(TP+FN)
 FPR =FP/(FP+TN)
 No_Int= length(find(triu(Final_interactions==1)))
+
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
 

@@ -47,7 +47,7 @@
 %     probably just ignore the excel and use the original csv file..?
 % 3. What is 2408? 7443?
 % 4. What's shown in the top Gaussian plot? How are those Gaussian picked?
-% 5. What Gaussians "represent" all the replicated? How are these picked?
+% 5. What Gaussians "represent" all the replicates? How are these picked?
 % 6. What happens to a Gaussian that's only in one replicate?
 
 
@@ -1798,7 +1798,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 %% 7. Use fold-change > 2 to determine if complexes change
-fprintf('    7. Use fold-change > 2 to determine if complexes change (BETWEEN REPLICATE)')
+fprintf('    7. Use fold-change > 2 to determine if complexes change (BETWEEN REPLICATEs)')
 
 
 % Comparsion 3 Part B: 
@@ -3877,7 +3877,7 @@ for figure_counter=1:replicate_num
   
   %Write out histogram of complex coverage within sample
   figure
-  f7=subplot(2,1,1)
+  f7=subplot(2,1,1);
   f7_1_figure=bar(bin_number_hist_MvsL_plus1,Isotopologue_areaA(:,1), 0.6, 'stack');
   set(f7_1_figure(1),'facecolor', myC(1,:), 'EdgeColor', 'k' );
   hold on
@@ -3899,7 +3899,7 @@ for figure_counter=1:replicate_num
   catch
   end
   
-  f7=subplot(2,1,2)
+  f7=subplot(2,1,2);
   f7_2_figure=bar(bin_number_hist_HvsL_plus1,Isotopologue_areaB(:,1) , 0.6, 'stack');
   set(f7_2_figure(1),'facecolor', myC(1,:), 'EdgeColor', 'k' );
   hold on
@@ -3932,7 +3932,7 @@ for figure_counter=1:replicate_num
   saveas(f7, Save_name_plot);
   
   figure
-  f8=subplot(2,1,1)
+  f8=subplot(2,1,1);
   f8_1_figure=bar(bin_number_hist_SEC_plus1,Coverage_areaA(:,1), 0.6, 'stack');
   set(f8_1_figure(1),'facecolor', myC(1,:), 'EdgeColor', 'k' );
   xlim([0,1]);
@@ -3949,7 +3949,7 @@ for figure_counter=1:replicate_num
   % 'Reflect the changes on the plot
   set(gca,'xticklabel',new_xticks);
   
-  f8=subplot(2,1,2)
+  f8=subplot(2,1,2);
   f8_2_figure=bar(bin_number_hist_SEC_plus1,Coverage_areaB(:,1), 0.6, 'stack');
   set(f8_2_figure(1),'facecolor', myC(1,:), 'EdgeColor', 'k' );
   xlim([0,1]);
@@ -3972,7 +3972,7 @@ for figure_counter=1:replicate_num
   
   %Create figure of observed changes across Isotopologue_coverage
   figure
-  f9=subplot(2,1,1)
+  f9=subplot(2,1,1);
   f9_1_figure=bar(bin_number_hist_MvsL_plus1,[Isotopologue_areaA(:,4),Isotopologue_areaA(:,2),Isotopologue_areaA(:,3)] , 0.6, 'stack');
   order_of_columns=[1 3 6];
   for k=1:3
@@ -4009,7 +4009,7 @@ for figure_counter=1:replicate_num
   
   %Create figure of observed changes across Isotopologue_coverage
   figure
-  f9B=subplot(2,1,1)
+  f9B=subplot(2,1,1);
   f9B_1_figure=bar(bin_number_hist_HvsL_plus1,[Isotopologue_areaB(:,4),Isotopologue_areaB(:,2),Isotopologue_areaB(:,3)] , 0.6, 'stack');
   order_of_columns=[1 3 6];
   for k=1:3
@@ -4021,7 +4021,7 @@ for figure_counter=1:replicate_num
   ylabel('Number of proteins','FontSize', 8);
   xlabel('Coverage (expected area under the curve vs observed)','FontSize', 8);
   
-  f9B=subplot(2,1,2)
+  f9B=subplot(2,1,2);
   f9B_2_figure=bar(bin_number_hist_SEC_plus1,[Coverage_areaB(:,4),Coverage_areaB(:,2),Coverage_areaB(:,3)], 0.6, 'stack');
   for k=1:3
     set(f9B_2_figure(k),'facecolor', colour_to_use(order_of_columns(k),:), 'EdgeColor', 'k' );
@@ -4058,7 +4058,7 @@ for figure_counter=1:replicate_num
   ylabel('Number of proteins','FontSize', 8);
   xlabel('Coverage (expected area under the curve vs observed)','FontSize', 8);
   
-  f10=subplot(2,1,2)
+  f10=subplot(2,1,2);
   f10_2_figure=bar(bin_number_hist_SEC,[Hist_array7B(:,1),Hist_array7B(:,2),Hist_array7B(:,3),...
     Hist_array7B(:,4),Hist_array7B(:,5),Hist_array7B(:,6)], 0.6, 'stack');
   for k=1:6
@@ -4084,7 +4084,7 @@ for figure_counter=1:replicate_num
   saveas(f10, Save_name_plot);
   
   figure
-  f10B=subplot(2,1,1)
+  f10B=subplot(2,1,1);
   f10B_1_figure=bar(bin_number_hist_HvsL,[Hist_array7C(:,1),Hist_array7C(:,2),Hist_array7C(:,3),...
     Hist_array7C(:,4),Hist_array7C(:,5),Hist_array7C(:,6)], 0.6, 'stack');
   order_of_columns=[1 3 6];
@@ -4097,7 +4097,7 @@ for figure_counter=1:replicate_num
   ylabel('Number of proteins','FontSize', 8);
   xlabel('Coverage (expected area under the curve vs observed)','FontSize', 8);
   
-  f10B=subplot(2,1,2)
+  f10B=subplot(2,1,2);
   f10B_2_figure=bar(bin_number_hist_SEC,[Hist_array7D(:,1),Hist_array7D(:,2),Hist_array7D(:,3),...
     Hist_array7D(:,4),Hist_array7D(:,5),Hist_array7D(:,6)], 0.6, 'stack');
   for k=1:6
@@ -4123,7 +4123,7 @@ for figure_counter=1:replicate_num
   saveas(f10B, Save_name_plot);
   
   figure
-  f11=subplot(2,1,1)
+  f11=subplot(2,1,1);
   f11_1_figure=bar(bin_number_hist_HvsL_plus1,Isotopologue_areaB(:,1), 0.6, 'stack');
   set(f11_1_figure(1),'facecolor', myC(1,:), 'EdgeColor', 'k' );
   hold on
@@ -4246,8 +4246,8 @@ Text_for_figure1=strcat('Mean std dev: ', mat2str((round(mean_stdev*1000))/1000)
 Text_for_figure2=strcat('Number of Guassian below bonferroni adjusted p-value: ', mat2str(Gaussian_ploted));
 
 %Graph data as log2 scatter
-f_all=figure;
-f_all=subplot(2,1,1)
+figure;
+f_all=subplot(2,1,1);
 P4A =scatter([1:length_values_plot],data_scatter_plot(:,1),5,'fill', 'markerfacecolor',colour_to_use(1,:));
 hold on
 P4B =scatter([1:length_values_plot],Multiple_measurement_Adjusted_pvalue_corrected(:,1), 5,'fill', 'markerfacecolor',colour_to_use(6,:));
