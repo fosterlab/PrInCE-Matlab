@@ -7,7 +7,7 @@ function [clean_chromatogram,tmp1,tmp2] = cleanChromatogram(rawchrom,steps)
 %   1. Impute (fill in) single missing values (nans) by linear interpolation;
 %   2. Fill in first and last fractions with a 0 if they're missing;
 %   3. Replace values <0.2 with nan;
-%   4. If a value is not part of 5 consecutive values, replace it with 0.05;
+%   4. If a value is not part of 5 consecutive values, replace it with 0;
 %   5. Add 5 zeros to either side of the chromatogram;
 %   6. Smooth whole chromatogram with a boxcar filter (moving average).
 %   7. Replace nan with zero.
@@ -87,7 +87,8 @@ if ismember(4,steps)
   Nminconsecutive = 5; % minimum number of consecutive non-nan values
   a = ones(1,Nminconsecutive); % the pattern to look for: [1 1 1 1 1]
   a2 = strfind(~isnan(tmpchrom),a); % find the pattern
-  tmpchrom2 = ones(size(tmpchrom))*0.05; % dummy variable
+  %tmpchrom2 = ones(size(tmpchrom))*0.05; % dummy variable
+  tmpchrom2 = zeros(size(tmpchrom)); % dummy variable
   for ii = 1:length(a2)
     I = a2(ii) : a2(ii) + Nminconsecutive-1;
     tmpchrom2(I) = tmpchrom(I);
