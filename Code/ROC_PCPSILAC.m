@@ -28,20 +28,9 @@
 %
 %%%%%%%%%%%%%%% To do:
 % - Why is this script pre-processing chromatograms? Shouldn't that have been done earlier?
-% - What happens to the output from the 'Find "Binary" interactions' section?
-% - Why does replicate_counter start at 4 and go to Nreplicates*Nchannels?
-% - What variables need to be stored in the replicate loop?
-% - What variables need to be stored in the precision=[50 60 70] loop?
-% - FNBinaryInteractions is huge. Do we really need to make it and store it so early? Anything we
-%   can leave out?
-%       - yeah, this seems super wasteful.
-%       - Better to save i) 1431x1 lists and ii) the million or so indices.
-% - Find a smart way to preallocate BinaryInteractions.
-% - It's stupid, but for now write BI and FNBI to file for each precision and replicate.
-% - Why is FNBinaryInteractions 1.5GB, but Nick's FN csv file is only 36MB?
-% - Do we need to save FNBinaryInteractions for each precision level?
 % - What's going on in 8b? We keep interactions with Delta_Center>2... so why check for it?
 % - FN_binary_interaction_list can get up to 3 GB. Can we make it smaller?
+% - Both 5. and 6. calculate precision as a function of Euc distance. Can we combine them?
 %
 %
 %%%%%%%%%%%%%%% Fix the logic:
@@ -440,15 +429,13 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   
   
   %% 5. Make ROC curves for different Dist fieldnames
-  % Aside from making FPR_out, this can be skipped
-  pause
+  % Aside from making FPR_out and Precision_out, this can be skipped
   tic
-  s = ['        5. Make figure for ROC curves.'];
-  fprintf(s)
+  fprintf('        5. Make figure for ROC curves.')
   
   fn = fieldnames(Dist);
   %cd('ROC analysis related Figures');
-  for i=1:length(fn)
+  for i=[1 5 6]
     
     count=0;
     nr=50;
@@ -458,8 +445,10 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     FPR_out.(fn{i})=zeros(nr,1);
     
     xDist = linspace(0,max(Dist.(fn{i})(:)),nr);
+    %xDist = logspace(0,log10(max(Dist.(fn{i})(:))+1),nr)-1;
     
-    for Distance = xDist %Loop to calculate performance of variables  %for Distance= 0.1:0.1:50 %Loop to calculate performance of variables
+    for Distance = xDist %Loop to calculate performance of variables  
+    %for Distance= 0.1:0.1:50 %Loop to calculate performance of variables
       MatrixGaussian = Dist.(fn{i}) < Distance;
       count=1+count;
       
@@ -469,45 +458,51 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
         MatrixGaussian= (MatrixGaussian & (Dist.(fn{2}) < 2));
       else
         MatrixGaussian = Dist.(fn{i}) < Distance;
-      end
+      end      
       
-      %Total number of interaction within distance
-      Total_Int = (MatrixGaussian & inverse_self);
-      Total_Int2_Triu =triu(Total_Int); %Only consider interactions in the top right of the matrix
-      Total_Int_number= length(find(Total_Int2_Triu==1));
+%       %Total number of interaction within distance
+%       Total_Int = (MatrixGaussian & inverse_self);
+%       Total_Int2_Triu =triu(Total_Int); %Only consider interactions in the top right of the matrix
+%       Total_Int_number= length(find(Total_Int2_Triu==1));
+%       
+%       %Protein interactions of protein in Corum within distance
+%       Possible_Int1 = (MatrixGaussian & Int_matrix);
+%       Possible_Int2 = (Possible_Int1 & inverse_self);
+%       Possible_Int2_Triu = triu(Possible_Int2); %Only consider interactions in the top right of the matrix
+%       Possible_Int_number= length(find(Possible_Int2_Triu==1));
+%       
+%       % Calculate True possitives
+%       TP_Matrix_Int1 = (Possible_Int1 & TP_Matrix);
+%       TP_Matrix_Int2 = (TP_Matrix_Int1 & inverse_self);
+%       TP_Matrix_Int2_Triu = triu(TP_Matrix_Int2); %Only consider interactions in the top right of the matrix
+%       TP= length(find(TP_Matrix_Int2_Triu==1));
+%       
+%       % Calculate false negatives
+%       Inverse_TP_matrix1=~TP_Matrix_Int2;
+%       MaxTP_matrix1 = (TP_Matrix & Inverse_TP_matrix1);
+%       MaxTP_matrix2 = (MaxTP_matrix1 & inverse_self);
+%       MaxTP_matrix2_Triu = triu(MaxTP_matrix2); %Only consider interactions in the top right of the matrix
+%       FN= length(find(MaxTP_matrix2_Triu==1));
+%       
+%       % Calculate false positives
+%       FP_Matrix_Int1= (Possible_Int2 & FP_Matrix);
+%       FP_Matrix_Int2= (FP_Matrix_Int1 & inverse_self);
+%       FP_Matrix_Int2_Triu = triu(FP_Matrix_Int2); %Only consider interactions in the top right of the matrix
+%       FP= length(find(FP_Matrix_Int2_Triu==1));
+%       
+%       % Find True negatives
+%       Inverse_false_postive_matrix=~FP_Matrix_Int1;
+%       Int_matrix_minus_TP = (Int_matrix & Inverse_TP_matrix);
+%       Int5_matrix= (Int_matrix_minus_TP & Inverse_false_postive_matrix);
+%       Int6_matrix = (Int5_matrix & inverse_self);
+%       Int6_matrix_Triu = triu(Int6_matrix); %Only consider interactions in the top right of the matrix
+%       TN= (length(find(Int6_matrix_Triu==1)));
       
-      %Protein interactions of protein in Corum within distance
-      Possible_Int1 = (MatrixGaussian & Int_matrix);
-      Possible_Int2 = (Possible_Int1 & inverse_self);
-      Possible_Int2_Triu = triu(Possible_Int2); %Only consider interactions in the top right of the matrix
-      Possible_Int_number= length(find(Possible_Int2_Triu==1));
-      
-      % Calculate True possitives
-      TP_Matrix_Int1 = (Possible_Int1 & TP_Matrix);
-      TP_Matrix_Int2 = (TP_Matrix_Int1 & inverse_self);
-      TP_Matrix_Int2_Triu = triu(TP_Matrix_Int2); %Only consider interactions in the top right of the matrix
-      TP= length(find(TP_Matrix_Int2_Triu==1));
-      
-      % Calculate false negatives
-      Inverse_TP_matrix1=~TP_Matrix_Int2;
-      MaxTP_matrix1 = (TP_Matrix & Inverse_TP_matrix1);
-      MaxTP_matrix2 = (MaxTP_matrix1 & inverse_self);
-      MaxTP_matrix2_Triu = triu(MaxTP_matrix2); %Only consider interactions in the top right of the matrix
-      FN= length(find(MaxTP_matrix2_Triu==1));
-      
-      % Calculate false positives
-      FP_Matrix_Int1= (Possible_Int2 & FP_Matrix);
-      FP_Matrix_Int2= (FP_Matrix_Int1 & inverse_self);
-      FP_Matrix_Int2_Triu = triu(FP_Matrix_Int2); %Only consider interactions in the top right of the matrix
-      FP= length(find(FP_Matrix_Int2_Triu==1));
-      
-      % Find True negatives
-      Inverse_false_postive_matrix=~FP_Matrix_Int1;
-      Int_matrix_minus_TP = (Int_matrix & Inverse_TP_matrix);
-      Int5_matrix= (Int_matrix_minus_TP & Inverse_false_postive_matrix);
-      Int6_matrix = (Int5_matrix & inverse_self);
-      Int6_matrix_Triu = triu(Int6_matrix); %Only consider interactions in the top right of the matrix
-      TN= (length(find(Int6_matrix_Triu==1)));
+      % simplify the above
+      TP = nnz(triu(MatrixGaussian & TP_Matrix  & inverse_self & Int_matrix));
+      FP = nnz(triu(MatrixGaussian & ~TP_Matrix  & inverse_self & Int_matrix));
+      TN = nnz(triu(~MatrixGaussian & ~TP_Matrix  & inverse_self & Int_matrix));
+      FN = nnz(triu(~MatrixGaussian & TP_Matrix  & inverse_self & Int_matrix));
       
       Recall = TP/(TP+FN);
       Precision = TP/(TP+FP);
@@ -527,21 +522,25 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     cols = {'b' 'g' 'c' [.5 .5 .5] 'r' 'm' [1 .5 0]};
     
     figure,hold on
-    for i=1:length(fn)
+    %for i=1:length(fn)
+    for i=[1 5 6]
       plot(FPR_out.(fn{i}),TPR_out.(fn{i}),'color',cols{i})
     end
     plot([0 1],[0 1],'--k')
     axis([0 1 0 1])
-    legend('Euc','Center','Height','Width','Gauss fits','R2','location','northwest')
+    %legend('Euc','Center','Height','Width','Gauss fits','R2','location','northwest')
+    legend('Euc','Gauss fits','R2','location','northeast')
     xlabel('FPR')
     ylabel('TPR')
     
     figure,hold on
-    for i=1:length(fn)
+    %for i=1:length(fn)
+    for i=[1 5 6]
       plot(Recall_out.(fn{i}),Precision_out.(fn{i}),'color',cols{i})
     end
     %axis([0 1 0 1])
-    legend('Euc','Center','Height','Width','Gauss fits','R2','location','northeast')
+    %legend('Euc','Center','Height','Width','Gauss fits','R2','location','northeast')
+    legend('Euc','Gauss fits','R2','location','northeast')
     xlabel('Recall')
     ylabel('Precision')
   end
@@ -557,7 +556,6 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   
   
   
-  
   %% 6. Calculate precision as a function of Euc, Center
   tic
   fprintf('        6. Calculate precision as a function of Euc, Center.')
@@ -568,11 +566,24 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Precision = Precision_out.Euc; % Precision_out.Euc
   
   %Test if the Euclidian distance ever gives a precision above 0.8
-  [~, idx] = min(abs(Precision - prec_thresh));
-  if max(Precision) < prec_thresh;idx=1;end
+  if max(Precision) < prec_thresh
+    idx=1;
+    goodDist = xDist(idx); %determines the Eucldian distance which gives a precision closest to 0.8
+  else    
+    % interpolate to find goodDist
+    p1 = Precision - prec_thresh;
+    segments = find(diff(sign(p1)) == -2);
+    segments = segments(end);
+    x(1) = xDist(segments);
+    x(2) = xDist(segments+1);
+    y(1) = p1(segments);
+    y(2) = p1(segments+1);
+    m = (y(2)-y(1))/(x(2)-x(1));
+    n = y(2) - m * x(2);
+    goodDist = -n/m;
+  end
   
   %Determine interactions within precision of >0.80 based on Eu distance
-  goodDist = xDist(idx); %determines the Eucldian distance which gives a precision closest to 0.8
   Interactions_detected_due_to_High_Eucldian_distance = Dist.Euc < goodDist;
   Interactions_Based_only_Eucldian_distance = (Interactions_detected_due_to_High_Eucldian_distance & inverse_self & (Dist.Center < 2));
   
@@ -817,8 +828,8 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
         %FNBinaryInteractions{fn_count,5} = abs(W(ri1)-W(ri2)); % Delta_Width
         %FNBinaryInteractions{fn_count,6} = Int_matrix(ri1,ri2); % Both_proteins_Corum
         %FNBinaryInteractions{fn_count,7} = TP_Matrix(ri1,ri2); % Interaction_in_Corum
-        FNBinaryInteractions{fn_count,1} = Protein.Isoform(ri1); % Protein_interactions1
-        FNBinaryInteractions{fn_count,2} = Protein.Isoform(ri2); % Protein_interactions2
+        FNBinaryInteractions{fn_count,1} = Protein.Isoform{ri1}; % Protein_interactions1
+        FNBinaryInteractions{fn_count,2} = Protein.Isoform{ri2}; % Protein_interactions2
         FNBinaryInteractions{fn_count,3} = TP_Matrix(ri1,ri2); % Interaction_in_Corum
         %FNBinaryInteractions{fn_count,10} = C(ri1); % Protein_interactions_center1
         %FNBinaryInteractions{fn_count,11} = C(ri2); % Protein_interactions_center2
@@ -861,8 +872,8 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
             BinaryInteractions{interaction_count,5}= abs(W(vii)-W(viii)); % Delta_Width
             BinaryInteractions{interaction_count,6}= Int_matrix(vii,viii); % Both_proteins_Corum
             BinaryInteractions{interaction_count,7}= TP_Matrix(vii,viii); % Interaction_in_Corum
-            BinaryInteractions{interaction_count,8}=Protein.Isoform(vii); % Protein_interactions1
-            BinaryInteractions{interaction_count,9}=Protein.Isoform(viii); % Protein_interactions2
+            BinaryInteractions{interaction_count,8}=Protein.Isoform{vii}; % Protein_interactions1
+            BinaryInteractions{interaction_count,9}=Protein.Isoform{viii}; % Protein_interactions2
             BinaryInteractions{interaction_count,10}=C(vii); % Protein_interactions_center1
             BinaryInteractions{interaction_count,11}=C(viii); % Protein_interactions_center2
             BinaryInteractions{interaction_count,12} = replicate_counter; % Protein_interactions_center2
@@ -1031,7 +1042,6 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     
     tt = toc;
     fprintf('  ...  %.2f seconds\n',tt)
-    
   end
   
 end
@@ -1093,9 +1103,9 @@ for pri = 1:length(precision_range)
   
   interaction_pairs = cell(size(binary_interaction_list,1),1);
   for ri=1:size(binary_interaction_list,1)
-    interaction_pairs{ri} = [binary_interaction_list{ri,8}{1} '_' binary_interaction_list{ri,9}{1}];
+    interaction_pairs{ri} = [binary_interaction_list{ri,8} '_' binary_interaction_list{ri,9}];
   end
-  unique_interaction = unique(interaction_pairs(2:end));
+  unique_interaction = unique(interaction_pairs);
   length_unique_inter = length(unique_interaction);
   
   %Create array to store values
@@ -1111,85 +1121,73 @@ for pri = 1:length(precision_range)
   interaction_final.DeltaEucDist=cell(0,0);
   interaction_final.proteinInCorum=cell(0,0);
   interaction_final.interactionInCorum=cell(0,0);
-  Unique_interaction_counter=1;
+  Unique_interaction_counter=0;
   for interaction_counter2A = 1:length_unique_inter
+    interaction_counter2A
     %Find location of unique protein interaction
     %location_interaction_pairs = ind2sub(length_unique_inter, strmatch(unique_interaction(interaction_counter2A), interaction_pairs(2:end), 'exact'));
     location_interaction_pairs = strmatch(unique_interaction(interaction_counter2A), interaction_pairs(1:end), 'exact');
     
     %find which replicate the interactions were seen in
-    while ~isempty(location_interaction_pairs(:))
+    %while ~isempty(location_interaction_pairs(:))
+    
+    diffC = abs(cellfun(@minus,binary_interaction_list(location_interaction_pairs,10),...
+      binary_interaction_list(location_interaction_pairs,11)));
+    position_within_two = find(diffC<2);
+    
+    %Check if multiple centers are withing two fractions of each other
+    if ~nnz(position_within_two)==0
+      %Add one to counters and remove location already checked
+      %row_counter=row_counter+1;
+      Unique_interaction_counter=Unique_interaction_counter+1;
       
-      %determine if the centers of the interactions are withing 2 fractions
-%       num_interaction_pairs = length(location_interaction_pairs);
-%       center_interaction_pairs = binary_interaction_list{location_interaction_pairs,8};
-%       %test are center values within two
-%       Values_to_test=(abs(cellfun(@str2num,center_interaction_pairs)...
-%         -cellfun(@str2num,center_interaction_pairs(num_interaction_pairs(1)))))<2;
-%       %find positions within two
-%       position_within_two = find(Values_to_test);
-      
-      diffC = abs(cellfun(@minus,binary_interaction_list(location_interaction_pairs,10),...
-        binary_interaction_list(location_interaction_pairs,11)));
-      position_within_two = find(diffC<2);
+      interaction_final.unique_interactions(Unique_interaction_counter,1) = unique_interaction(interaction_counter2A);
+      interaction_final.proteinInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(position_within_two(1)),6);
+      interaction_final.interactionInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(position_within_two(1)),7);
 
-      %Define row counter
-      row_counter=0;
-      %Check if multiple centers are withing two fractions of each other
-      if ~nnz(position_within_two)==0
-        for counter=1:length(position_within_two)
-          row_counter=row_counter+1;
-          
-          interaction_final.unique_interactions(Unique_interaction_counter,1) = unique_interaction(interaction_counter2A);
-          %check size of replicate_numbers
-          interaction_final.replicate_numbers{Unique_interaction_counter,row_counter} = ...
-            num2str(binary_interaction_list{location_interaction_pairs(position_within_two(counter)),12});
-          
-          % copy the values for the first unique interaction to the list
-          interaction_final.proteinA(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(position_within_two(counter)),8);
-          interaction_final.proteinB(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(position_within_two(counter)),9);
-          interaction_final.CenterA(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(position_within_two(counter)),10);
-          interaction_final.CenterB(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(position_within_two(counter)),11);
-          interaction_final.DeltaHeight(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(position_within_two(counter)),4);
-          interaction_final.DeltaCenter(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(position_within_two(counter)),3);
-          interaction_final.DeltaWidth(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(position_within_two(counter)),5);
-          interaction_final.DeltaEucDist(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(position_within_two(counter)),2);
-          interaction_final.proteinInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(position_within_two(counter)),6);
-          interaction_final.interactionInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(position_within_two(counter)),7);
-          
-          %Add one to counters and remove location already checked
-        end
-        location_interaction_pairs(position_within_two)=[];
-        Unique_interaction_counter=Unique_interaction_counter+1;
+      for row = 1:length(position_within_two)
+        %check size of replicate_numbers
+        interaction_final.replicate_numbers{Unique_interaction_counter,row} = ...
+          num2str(binary_interaction_list{location_interaction_pairs(position_within_two(row)),12});
         
-        %If center not within two fractions
-      elseif nnz(position_within_two)==0
-        for counter=1:length(position_within_two)
-          row_counter=row_counter+1;
-                    
-          interaction_final.unique_interactions(Unique_interaction_counter,1)= unique_interaction(interaction_counter2A);
-          %check size of replicate_numbers
-          interaction_final.replicate_numbers{Unique_interaction_counter,row_counter}=...
-            num2str(binary_interaction_list{location_interaction_pairs(counter),12});
-          
-          %copy the values for the first unique interaction to the list
-          interaction_final.proteinA(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(1),8);
-          interaction_final.proteinB(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(1),9);
-          interaction_final.CenterA(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(1),10);
-          interaction_final.CenterB(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(1),11);
-          interaction_final.DeltaHeight(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(1),4);
-          interaction_final.DeltaCenter(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(1),3);
-          interaction_final.DeltaWidth(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(1),5);
-          interaction_final.DeltaEucDist(Unique_interaction_counter,row_counter) = binary_interaction_list(location_interaction_pairs(1),2);
-          interaction_final.proteinInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),6);
-          interaction_final.interactionInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),7);
-          
-          %Add one to counters and remove location already checked
-        end
-        location_interaction_pairs(1)=[];
-        Unique_interaction_counter=Unique_interaction_counter+1;
+        % copy the values for the first unique interaction to the list
+        interaction_final.proteinA(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),8);
+        interaction_final.proteinB(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),9);
+        interaction_final.CenterA(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),10);
+        interaction_final.CenterB(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),11);
+        interaction_final.DeltaHeight(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),4);
+        interaction_final.DeltaCenter(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),3);
+        interaction_final.DeltaWidth(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),5);
+        interaction_final.DeltaEucDist(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),2);
+        
       end
+      %location_interaction_pairs(position_within_two)=[];
+      
+      %If center not within two fractions
+    elseif nnz(position_within_two)==0
+      %Add one to counters and remove location already checked
+      %location_interaction_pairs(1)=[];
+      Unique_interaction_counter=Unique_interaction_counter+1;
+      
+      interaction_final.unique_interactions(Unique_interaction_counter,1)= unique_interaction(interaction_counter2A);
+      %check size of replicate_numbers
+      interaction_final.replicate_numbers{Unique_interaction_counter,1}=...
+        binary_interaction_list{location_interaction_pairs(1),12};
+      
+      %copy the values for the first unique interaction to the list
+      interaction_final.proteinA(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),8);
+      interaction_final.proteinB(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),9);
+      interaction_final.CenterA(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),10);
+      interaction_final.CenterB(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),11);
+      interaction_final.DeltaHeight(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),4);
+      interaction_final.DeltaCenter(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),3);
+      interaction_final.DeltaWidth(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),5);
+      interaction_final.DeltaEucDist(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),2);
+      interaction_final.proteinInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),6);
+      interaction_final.interactionInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),7);
+      
     end
+    %end
   end
   
   tt = toc;
@@ -1210,9 +1208,11 @@ for pri = 1:length(precision_range)
   for counter=1:Total_unique_interactions
     
     %convert cell array to double
-    testA=[interaction_final.replicate_numbers{counter,:}];
+    a = interaction_final.replicate_numbers(counter,:);
+    ix = ~cellfun('isempty',a);
+    testA = [a{ix}];
     %Save values
-    number_observation_pre_interaction(counter,1)=nnz(testA);
+    number_observation_pre_interaction(counter) = nnz(testA);
     
     %Determine if multiple gaussians within the same replicate were indentified
     unique_testA = unique(testA);
@@ -1220,8 +1220,8 @@ for pri = 1:length(precision_range)
     number_unique_interaction(counter) = number_of_unique;
     
     %Which replicate is the interaction in
-    for replicate_counter=1:(number_of_replicates*number_of_channels)
-      interactions_prep_replicate(counter,replicate_counter)=nnz(find(testA(:)==replicate_counter));
+    for replicate_counter = 1:(number_of_replicates*number_of_channels)
+      interactions_prep_replicate(counter,replicate_counter) = nnz(find(testA(:)==replicate_counter));
     end
   end
   
@@ -1253,44 +1253,27 @@ for pri = 1:length(precision_range)
   %       the positive interactions.
   interaction_FN_pairs = cell(size(FN_binary_interaction_list,1),1);
   for ri=1:size(FN_binary_interaction_list,1)
-    interaction_FN_pairs{ri} = [FN_binary_interaction_list{ri,1}{1} '_' FN_binary_interaction_list{ri,2}{1}];
+    interaction_FN_pairs{ri} = [FN_binary_interaction_list{ri,1} '_' FN_binary_interaction_list{ri,2}];
   end
   %interaction_FN_pairs=strcat(FN_binary_interaction_list(:,2),'_',FN_binary_interaction_list(:,3));
   unique_FN_interaction = unique(interaction_FN_pairs(2:end));
-  length_unique_FN_inter=length(unique_FN_interaction);
+  length_unique_FN_inter = length(unique_FN_interaction);
   
   %Determine the number of unique false negatives
-  interactions_in_corum_FN = FN_binary_interaction_list(2:end,3);
-  interaction_as_number = cellfun(@str2double,interactions_in_corum_FN);
-  %interaction_as_number=str2double(interactions_in_corum_FN);
-  
-  %Create array to place values in
-  interaction_FN_incorum_pairs=cell(length(interactions_in_corum_FN),1);
-  parfor interaction_counter=1:length(interactions_in_corum_FN)
-    if interaction_as_number(interaction_counter)==1
-      interaction_FN_incorum_pairs(interaction_counter)=interaction_FN_pairs(interaction_counter+1);
-    end
-  end
-  clear interactions_in_corum_FN
-  
-  %remove empty cells
-  interaction_FN_incorum_pairs(cellfun('isempty',interaction_FN_incorum_pairs)) = [];
-  
-  %Determine the unique interaction and count them
-  unique_FN_interaction_in_corum = unique(interaction_FN_incorum_pairs);
-  length_unique_FN_incorum=length(unique_FN_interaction_in_corum);
-  
-  pause
-  
+  interaction_as_number = cat(1,FN_binary_interaction_list{:,3});
+  interaction_FN_incorum_pairs = interaction_FN_pairs(interaction_as_number==1);
+  length_unique_FN_incorum = length(unique(interaction_FN_incorum_pairs));
+    
   %clear varibles to speed up processing
   clearvars interaction_FN_incorum_pairs;
   clearvars interaction_FN_pairs;
   clearvars FN_binary_interaction_list;
+  clear interaction_as_number
   
   % Caliculate TP, FP, FN and TN
   %Caliculate values from true interaction data set
-  True_proteinInCorum=sum([str2double(interaction_final.proteinInCorum)]);
-  True_interactionInCorum=sum([str2double(interaction_final.interactionInCorum)]);
+  True_proteinInCorum=sum([cell2mat(interaction_final.proteinInCorum)]);
+  True_interactionInCorum=sum([cell2mat(interaction_final.interactionInCorum)]);
   
   %Caliculate values from true interaction data set
   False_proteinInCorum=length_unique_FN_inter;
@@ -1365,7 +1348,6 @@ for pri = 1:length(precision_range)
   
   %Crete list of DeltaCenter, note ensure strjoin function is avalible
   interaction_final.DeltaCenter_formated=cell(Total_unique_interactions,1);
-  
   for format_loop=1:Total_unique_interactions
     DeltaCenter_2bformated1=interaction_final.DeltaCenter(format_loop,:);
     DeltaCenter_2bformated1(cellfun('isempty',DeltaCenter_2bformated1)) = [];
@@ -1446,16 +1428,16 @@ for pri = 1:length(precision_range)
   for precision_counter = 1:(number_of_replicates*number_of_channels)
     %Find position of interaction observed within the required number of
     %replicates
-    position_to_sum=find(interaction_final.times_observed_across_reps(:)==precision_counter);
+    position_to_sum=find(interaction_final.times_observed_across_reps==precision_counter);
     
     %Count the number values for non redundant list
-    Precision_array(precision_counter,1)=sum(cellfun(@str2double,interaction_final.proteinInCorum(position_to_sum)));
-    Precision_array(precision_counter,2)=sum(cellfun(@str2double,interaction_final.interactionInCorum(position_to_sum)));
-    Precision_array(precision_counter,3)=length(position_to_sum);
+    Precision_array(precision_counter,1) = sum(cell2mat(interaction_final.proteinInCorum(position_to_sum)));
+    Precision_array(precision_counter,2) = sum(cell2mat(interaction_final.interactionInCorum(position_to_sum)));
+    Precision_array(precision_counter,3) = length(position_to_sum);
     %Count the number values for redundant list
-    Precision_redundant(precision_counter,1)=(sum(cellfun(@str2double,interaction_final.proteinInCorum(position_to_sum)))*precision_counter);
-    Precision_redundant(precision_counter,2)=(sum(cellfun(@str2double,interaction_final.interactionInCorum(position_to_sum)))*precision_counter);
-    Precision_redundant(precision_counter,3)=(length(position_to_sum)*precision_counter);
+    Precision_redundant(precision_counter,1) = (sum(cell2mat(interaction_final.proteinInCorum(position_to_sum)))*precision_counter);
+    Precision_redundant(precision_counter,2) = (sum(cell2mat(interaction_final.interactionInCorum(position_to_sum)))*precision_counter);
+    Precision_redundant(precision_counter,3) = (length(position_to_sum)*precision_counter);
   end
   
   %Generation precision as a precentage for non redundant interactions
@@ -1472,6 +1454,7 @@ for pri = 1:length(precision_range)
   
   
   
+  tic
   fprintf('       8d. Interactions observed only under treatment')
   Observed_treatment=zeros(Total_unique_interactions,1);
   Observed_untreatment=zeros(Total_unique_interactions,1);
@@ -1576,11 +1559,13 @@ for pri = 1:length(precision_range)
   
   
   
+  tic
   fprintf('       8e. Write output files')
   writeOutput_ROC
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   
+  tic
   fprintf('       8f. Make figures')
   makeFigures_ROC
   tt = toc;
