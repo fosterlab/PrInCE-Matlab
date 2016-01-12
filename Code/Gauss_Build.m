@@ -101,6 +101,8 @@ fprintf('\n    2. Clean the chromatograms')
 
 % store all clean chromatograms in cleandata
 cleandata = cell(size(rawdata));
+Xraw = (1:55)';
+Xclean = (1:65)' - 5;
 
 % a couple of housekeeping variables
 tmp1 = cell(size(rawdata));
@@ -134,7 +136,7 @@ fprintf('\n    3. Fit 1-5 Gaussians on each cleaned chromatogram')
 Coef = cell(Nchannels, Nproteins);
 SSE = nan(size(Coef));
 adjrsquare = nan(size(Coef));
-fit_flag = nan(size(Coef));
+%fit_flag = nan(size(Coef));
 Try_Fit = zeros(size(Coef));
 
 gausscount = 0;
@@ -145,6 +147,10 @@ for ci = 1:Nchannels % loop over channels
     
     % get a single clean chromatogram
     clean_chromatogram = cleandata{ci}(ri,:);
+    %clean_chromatogram = rawdata{ci}(ri,:);
+    %I = ~isnan(clean_chromatogram);
+    %clean_chromatogram = clean_chromatogram(I);
+    %x = Xraw(I);
     
     % don't fit Gaussians if there are less than 5 good data points in the chromatogram
     if sum(clean_chromatogram > 0.05)<5
@@ -152,18 +158,31 @@ for ci = 1:Nchannels % loop over channels
     end
     Try_Fit(ci,ri)=1;
     
-    % choose the best model to fit
-    model = choosemodel_holdout(clean_chromatogram,MaxIter);
+    % choose the best model
+    %model = choosemodel_holdout(clean_chromatogram,MaxIter);
+    model = choosemodel_AIC(clean_chromatogram,Xclean);
     disp(['    fit protein number ' num2str(ri) ' (' txt_HvsL{ri+1} ') with ' num2str(model.Ngauss) ' Gaussians...'])
     
     % fit that model
-    [Coef{ci,ri},SSE(ci,ri),adjrsquare(ci,ri),fit_flag(ci,ri)] = fitgaussmodel(clean_chromatogram,model);
+    %[Coef{ci,ri},SSE(ci,ri),adjrsquare(ci,ri),fit_flag(ci,ri)] = fitgaussmodel(clean_chromatogram,model);
+    Coef{ci,ri} = model.coeffs;
+    SSE(ci,ri) = model.SSE;
+    adjrsquare(ci,ri) = model.adjrsquare;
     
     % make protgausI{ci}, where each row is for a Gaussian: [protein number, gaussian number]
     for gi = 1:model.Ngauss
       gausscount = gausscount+1;
       protgausI{ci}(gausscount,:) = [ri,gi];
     end
+    
+    figure,hold on
+    x = -4:60;
+    plot(x,clean_chromatogram)
+    yhat = feval(model.curveFit,x);
+    plot(x,yhat,'r')
+    model.BIC
+    pause
+    close all
     
   end
 end
