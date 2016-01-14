@@ -142,15 +142,10 @@ Try_Fit = zeros(size(Coef));
 gausscount = 0;
 protgausI = cell(Nchannels,1); % just an indexing variable. matches up gaussians to protein number
 for ci = 1:Nchannels % loop over channels
-  protgausI{ci} = zeros(100,2);
-  for ri = 1:Nproteins % loop over proteins
+  parfor ri = 1:Nproteins % loop over proteins
     
     % get a single clean chromatogram
     clean_chromatogram = cleandata{ci}(ri,:);
-    %clean_chromatogram = rawdata{ci}(ri,:);
-    %I = ~isnan(clean_chromatogram);
-    %clean_chromatogram = clean_chromatogram(I);
-    %x = Xraw(I);
     
     % don't fit Gaussians if there are less than 5 good data points in the chromatogram
     if sum(clean_chromatogram > 0.05)<5
@@ -158,32 +153,42 @@ for ci = 1:Nchannels % loop over channels
     end
     Try_Fit(ci,ri)=1;
     
-    % choose the best model
+    % choose 5 models and fit the best one
     %model = choosemodel_holdout(clean_chromatogram,MaxIter);
-    model = choosemodel_AIC(clean_chromatogram,Xclean);
+    model = choosemodel_AIC(clean_chromatogram,Xclean,'AICc');
     disp(['    fit protein number ' num2str(ri) ' (' txt_HvsL{ri+1} ') with ' num2str(model.Ngauss) ' Gaussians...'])
-    
-    % fit that model
     %[Coef{ci,ri},SSE(ci,ri),adjrsquare(ci,ri),fit_flag(ci,ri)] = fitgaussmodel(clean_chromatogram,model);
     Coef{ci,ri} = model.coeffs;
     SSE(ci,ri) = model.SSE;
     adjrsquare(ci,ri) = model.adjrsquare;
     
-    % make protgausI{ci}, where each row is for a Gaussian: [protein number, gaussian number]
-    for gi = 1:model.Ngauss
-      gausscount = gausscount+1;
-      protgausI{ci}(gausscount,:) = [ri,gi];
+%     figure,hold on
+%     x = -4:60;
+%     plot(x,clean_chromatogram)
+%     yhat = feval(model.curveFit,x);
+%     plot(x,yhat,'r')
+%     model.BIC
+%     pause
+%     close all
+    
+  end
+end
+
+% make protgausI{ci}, where each row is for a Gaussian: [protein number, gaussian number, replicate number]
+protgausI = cell(Nchannels,1); % just an indexing variable. matches up gaussians to protein number
+for ci = 1:Nchannels % loop over channels
+  protgausI{ci} = zeros(100,3);
+  gausscount = 0;
+  for ri = 1:Nproteins % loop over proteins
+    % don't fit Gaussians if there are less than 5 good data points in the chromatogram
+    if sum(cleandata{ci}(ri,:) > 0.05)>5
+      Ng = length(Coef{ci,ri})/3;
+      rep = replicate(ri);
+      for gi = 1:Ng
+        gausscount = gausscount+1;
+        protgausI{ci}(gausscount,:) = [ri, gi, rep];
+      end
     end
-    
-    figure,hold on
-    x = -4:60;
-    plot(x,clean_chromatogram)
-    yhat = feval(model.curveFit,x);
-    plot(x,yhat,'r')
-    model.BIC
-    pause
-    close all
-    
   end
 end
 
@@ -193,9 +198,10 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 %% 4. Write output
 
-writeOutput_gaussbuild(datadir,datadir1,datadir2,datadir3,datadir4,...
-  Coef,SSE,adjrsquare,Try_Fit,...
-  txt_MvsL,txt_HvsL,replicate,SEC_size_alignment,experimental_channels,...
-  cleandata,rawdata,tmp1,tmp2,...
-  protgausI);
+% writeOutput_gaussbuild(datadir,datadir1,datadir2,datadir3,datadir4,...
+%   Coef,SSE,adjrsquare,Try_Fit,...
+%   txt_MvsL,txt_HvsL,replicate,SEC_size_alignment,experimental_channels,...
+%   cleandata,rawdata,tmp1,tmp2,...
+%   protgausI);
+writeOutput_gaussbuild
 

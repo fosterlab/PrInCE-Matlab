@@ -37,7 +37,7 @@ if isempty(x)
 end
 
 if nargin<3
-  aicstring = 'AIC';
+  aicstring = 'AICc';
 end
 
 [n1,n2] = size(cleanchrom);
@@ -50,7 +50,7 @@ if n2>n1
   cleanchrom = cleanchrom';
 end
 
-MaxIter = 2;
+MaxIter = 3;
 
 
 
@@ -64,11 +64,11 @@ ft{4} = fittype('gauss4');
 ft{5} = fittype('gauss5');
 
 % Define fit options
-fo{1} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,3),'MaxIter',400);
-fo{2} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,6),'MaxIter',400);
-fo{3} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,9),'MaxIter',400);
-fo{4} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,12),'MaxIter',400);
-fo{5} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,15),'MaxIter',400);
+fo{1} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,3)*.1,'MaxIter',400,'Display','off');
+fo{2} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,6)*.1,'MaxIter',400,'Display','off');
+fo{3} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,9)*.1,'MaxIter',400,'Display','off');
+fo{4} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,12)*.1,'MaxIter',400,'Display','off');
+fo{5} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,15)*.1,'MaxIter',400,'Display','off');
 
 I = cleanchrom>0;
 msse = nan(5,1);
@@ -78,6 +78,8 @@ for ii=1:5
   iter = 0;
   fitAgain = 1;
   while fitAgain
+    iter = iter+1;
+
     ics = makeics(cleanchrom,ii); % make initial conditions
     set(fo{ii},'startpoint',ics(1:3*ii)); % Include ICs in fit options
     curveFit{ii} = fit(x,cleanchrom,ft{ii},fo{ii}); 
@@ -86,8 +88,9 @@ for ii=1:5
     tmp = corrcoef(yhat,cleanchrom);
     R2(ii) = tmp(1,2).^2;
     
-    iter = iter+1;
-    fitAgain = R2(ii)<0.5 & iter<=MaxIter;
+    %fitAgain = R2(ii)<0.5 & iter<=MaxIter;
+    cf = coeffvalues(curveFit{ii});
+    fitAgain = sum(cf(1:3:end))<0.5 & iter<=MaxIter;
   end
 end
 
@@ -104,9 +107,9 @@ AICc = zeros(5,1);
 BIC = zeros(5,1);
 for ii=1:5
   k = length(coeffvalues(curveFit{ii}));
-  AIC(ii) = N*log(msse(ii)/N) + 2*k + 5*k;
-  AICc(ii) = N*log(msse(ii)/N) + 2*k + 2*k*(k+1)/(N-k-1) + 5*k;
-  BIC(ii) = N*log(msse(ii)/N) + k*log(N) + 5*k;
+  AIC(ii) = N*log(msse(ii)/N) + 2*k + 2*k;
+  AICc(ii) = N*log(msse(ii)/N) + 2*k + 2*k*(k+1)/(N-k-1) + 2*k;
+  BIC(ii) = N*log(msse(ii)/N) + k*log(N) + 2*k;
 end
 
 % Throw out any models where the number of non-imputed data points, i.e. the real data, is less than
@@ -124,7 +127,7 @@ elseif strcmp(aicstring,'AICc')
 elseif strcmp(aicstring,'BIC')
   [~,Ngauss] = min(BIC);
 else
-  error('Input aicstring must be either AIC, AICc, or BIC')
+  error('Model selection method must be either AIC, AICc, or BIC')
 end
 
 model.coeffs = coeffvalues(curveFit{Ngauss});
@@ -159,13 +162,13 @@ ss = 2;
 ics = nan(1,15);
 for ii=1:5
   if ii<=length(pks)
-    ics((ii-1)*3 + 1) = pks(ii); % A, height
-    ics((ii-1)*3 + 2) = pksI(ii); % mu, center
-    ics((ii-1)*3 + 3) = ss; % sigma, width
+    ics((ii-1)*3 + 1) = pks(ii) + rand-.5; % A, height
+    ics((ii-1)*3 + 2) = pksI(ii) + rand*3-1.5; % mu, center
+    ics((ii-1)*3 + 3) = ss + rand-.5; % sigma, width
   else
-    ics((ii-1)*3 + 1) = max(cleanchrom); % A, height
-    ics((ii-1)*3 + 2) = rand*length(cleanchrom); % mu, center
-    ics((ii-1)*3 + 3) = ss; % sigma, width
+    ics((ii-1)*3 + 1) = max(cleanchrom) + rand-.5; % A, height
+    ics((ii-1)*3 + 2) = rand*length(cleanchrom) + rand*3-1.5; % mu, center
+    ics((ii-1)*3 + 3) = ss + rand-.5; % sigma, width
   end
 end
 
