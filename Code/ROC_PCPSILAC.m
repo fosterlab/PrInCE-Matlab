@@ -212,7 +212,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Dist.Height = squareform(pdist(H,'euclidean'));
   Dist.Width = squareform(pdist(W,'euclidean'));
   Dist.Gaussian_fits = squareform(pdist(gaussian_fit,'euclidean'));
-  Dist.R2 = 1 - corrcoef(Chromatograms'); % one minus R squared
+  Dist.R2 = 1 - corrcoef(Chromatograms').^2; % one minus R squared
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
@@ -352,7 +352,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Corum_Dataset_expanded = cell(size(Corum_Dataset));
   ii = 0;
   for cc=1:size(Corum_Dataset,1)
-    
+    %pause
     I_hyphen = strfind(Corum_Dataset{cc},'-');
     Prot1 = Corum_Dataset{cc}(1:I_hyphen-1);
     Prot2 = Corum_Dataset{cc}(I_hyphen+1:end);
@@ -363,13 +363,12 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     ind2 = find(strcmp(Prot2,Protein.MajorID_NoIsoforms));
     [i2,j2] = ind2sub(size(Protein.MajorID_NoIsoforms),ind2);
     
-    Prot1_group = Protein.MajorID_NoIsoforms(i1(1),:); % all proteins in the same group as Prot1
-    Prot1_group = Prot1_group(~cellfun('isempty',Prot1_group)); % remove empty cells
+%     Prot1_group = Protein.MajorID_NoIsoforms(i1(1),:); % all proteins in the same group as Prot1
+%     Prot1_group = Prot1_group(~cellfun('isempty',Prot1_group)); % remove empty cells
+%     Prot2_group = Protein.MajorID_NoIsoforms(i2(1),:); % all proteins in the same group as Prot2
+%     Prot2_group = Prot2_group(~cellfun('isempty',Prot2_group)); % remove empty cells
     
-    Prot2_group = Protein.MajorID_NoIsoforms(i2(1),:); % all proteins in the same group as Prot2
-    Prot2_group = Prot2_group(~cellfun('isempty',Prot2_group)); % remove empty cells
-    
-    TP_Matrix(i1,i2) = TP_Matrix(i1(1),i2(1))+1;
+    TP_Matrix(i1,i2) = TP_Matrix(i1,i2)+1;
     
 %     for jj = 1:length(Prot1_group)
 %       for kk = 1:length(Prot2_group)
@@ -554,6 +553,8 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   
+  
+  pause
   
   
   %% 6. Calculate precision as a function of Euc, Center

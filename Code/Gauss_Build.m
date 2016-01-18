@@ -140,7 +140,6 @@ adjrsquare = nan(size(Coef));
 Try_Fit = zeros(size(Coef));
 
 gausscount = 0;
-protgausI = cell(Nchannels,1); % just an indexing variable. matches up gaussians to protein number
 for ci = 1:Nchannels % loop over channels
   parfor ri = 1:Nproteins % loop over proteins
     

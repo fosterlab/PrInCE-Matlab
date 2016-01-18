@@ -1,3 +1,6 @@
+% Compares Guass_build.m to Nick's old code. Specifically does the new code model the chromatograms
+% as successfully (Fig. 1)? Does it fit more or less complex models (Fig. 2)?
+%
 % Idea: Fit all the chromatograms with an AIC/AICc/BIC method and compare to Nick's fitting.
 %
 % Figures to make:
@@ -6,6 +9,8 @@
 % Fig. 1b: For each protein with a Gaussian fit, reconstruct the chromatogram from the Gaussian 
 %   parameters. Then calculate a correlation coefficient between mine and Nick?s data. How similarly 
 %   do we model each chromatogram?
+
+spl = 0;
 
 % Load in Nick's Gaussian fits
 fn = '/Users/Mercy/Academics/Foster/NickCodeData/1_Gaussian processing/MvsL/MvsL_Combined_OutputGaus.csv';
@@ -61,6 +66,8 @@ goodprot = unique(Protein_number);
 Ng_nick = zeros(length(goodprot),1);
 Ng_greg = zeros(length(goodprot),1);
 R2_ng = zeros(length(goodprot),1);
+R2_cg = zeros(length(goodprot),1);
+R2_cn = zeros(length(goodprot),1);
 yhat_nick = zeros(length(goodprot),65);
 yhat_greg = zeros(length(goodprot),65);
 cleanchrom = zeros(length(goodprot),65);
@@ -101,6 +108,11 @@ for ri = 1:length(goodprot)
   % Raw chromatogram
   pn = Protein_numberg(Ig);
   cleanchrom(ri,:) = cleandata{1}(pn(1),:);
+  tmp = corrcoef(cleanchrom(ri,:),yhat_greg(ri,:));
+  R2_cg(ri) = tmp(1,2)^2;
+  tmp = corrcoef(cleanchrom(ri,:),yhat_nick(ri,:));
+  R2_cn(ri) = tmp(1,2)^2;
+
   
 %   % Raw chromatogram
 %   pn = Protein_numberg(Ig);
@@ -127,18 +139,63 @@ end
 
 
 
+%% Examples of good, okay, bad
 
-%% Venn diagram
+% goodI = find(R2_ng>.95);
+% goodI = randsample(goodI,1);
+% okayI = find(R2_ng<.7 & R2_ng>0.4);
+% okayI = randsample(okayI,1);
+% badI = find(R2_ng<.2);
+% badI = randsample(badI,1);
+%goodI = 4671;
+%okayI = 1306;
+%badI = 761;
+goodI = 1319;
+okayI = 2013;
+badI = 1786;
 
-Allprots = unique([unique(Protein_name);unique(Protein_nameg)]);
-Protg = find(ismember(Allprots,Protein_nameg));
-Protn = find(ismember(Allprots,Protein_name));
 figure
-myVenn2([length(Protn) length(Protg)], length(Allprots))
-%text(0,0,num2str(length(Inc2)))
-%text(-15,10,num2str(length(Incn) - length(Inc2)))
-%text(16,10,num2str(length(Incg) - length(Inc2)))
-set(gca,'xtick',[],'ytick',[])
+subplot(2,2,1),hold on
+plot(cleanchrom(goodI,:),'color',[.7 .7 .7],'linewidth',2)
+plot(yhat_nick(goodI,:),'k')
+plot(yhat_greg(goodI,:),'g')
+legend('Chromat.','Old Gauss','New Gauss','location','best')
+y = ylim;
+text(35,y(1) + diff(y)*.75,['R^2 = ' num2str(R2_ng(goodI))])
+xlim([0 65])
+xlabel('Fraction','fontsize',12)
+title(Protein_name{goodprot(goodI)})
+subplot(2,2,2),hold on
+plot(cleanchrom(okayI,:),'color',[.7 .7 .7],'linewidth',2)
+plot(yhat_nick(okayI,:),'k')
+plot(yhat_greg(okayI,:),'g')
+y = ylim;
+text(35,y(1) + diff(y)*.75,['R^2 = ' num2str(R2_ng(okayI))])
+xlim([0 65])
+xlabel('Fraction','fontsize',12)
+title(Protein_name{goodprot(okayI)})
+subplot(2,2,3),hold on
+plot(cleanchrom(badI,:),'color',[.7 .7 .7],'linewidth',2)
+plot(yhat_nick(badI,:),'k')
+plot(yhat_greg(badI,:),'g')
+y = ylim;
+text(35,y(1) + diff(y)*.75,['R^2 = ' num2str(R2_ng(badI))])
+xlim([0 65])
+xlabel('Fraction','fontsize',12)
+title(Protein_name{goodprot(badI)})
+subplot(2,2,4)
+hist(R2_ng,linspace(0,1,101))
+xlim([-.01 1.01])
+xlabel('R^2 between old and new Gaussian curves','fontsize',12)
+ylabel('Count','fontsize',12)
+
+set(gcf,'units','normalized','position',[.1 .1 .5 .7])
+
+if spl
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+  graphdir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Figures/Test/';
+  saveas(gcf,[graphdir 'GaussBuild_fig1'],'jpg')
+end
 
 
 
@@ -160,52 +217,8 @@ text(4,2100,'New code (robust + AIC)')
 xlabel('Number of Gaussians fit, new code','fontsize',12)
 ylabel('Count')
 
-
-
-%% Examples of good, okay, bad
-
-goodI = find(R2_ng>.95);
-goodI = randsample(goodI,1);
-okayI = find(R2_ng<.7 & R2_ng>0.4);
-okayI = randsample(okayI,1);
-badI = find(R2_ng<.2);
-badI = randsample(badI,1);
-%goodI = 4671;
-%okayI = 1306;
-%badI = 761;
-
-figure
-subplot(2,2,1)
-hist(R2_ng,linspace(0,1,101))
-xlim([-.01 1.01])
-xlabel('R^2 between old and new Gaussian curves','fontsize',12)
-ylabel('Count','fontsize',12)
-subplot(2,2,2),hold on
-plot(cleanchrom(goodI,:),'color',[.7 .7 .7],'linewidth',2)
-plot(yhat_nick(goodI,:),'k')
-plot(yhat_greg(goodI,:),'g')
-legend('Chromat.','Old Gauss','New Gauss','location','best')
-y = ylim;
-text(35,y(1) + diff(y)*.75,['R^2 = ' num2str(R2_ng(goodI))])
-xlim([0 65])
-xlabel('Fraction','fontsize',12)
-subplot(2,2,3),hold on
-plot(cleanchrom(okayI,:),'color',[.7 .7 .7],'linewidth',2)
-plot(yhat_nick(okayI,:),'k')
-plot(yhat_greg(okayI,:),'g')
-y = ylim;
-text(35,y(1) + diff(y)*.75,['R^2 = ' num2str(R2_ng(okayI))])
-xlim([0 65])
-xlabel('Fraction','fontsize',12)
-subplot(2,2,4),hold on
-plot(cleanchrom(badI,:),'color',[.7 .7 .7],'linewidth',2)
-plot(yhat_nick(badI,:),'k')
-plot(yhat_greg(badI,:),'g')
-y = ylim;
-text(35,y(1) + diff(y)*.75,['R^2 = ' num2str(R2_ng(badI))])
-xlim([0 65])
-xlabel('Fraction','fontsize',12)
-
-set(gcf,'units','normalized','position',[.1 .1 .5 .7])
-
-
+if spl
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 5 8])
+  graphdir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Figures/Test/';
+  saveas(gcf,[graphdir 'GaussBuild_fig2'],'jpg')
+end
