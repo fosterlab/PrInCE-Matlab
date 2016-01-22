@@ -1,80 +1,46 @@
-
-
-
-%% Calculate PR curve for just R^2
-I = inverse_self & Int_matrix;
-data = Dist.R2(I(:));
-labels = TP_Matrix(I(:));
-y = labels(:) > 0;
-
-RRange = linspace(0, 1,201);
-Recall = zeros(size(RRange));
-Precision = zeros(size(RRange));
-TPR = zeros(size(RRange));
-FPR = zeros(size(RRange));
-for di = 1:length(RRange)
-  ypred2 = data<RRange(di);
-  
-  TP = sum(ypred2==1 & y==1);
-  FP = sum(ypred2==1 & y==0);
-  TN = sum(ypred2==0 & y==0);
-  FN = sum(ypred2==0 & y==1);
-  Recall(di) = TP/(TP+FN);
-  Precision(di) = TP/(TP+FP);
-  TPR(di) = TP/(TP+FN);
-  FPR(di) = FP/(FP+TN);
-end
-
-figure
-subplot(3,1,1),hold on
-x = linspace(0,1,101);
-h1 = hist(data(y==1,1),x);
-h0 = hist(data(y==0,1),x);
-plot(x,h1,'g')
-plot(x,h0,'k')
-subplot(3,1,2),
-plot(Recall,Precision)
-axis([0 1 0 1])
-subplot(3,1,3),
-plot(FPR,TPR)
-axis([0 1 0 1])
-set(gcf,'units','normalized','position',[.1 .1 .3 .9])
-
-
-
 %% SVM: protein interactions, generate P-R curve
-% To generate all variables, run ROC_PCPSILAC.m and pause after section 5 
+% To generate all variables, run ROC_PCPSILAC.m and pause after section 5
 %
 % Training set = inverse_self & Int_matrix
 % TP labels = TP_Matrix
 
 % Get data
 I = inverse_self & Int_matrix;
+labels = TP_Matrix(I(:));
+y = labels(:);
+y(y>0) = 1;
+y(y~=1) = -1;
 data1 = Dist.R2(I(:)); % 1 - R^2
 data2 = Dist.Euc(I(:));
 data3 = Dist.Center(I(:));
-labels = TP_Matrix(I(:));
-y = labels(:);% > 0;
-y(y>0) = 1;
-y(y~=1) = -1;
-X = [data1 data2 data3];
-Nd = size(X,2);
+data4 = Dist.dtw(I(:));
+X = [data1 data2 data3 data4];
 %X = data1;
-%X(y==1,:) = repmat([0 0 0],sum(y==1),1); % cheat
-%X(y==0,:) = X(y==0,:) + repmat([1 1 1],sum(y==0),1)*0.38; % cheat2
+Nd = size(X,2);
+
+% Soft whiten data
+eps = 2e-16;
+wmu = zeros(Nd,1);
+wstd = zeros(Nd,1);
+for ii = 1:Nd
+  wmu(ii) = mean(X(:,ii));
+  wstd(ii) = std(X(:,ii));
+  X(:,ii) = (X(:,ii) - wmu(ii)) / 2 / (wstd(ii) + eps);
+end
 
 % Make training and testing data
-if 1
-  Itrain = zeros(size(y));
-  Itrain(randsample(length(Itrain),1400)) = 1;
-  Itrain = Itrain==1;
-else % equalize 1s and 0s labels
-  nn = 700;
+nn = 1000;
+if 1 % balance training data
   I1 = find(y==1);
-  I1 = I1(randsample(length(I1),nn));
+  I1 = I1(randsample(length(I1),nn/2));
   I0 = find(y==-1);
-  I0 = I0(randsample(length(I0),nn));
+  I0 = I0(randsample(length(I0),nn/2));
   Itrain = ismember(1:length(y),[I1;I0]);
+  Ipred = ~Itrain;
+else
+  Itrain = zeros(size(y));
+  Itrain(randsample(length(Itrain),nn)) = 1;
+  Itrain = Itrain==1;
   Ipred = ~Itrain;
 end
 Xtr = X(Itrain,:);
@@ -82,203 +48,308 @@ ytr = y(Itrain);
 Xnew = X(Ipred,:);
 ynew = y(Ipred);
 
-% Whiten data
-eps = 2e-16;
-wmu = zeros(Nd,1);
-wstd = zeros(Nd,1);
-for ii = 1:Nd
-  wmu(ii) = mean(Xtr(:,ii));
-  wstd(ii) = std(Xtr(:,ii));
-  X(:,ii) = (X(:,ii) - wmu(ii)) / 2 / (wstd(ii) + eps);
-end
+% % Make custom Cost matrix for SVM
+% fpw = 10^1; % false positive penalization weight.
+% fnw = 10^1; % false negative penalization weight.
+% Cost = [0 fpw; fnw 0];
 
-% Fit the model
-%model = fitcsvm(Xtr,ytr);
-%[label,score] = predict(model,Xnew);
-svm = svmtrain(Xtr,ytr,'method','smo','kernel_function','rbf');
-shift = svm.ScaleData.shift;
-scale = svm.ScaleData.scaleFactor;
-Xnew2 = bsxfun(@plus,Xnew,shift);
-Xnew2 = bsxfun(@times,Xnew2,scale);
-sv = svm.SupportVectors;
-alphaHat = svm.Alpha;
-bias = svm.Bias;
-kfun = svm.KernelFunction;
-kfunargs = svm.KernelFunctionArgs;
-f = kfun(sv,Xnew2,kfunargs{:})'*alphaHat(:) + bias;
-f = -f; % flip the sign to get the score for the +1 class
+% Feature selection
+% f2consider = find(IndFeat(Xtr,ytr) > 2);
+% [fsin,history] = sequentialfs(@SVM_class_fun,Xtr(:,f2consider),ytr,'cv',5);
+% Xtr2 = Xtr(:,f2consider(fsin));
+% Xnew2 = Xnew(:,f2consider(fsin));
+% f2consider(fsin)
 
-% Predict
-label = svmclassify(svm,Xnew);
-[precision_svm,recall_svm]=perfcurve(ynew,f,1,'xcrit','prec');
+% Fit svm model
+svm = fitcsvm(Xtr,ytr);
+[~,score_svm] = predict(svm,Xnew);
+[precision_svm,recall_svm,~,auc_svm] = perfcurve(ynew,score_svm(:,2),1,'xcrit','prec');
 
-% Evaluate
-TP = sum(label==1 & ynew==1);
-FP = sum(label==1 & ynew==-1);
-TN = sum(label==-1 & ynew==-1);
-FN = sum(label==-1 & ynew==1);
-Recall = TP/(TP+FN);
-Precision = TP/(TP+FP);
+% Fit naive bayes model
+nab = fitcnb(Xtr,ytr);
+[~,score_nb] = predict(nab,Xnew);
+[precision_nb,recall_nb,~,auc_nb] = perfcurve(ynew,score_nb(:,2),1,'xcrit','prec');
 
-[TP FP TN FN]
-[Recall Precision]
+disp([num2str(auc_svm) ', ' num2str(auc_nb)])
+
+%figure
+hold on
+plot(recall_svm,precision_svm,'r')
+plot(recall_nb,precision_nb,'g')
+xlabel('Recall','fontsize',13)
+ylabel('Precision','fontsize',13)
+hl = legend('SVM','Naive Bayes');
+set(hl,'fontsize',13)
+title('Comparing classifiers SVM and NB','fontsize',13)
 
 
 
+%% Prove that the classifiers are working
+% Include fake informative variables
 
-%% Naive Bayes: protein interactions, generate P-R curve
-% To generate all variables, run ROC_PCPSILAC.m and pause after section 5 
+clear precnb{ii} recnb{ii} aucnb(ii) precsvm{ii} recsvm{ii} aucsvm(ii)
 
+% Get data
 I = inverse_self & Int_matrix;
-data1 = Dist.R2(I(:)); % 1 - R^2
-data2 = Dist.Euc(I(:));
-data3 = Dist.Center(I(:));
 labels = TP_Matrix(I(:));
-y = labels(:) > 0;
-X = [data1 data2 data3];
+y = labels(:);
+y(y>0) = 1;
+y(y~=1) = -1;
+data1 = Dist.R2(I(:)); % 1 - R^2
+data2 = y + rand(size(y))*10; % weak fake data
+data3 = y + rand(size(y))*5; % medium fake data
+data4 = y + rand(size(y))*1; % strong fake data
+data5 = rand(size(y))*6; % awful fake data
+clear data
+% data{1} = data1;
+% data{2} = [data1 data2];
+% data{3} = [data1 data3];
+% data{4} = [data1 data4];
+% data{5} = [data1            data5];
+% data{6} = [data1 data2      data5];
+% data{7} = [data1 data3      data5];
+% data{8} = [data1 data4      data5];
+data{1} = data1;
+data{2} = [data1 data5];
+data{3} = [data1 data5*1000];
+data{4} = [data1 data5*1000];
+data{5} = [data1 data5*1000];
+data{6} = [data1 data5*1000];
 
-% Train on Ntr points
-% Ntr = length(y) - 499;
-% Itr = zeros(size(y));
-% Itr(randsample(length(Itr),Ntr)) = 1;
-% Itr = Itr==1;
-nn = 10000;
-I1 = find(y==1);
-I1 = I1(randsample(length(I1),nn));
-I0 = find(y==0);
-I0 = I0(randsample(length(I0),nn*5));
-Itr = ismember(1:length(y),[I1;I0]);
-Xtr = X(Itr,:);
-ytr = y(Itr);
-
-Itest = find(~Itr);
-Itest = Itest(randsample(length(Itest),500));
-Xtest = X(Itest,:);
-ytest = y(Itest);
-
-ypred = zeros(size(ytest));
-Dprob = zeros(size(ytest));
-for ii = 1:length(ytest)
-  x = Xtest(ii,:); % test data
-
-  prob = zeros(2,1);
-  for ki = 1:2
-    % calculate Bayesian probability 
-    % p(Ck | x) = p(C_k) * p(x_1|C_k) * p(x_2|C_k) * ... * p(x_n|C_k)    
-    Ck = ki - 1;
-    prob(ki) = sum(ytr == Ck) / length(ytr); % prior
-    
-    % gaussian likelihood parameters
-    xmu = mean(Xtr(ytr == Ck,:),1);
-    xstd = std(Xtr(ytr == Ck,:),1);
-    % beta likelihood parameters
-    alpha = ((1-xmu)./xstd.^2 - 1./xmu).*xmu.^2;
-    beta = alpha.*(1./xmu - 1);
-    
-    likelihood = zeros(size(x));
-    for xi=1:size(X,2)
-      if xi==1 % X(:,1) looks beta-distributed
-        likelihood(xi) = pdf('beta',x(xi),alpha(xi),beta(xi));%exp(-(x(xi) - xmu(xi))^2 / xstd(xi)^2); % p(x_i|C_k)
-      else % X(:,2:3) look normally-distributed
-        likelihood(xi) = pdf('normal',x(xi),xmu(xi),xstd(xi));%exp(-(x(xi) - xmu(xi))^2 / xstd(xi)^2); % p(x_i|C_k)
-      end
-      prob(ki) = prob(ki)*likelihood(xi);
+for ii=1:length(data)
+  disp(num2str(ii))
+  X = data{ii};
+  Nd = size(X,2);
+  
+  if ii == 4
+    % Soft whiten data
+    eps = 2e-16;
+    wmu = zeros(Nd,1);
+    wstd = zeros(Nd,1);
+    for jj = 1:Nd
+      wmu(jj) = mean(X(:,jj));
+      wstd(jj) = std(X(:,jj));
+      X(:,jj) = (X(:,jj) - wmu(jj)) / 2 / (wstd(jj) + eps);
     end
-    %[x xmu likelihood sum(ytr == Ck) / length(ytr)] 
-  end
-  % what does the classifier say?
-  [~,I] = max(prob);
-  ypred(ii) = I-1;
-  Dprob(ii) = diff(prob);
-  
-  if mod(ii,10)==0
-  disp([num2str(ii) ',    ' num2str(x(1))  ',    ' num2str(ypred(ii)) ',    ' num2str(ytest(ii))])
   end
   
-  %[prob' ytest(ii) ypred(ii)]
-  %pause
-end
-
-TP = sum(ypred==1 & ytest==1);
-FP = sum(ypred==1 & ytest==0);
-TN = sum(ypred==0 & ytest==0);
-FN = sum(ypred==0 & ytest==1);
-Recall = TP/(TP+FN);
-Precision = TP/(TP+FP);
-TPR = TP/(TP+FN);
-FPR = FP/(FP+TN);
-
-[TP FP TN FN]
-[Recall Precision]
-
-
-%% Calculate PR curve for Naive Bayes
-%Dprob2 = -log(-Dprob); % what?!? why does this make sense!
-Dprob2 = Dprob;
-DprobRange = linspace(min(Dprob2),max(Dprob2),201);
-Recall = zeros(size(DprobRange));
-Precision = zeros(size(DprobRange));
-TPR = zeros(size(DprobRange));
-FPR = zeros(size(DprobRange));
-for di = 1:length(DprobRange)
-  ypred2 = Dprob2>DprobRange(di);
+  if ii == 5 || ii ==6
+    % Hard whiten data
+    eps = 2e-16;
+    mm = zeros(Nd,1);
+    mn = zeros(Nd,1);
+    mx = zeros(Nd,1);
+    for jj = 1:Nd
+      mm(jj) = mean(X(:,jj));
+      mn(jj) = min(X(:,jj));
+      mx(jj) = max(X(:,jj));
+      X(:,jj) = (X(:,jj) - mm(jj)) / (mx(jj) - mn(jj));
+    end
+  end
   
-  TP = sum(ypred2==1 & ytest==1);
-  FP = sum(ypred2==1 & ytest==0);
-  TN = sum(ypred2==0 & ytest==0);
-  FN = sum(ypred2==0 & ytest==1);
-  Recall(di) = TP/(TP+FN);
-  Precision(di) = TP/(TP+FP);
-  TPR(di) = TP/(TP+FN);
-  FPR(di) = FP/(FP+TN);
+  % Make training and testing data
+  nn = 2000;
+  if 1 % balance training data
+    I1 = find(y==1);
+    I1 = I1(randsample(length(I1),nn/2));
+    I0 = find(y==-1);
+    I0 = I0(randsample(length(I0),nn/2));
+    Itrain = ismember(1:length(y),[I1;I0]);
+    Ipred = ~Itrain;
+  else
+    Itrain = zeros(size(y));
+    Itrain(randsample(length(Itrain),nn)) = 1;
+    Itrain = Itrain==1;
+    Ipred = ~Itrain;
+  end
+  Xtr = X(Itrain,:);
+  ytr = y(Itrain);
+  Xnew = X(Ipred,:);
+  ynew = y(Ipred);
+  
+  % weight features by F-ratio
+  if ii==6
+    ww = IndFeat(Xtr,ytr);
+    for jj = 1:Nd
+      X(:,jj) = X(:,jj) * ww(jj);
+    end
+  end
+  
+  % Fit svm model
+  svm = fitcsvm(Xtr,ytr);
+  [label_svm,score_svm] = predict(svm,Xnew);
+  [precsvm{ii},recsvm{ii},~,aucsvm(ii)] = perfcurve(ynew,score_svm(:,2),1,'xcrit','prec');
+  
+  % Fit naive bayes model
+  nab = fitcnb(Xtr,ytr);
+  [~,score_nb] = predict(nab,Xnew);
+  [precnb{ii},recnb{ii},~,aucnb(ii)] = perfcurve(ynew,score_nb(:,2),1,'xcrit','prec');
+  
 end
 
 figure
-subplot(3,1,1),hold on
-x = linspace(0,1,101);
-h1 = hist(X(y==1,1),x);
-h0 = hist(X(y==0,1),x);
-subplot(3,1,2),
-plot(Recall,Precision)
-axis([0 1 0 1])
-subplot(3,1,3),
-plot(FPR,TPR)
-axis([0 1 0 1])
-set(gcf,'units','normalized','position',[.1 .1 .3 .8])
+subplot(1,2,1),hold on
+plot(recsvm{1},precsvm{1},'k')
+plot(recsvm{2},precsvm{2},'m')
+plot(recsvm{3},precsvm{3},'r')
+plot(recsvm{4},precsvm{4},'color',[.5 .5 .5])
+plot(recsvm{5},precsvm{5},'b')
+plot(recsvm{6},precsvm{6},'color',[.5 .5 1])
+legend('R2','R2+bad','R2+1000*bad','R2+1000*bad+sw','R2+1000*bad+hw','R2+1000*bad+hw','location','northeast')
+title('SVM')
+subplot(1,2,2),hold on
+plot(recnb{1},precnb{1},'k')
+plot(recnb{2},precnb{2},'m')
+plot(recnb{3},precnb{3},'r')
+plot(recnb{4},precnb{4},'color',[.5 .5 .5])
+plot(recnb{5},precnb{5},'b')
+plot(recnb{6},precnb{6},'color',[.5 .5 1])
+title('Naive Bayes')
+set(gcf,'units','normalized','position',[.1 .1 .8 .6])
 
 
-% % Leave-one-out cross validation
-% predClass = zeros(N,1);
-% realClass = zeros(size(predClass));
-% for vi = 1:N
-%   
-%   Itr = [1:vi-1 vi+1:N];    % training indices
-%   Xtr = X(Itr,:);           % training data, X
-%   classtr = class(Itr);     % training data, class
-%   x = X(vi,:);              % test data
-%   
-%   % calculate Bayesian probability p(Ck | x) = p(C_k) * p(x_1|C_k) * p(x_2|C_k) * ... * p(x_n|C_k)
-%   prob = zeros(length(class_cat),1);
-%   for ki=1:length(class_cat)
-%     Ck = class_cat(ki);
-%     prob(ki) = sum(classtr == Ck) / length(classtr); % prior
-%     
-%     % likelihood parameters
-%     xmu = mean(Xtr(classtr == Ck,:),1);
-%     xstd = std(Xtr(classtr == Ck,:),1);
-%     
-%     likelihood = zeros(length(x));
-%     for xi=1:D
-%       likelihood(xi) = exp(-(x(xi) - xmu)^2 / 2 / xstd^2); % p(x_i|C_k)
-%       prob(ki) = prob(ki)*likelihood(xi);
-%     end
-%   end
-%   
-%   % what does the classifier say?
-%   [~,I] = max(prob);
-%   predClass(vi) = class_cat(I);
-%   
-%   % what's the real class?
-%   realClass(vi) = class(vi);
+
+%% Try out DTW matrix
+% Make Dist.DTW using a subset of proteins.
+% Goal: 1000 interactions, 1000 non-interactions, run time <300s
+
+clear nint
+for oi = 1:size(TP_Matrix,1)-201
+pri = (1:180) + oi;
+I = inverse_self(pri,pri) & Int_matrix(pri,pri);
+tpm = TP_Matrix(pri,pri);
+nint(oi) = sum(tpm(:));
+end
+[~,offs] = max(nint);
+pri = (1:180) + offs;
+I = inverse_self(pri,pri) & Int_matrix(pri,pri);
+tpm = TP_Matrix(pri,pri);
+Nint = sum(tpm(:));
+runhat = 0.007 * numel(I);
+disp(['Number of interactions: ' num2str(Nint) ', Estimated run time: ' num2str(runhat) 's'])
+labels = tpm(I(:));
+y = labels(:);
+y(y>0) = 1;
+y(y~=1) = -1;
+
+
+Dist2.Euc = Dist.Euc(pri,pri);
+Dist2.Center = Dist.Center(pri,pri);
+Dist2.R2 = Dist.R2(pri,pri); % one minus R squared
+Dist2.dtw = ones(length(pri),length(pri));
+for ii = 1:length(pri)
+  if mod(ii,10)==0;disp(num2str(ii));end
+  i1 = pri(ii);
+  for jj = 1:length(pri)
+    j1 = pri(jj);
+    Dist2.dtw(ii,jj) = dtw_old(Chromatograms(i1,:),Chromatograms(j1,:));
+  end
+end
+
+
+
+data1 = Dist2.R2(I(:)); % 1 - R^2
+data2 = Dist2.Euc(I(:));
+data3 = Dist2.Center(I(:));
+data4 = Dist2.dtw(I(:));
+X = [data1 data2 data3 data4];
+Nd = size(X,2);
+
+if 1
+  % Soft whiten data
+  eps = 2e-16;
+  wmu = zeros(Nd,1);
+  wstd = zeros(Nd,1);
+  for ii = 1:Nd
+    wmu(ii) = mean(X(:,ii));
+    wstd(ii) = std(X(:,ii));
+    X(:,ii) = (X(:,ii) - wmu(ii)) / 2 / (wstd(ii) + eps);
+  end
+else
+  % Hard whiten data
+  eps = 2e-16;
+  mm = zeros(Nd,1);
+  mn = zeros(Nd,1);
+  mx = zeros(Nd,1);
+  for jj = 1:Nd
+    mm(jj) = mean(X(:,jj));
+    mn(jj) = min(X(:,jj));
+    mx(jj) = max(X(:,jj));
+    X(:,jj) = (X(:,jj) - mm(jj)) / (mx(jj) - mn(jj));
+  end
+end
+
+% Make training and testing data
+% balance training data
+nn = 1000;
+I1 = find(y==1);
+I1 = I1(randsample(length(I1),nn/2));
+I0 = find(y==-1);
+I0 = I0(randsample(length(I0),nn/2));
+Itrain = ismember(1:length(y),[I1;I0]);
+Ipred = ~Itrain;
+Xtr = X(Itrain,:);
+ytr = y(Itrain);
+Xnew = X(Ipred,:);
+ynew = y(Ipred);
+% 
+% % weight features by F-ratio
+% ww = IndFeat(X,y);
+% for jj = 1:Nd
+%   X(:,jj) = X(:,jj) * ww(jj);
 % end
 
+% Fit models on just [R2]
+% Fit svm model
+svm = fitcsvm(Xtr(:,1),ytr);
+[~,score_svm] = predict(svm,Xnew(:,1));
+[precision_svm1,recall_svm1,~,pav1] = perfcurve(ynew,score_svm(:,2),1,'xcrit','prec');
+[fpr_svm1,tpr_svm1,~,av1] = perfcurve(ynew,score_svm(:,2),1);
+% Fit naive bayes model
+nab = fitcnb(Xtr(:,1),ytr);
+[~,score_nb] = predict(nab,Xnew(:,1));
+[precision_nb1,recall_nb1,~,pab1] = perfcurve(ynew,score_nb(:,2),1,'xcrit','prec');
+[fpr_nb1,tpr_nb1,~,ab1] = perfcurve(ynew,score_nb(:,2),1);
+
+% Fit models on [R2 Euc C DTW]
+% Fit svm model
+svm = fitcsvm(Xtr,ytr);
+[~,score_svm] = predict(svm,Xnew);
+[precision_svm2,recall_svm2,~,pav2] = perfcurve(ynew,score_svm(:,2),1,'xcrit','prec');
+[fpr_svm2,tpr_svm2,~,av2] = perfcurve(ynew,score_svm(:,2),1);
+% Fit naive bayes model
+nab = fitcnb(Xtr,ytr);
+[~,score_nb] = predict(nab,Xnew);
+[precision_nb2,recall_nb2,~,pab2] = perfcurve(ynew,score_nb(:,2),1,'xcrit','prec');
+[fpr_nb2,tpr_nb2,~,ab2] = perfcurve(ynew,score_nb(:,2),1);
+
+
+disp(['ROC AUC: ' num2str(av2-av1) ', ' num2str(ab2-ab1)])
+disp(['PR AUC: ' num2str(pav2-pav1) ', ' num2str(pab2-pab1)])
+
+
+figure
+hold on
+plot(recall_svm1,precision_svm1,'r')
+plot(recall_nb1,precision_nb1,'b')
+plot(recall_svm2,precision_svm2,'m','linewidth',2)
+plot(recall_nb2,precision_nb2,'c','linewidth',2)
+xlabel('Recall','fontsize',13)
+ylabel('Precision','fontsize',13)
+hl = legend('SVM, R2','Naive Bayes, R2','SVM, all','Naive Bayes, all');
+set(hl,'fontsize',13)
+title('Comparing classifiers SVM and NB','fontsize',13)
+set(gcf,'units','normalized','position',[.05 .2 .4 .5])
+
+figure
+hold on
+plot(fpr_svm1,tpr_svm1,'r')
+plot(fpr_nb1,tpr_nb1,'b')
+plot(fpr_svm2,tpr_svm2,'m','linewidth',2)
+plot(fpr_nb2,tpr_nb2,'c','linewidth',2)
+xlabel('FPR','fontsize',13)
+ylabel('TPR','fontsize',13)
+hl = legend('SVM, R2','Naive Bayes, R2','SVM, all','Naive Bayes, all','location','southeast');
+set(hl,'fontsize',13)
+title('Comparing classifiers SVM and NB','fontsize',13)
+set(gcf,'units','normalized','position',[.55 .2 .4 .5])
