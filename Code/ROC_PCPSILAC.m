@@ -60,8 +60,8 @@ fprintf('\n    0. Initialize')
 number_of_replicates=3;
 number_of_channels=2;
 replicate_counter = 4; % Do a single replicate. This is Nick's loop index.
-%precision_range = [.50 .60 .70]; % 50%, 60%, 70% precision
-precision_range = .70; % 70% precision
+%desiredPrecision = [.50 .60 .70]; % 50%, 60%, 70% precision
+desiredPrecision = .70; % 70% precision
 treatment_replicates=[4,5,6];
 untreatment_replicates=[1,2,3];
 
@@ -212,7 +212,17 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Dist.Height = squareform(pdist(H,'euclidean'));
   Dist.Width = squareform(pdist(W,'euclidean'));
   Dist.Gaussian_fits = squareform(pdist(gaussian_fit,'euclidean'));
-  Dist.R2 = 1 - corrcoef(Chromatograms').^2; % one minus R squared
+  Dist.R2 = 1 - corr(Chromatograms').^2; % one minus R squared
+  Dist.dtw = ones(size(Dist.R2))*100;
+%   for ii = 1:size(Chromatograms,1)
+%     if mod(ii,100)==0;disp(num2str(ii));end
+%     for jj = 1:size(Chromatograms,1)
+%       if Dist.R2(ii,jj)<0.4
+%         Dist.dtw(ii,jj) = dtw(Chromatograms(ii,:)',Chromatograms(jj,:)');
+%         %Dist.dtw(ii,jj) = dtw_old(Chromatograms(ii,:),Chromatograms(jj,:));
+%       end
+%     end
+%   end
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
@@ -363,23 +373,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     ind2 = find(strcmp(Prot2,Protein.MajorID_NoIsoforms));
     [i2,j2] = ind2sub(size(Protein.MajorID_NoIsoforms),ind2);
     
-%     Prot1_group = Protein.MajorID_NoIsoforms(i1(1),:); % all proteins in the same group as Prot1
-%     Prot1_group = Prot1_group(~cellfun('isempty',Prot1_group)); % remove empty cells
-%     Prot2_group = Protein.MajorID_NoIsoforms(i2(1),:); % all proteins in the same group as Prot2
-%     Prot2_group = Prot2_group(~cellfun('isempty',Prot2_group)); % remove empty cells
-    
     TP_Matrix(i1,i2) = TP_Matrix(i1,i2)+1;
-    
-%     for jj = 1:length(Prot1_group)
-%       for kk = 1:length(Prot2_group)
-%         ii = ii+1;
-%         a = Prot1_group{jj};
-%         b = Prot2_group{kk};
-%         Corum_Dataset_expanded{ii} = [a,'-',b];
-%         
-%         %disp(Corum_Dataset_expanded{ii})
-%       end
-%     end
   end
   %I = unique(cell2mat(Corum_Dataset_expanded),'rows');
   %Corum_Dataset_expanded = unique(Corum_Dataset_expanded{ii});
@@ -417,6 +411,9 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   inverse_self = ~Self_Int_matrix; %creation of inverse of self interactions
   clear Self_Int_matrix
   
+  % Possible interactions, i.e. both in corum and not a self interaction
+  possibleInts = inverse_self & Int_matrix;
+
   % FP matrix
   Inverse_TP_matrix = ~TP_Matrix;
   FP_Matrix = (Int_matrix & Inverse_TP_matrix);
@@ -425,84 +422,35 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   fprintf('  ...  %.2f seconds\n',tt)
   
   
-  
-  
   %% 5. Make ROC curves for different Dist fieldnames
   % Aside from making FPR_out and Precision_out, this can be skipped
   tic
   fprintf('        5. Make figure for ROC curves.')
   
+  
   fn = fieldnames(Dist);
-  %cd('ROC analysis related Figures');
-  for i=[1 5 6]
+  for i=[1 6]
     
     count=0;
-    nr=50;
+    nr=100;
     Recall_out.(fn{i})=zeros(nr,1);
     Precision_out.(fn{i})=zeros(nr,1);
     TPR_out.(fn{i})=zeros(nr,1);
     FPR_out.(fn{i})=zeros(nr,1);
     
-    xDist = linspace(0,max(Dist.(fn{i})(:)),nr);
-    %xDist = logspace(0,log10(max(Dist.(fn{i})(:))+1),nr)-1;
+    % dummy vectors
+    dist = Dist.(fn{i})(possibleInts(:));
+    tp = TP_Matrix(possibleInts(:));
     
+    xDist = linspace(0,max(Dist.(fn{i})(:)),nr);    
     for Distance = xDist %Loop to calculate performance of variables  
-    %for Distance= 0.1:0.1:50 %Loop to calculate performance of variables
-      MatrixGaussian = Dist.(fn{i}) < Distance;
       count=1+count;
       
-      %As Euclidean distance represents a measurement across the total
-      %graident filter out measurements of guassian< 2 fractions away
-      if isequal(fn(i), fn(1))
-        MatrixGaussian= (MatrixGaussian & (Dist.(fn{2}) < 2));
-      else
-        MatrixGaussian = Dist.(fn{i}) < Distance;
-      end      
-      
-%       %Total number of interaction within distance
-%       Total_Int = (MatrixGaussian & inverse_self);
-%       Total_Int2_Triu =triu(Total_Int); %Only consider interactions in the top right of the matrix
-%       Total_Int_number= length(find(Total_Int2_Triu==1));
-%       
-%       %Protein interactions of protein in Corum within distance
-%       Possible_Int1 = (MatrixGaussian & Int_matrix);
-%       Possible_Int2 = (Possible_Int1 & inverse_self);
-%       Possible_Int2_Triu = triu(Possible_Int2); %Only consider interactions in the top right of the matrix
-%       Possible_Int_number= length(find(Possible_Int2_Triu==1));
-%       
-%       % Calculate True possitives
-%       TP_Matrix_Int1 = (Possible_Int1 & TP_Matrix);
-%       TP_Matrix_Int2 = (TP_Matrix_Int1 & inverse_self);
-%       TP_Matrix_Int2_Triu = triu(TP_Matrix_Int2); %Only consider interactions in the top right of the matrix
-%       TP= length(find(TP_Matrix_Int2_Triu==1));
-%       
-%       % Calculate false negatives
-%       Inverse_TP_matrix1=~TP_Matrix_Int2;
-%       MaxTP_matrix1 = (TP_Matrix & Inverse_TP_matrix1);
-%       MaxTP_matrix2 = (MaxTP_matrix1 & inverse_self);
-%       MaxTP_matrix2_Triu = triu(MaxTP_matrix2); %Only consider interactions in the top right of the matrix
-%       FN= length(find(MaxTP_matrix2_Triu==1));
-%       
-%       % Calculate false positives
-%       FP_Matrix_Int1= (Possible_Int2 & FP_Matrix);
-%       FP_Matrix_Int2= (FP_Matrix_Int1 & inverse_self);
-%       FP_Matrix_Int2_Triu = triu(FP_Matrix_Int2); %Only consider interactions in the top right of the matrix
-%       FP= length(find(FP_Matrix_Int2_Triu==1));
-%       
-%       % Find True negatives
-%       Inverse_false_postive_matrix=~FP_Matrix_Int1;
-%       Int_matrix_minus_TP = (Int_matrix & Inverse_TP_matrix);
-%       Int5_matrix= (Int_matrix_minus_TP & Inverse_false_postive_matrix);
-%       Int6_matrix = (Int5_matrix & inverse_self);
-%       Int6_matrix_Triu = triu(Int6_matrix); %Only consider interactions in the top right of the matrix
-%       TN= (length(find(Int6_matrix_Triu==1)));
-      
-      % simplify the above
-      TP = nnz(triu(MatrixGaussian & TP_Matrix  & inverse_self & Int_matrix));
-      FP = nnz(triu(MatrixGaussian & ~TP_Matrix  & inverse_self & Int_matrix));
-      TN = nnz(triu(~MatrixGaussian & ~TP_Matrix  & inverse_self & Int_matrix));
-      FN = nnz(triu(~MatrixGaussian & TP_Matrix  & inverse_self & Int_matrix));
-      
+      TP = sum(dist<Distance & tp);
+      FP = sum(dist<Distance & ~tp);
+      TN = sum(dist>Distance & ~tp);
+      FN = sum(dist>Distance & tp);
+
       Recall = TP/(TP+FN);
       Precision = TP/(TP+FP);
       TPR = TP/(TP+FN);
@@ -522,29 +470,30 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     
     figure,hold on
     %for i=1:length(fn)
-    for i=[1 5 6]
+    for i=[1 6]
       plot(FPR_out.(fn{i}),TPR_out.(fn{i}),'color',cols{i})
     end
     plot([0 1],[0 1],'--k')
     axis([0 1 0 1])
     %legend('Euc','Center','Height','Width','Gauss fits','R2','location','northwest')
-    legend('Euc','Gauss fits','R2','location','northeast')
+    legend('Euc','R2','location','northeast')
     xlabel('FPR')
     ylabel('TPR')
     
     figure,hold on
     %for i=1:length(fn)
-    for i=[1 5 6]
+    for i=[1 6]
       plot(Recall_out.(fn{i}),Precision_out.(fn{i}),'color',cols{i})
     end
     %axis([0 1 0 1])
     %legend('Euc','Center','Height','Width','Gauss fits','R2','location','northeast')
-    legend('Euc','Gauss fits','R2','location','northeast')
+    legend('Euc','R2','location','northeast')
     xlabel('Recall')
     ylabel('Precision')
   end
   
   % do a bit of housekeeping
+  clear dist tp
   clear Int2_matrix Int3_matrix Int5_matrix Int6_matrix FP_Matrix_Int1 FP_Matrix_Int2 FP_Matrix_Int2_Triu
   clear MaxTP_matrix1 MaxTP_matrix2 TP_Matrix_Int2_Triu TP_Matrix_Int1 TP_Matrix_Int2 TP_Matrix_Int2_Triu
   clear Possible_Int1 Possible_Int2 Possible_Int2_Triu Total_Int Total_Int2_Triu
@@ -554,92 +503,156 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   fprintf('  ...  %.2f seconds\n',tt)
   
   
-  pause
   
-  
-  %% 6. Calculate precision as a function of Euc, Center
+  %% 6. Calculate score, the likelihood that a protein pair is interacting
   tic
-  fprintf('        6. Calculate precision as a function of Euc, Center.')
+  fprintf('        6. Calculate score, the likelihood that a protein pair is interacting')
   
-  % i. Make interactions_based_only_Ecldian_distance at 80% precision
-  xDist = linspace(0,max(Dist.Euc(:)),nr);
-  prec_thresh = 0.80;
-  Precision = Precision_out.Euc; % Precision_out.Euc
+  class = TP_Matrix(possibleInts(:));
   
-  %Test if the Euclidian distance ever gives a precision above 0.8
-  if max(Precision) < prec_thresh
-    idx=1;
-    goodDist = xDist(idx); %determines the Eucldian distance which gives a precision closest to 0.8
-  else    
-    % interpolate to find goodDist
-    p1 = Precision - prec_thresh;
-    segments = find(diff(sign(p1)) == -2);
-    segments = segments(end);
-    x(1) = xDist(segments);
-    x(2) = xDist(segments+1);
-    y(1) = p1(segments);
-    y(2) = p1(segments+1);
-    m = (y(2)-y(1))/(x(2)-x(1));
-    n = y(2) - m * x(2);
-    goodDist = -n/m;
-  end
+  % Predict interactions through R^2
+  scoreMatrix = 1 - Dist.R2;
+  score = scoreMatrix(possibleInts(:));
   
-  %Determine interactions within precision of >0.80 based on Eu distance
-  Interactions_detected_due_to_High_Eucldian_distance = Dist.Euc < goodDist;
-  Interactions_Based_only_Eucldian_distance = (Interactions_detected_due_to_High_Eucldian_distance & inverse_self & (Dist.Center < 2));
-  
-  %create matrix for Eu dis interactions with precision >0.8
-  Final_Interactions_Based_only_Eucldian_distance = Interactions_Based_only_Eucldian_distance;
+  % Predict interactions with a classifier
+  %score = predictsvm;
+  %score = predictnb;
+      
+  tt = toc;
+  fprintf('  ...  %.2f seconds\n',tt)
   
   
-  % ii. Make optimisation_matrix_precision
-  Height_Distance = 20.0; % As height has very little effect on interaction determination, this has been set very large
-  Width_Distangce = 20.0; % As width has very little effect on interaction determination, this has been set very large
-  MatrixHeight = Dist.Height < Height_Distance;
-  MatrixWidth = Dist.Width < Width_Distangce;
-  %Determine interactions for a FPR of 0.5%
-  [~, idx] = min(abs(FPR_out.Euc - 0.05)); %determines the postion which gives a FPR of 0.5%
-  Eucldian_distance_with_0_05FPR = ceil(xDist(idx)); %determines the Eucldian distance which gives a FPR of 0.5%
-  %Define number of data points
-  Optimisation_Dimension = Eucldian_distance_with_0_05FPR/0.025;
-  %optimisation_matrix_number_interaction = zeros(Optimisation_Dimension,Optimisation_Dimension);
-  %optimisation_matrix_precision = zeros(Optimisation_Dimension,Optimisation_Dimension);
-  Euclidian_Distance_optimisation = 0.025:0.025:Eucldian_distance_with_0_05FPR;
-  Gaussian_fit_Distance_optimisation = 0.025:0.025:Eucldian_distance_with_0_05FPR;
-  if 0
-    for iii=1:Optimisation_Dimension
-      for iv=1:Optimisation_Dimension
-        NS1 = Euclidian_Distance_optimisation(iii); % e-6
-        NS2 = Gaussian_fit_Distance_optimisation(iv); % e-6
-        MatrixGaussian = Dist.Gaussian_fits < NS1; % e-2
-        Matrix_Distance = Dist.Euc < NS2; % e-2
-        Interactions_optimisation_counter = (MatrixGaussian & MatrixHeight & MatrixWidth & Matrix_Distance & inverse_self); % e-2
-        total_interaction_number = length(find(triu(Interactions_optimisation_counter==1))); % e-2
-        optimisation_matrix_number_interaction(iii,iv) = total_interaction_number;
-        %Calculate true positives
-        TP_Matrix_Int_optimisation = (Interactions_optimisation_counter & TP_Matrix);
-        TP_optimisation = length(find(TP_Matrix_Int_optimisation==1));
-        %Calculate false positives
-        Int2_matrix_optimisation = (Interactions_optimisation_counter & Int_matrix);
-        Int3_matrix_optimisation = (Int2_matrix_optimisation & inverse_self);
-        FP_optimisation = length(find(Int3_matrix_optimisation==1))-TP_optimisation;
-        %Precision
-        Precision = TP_optimisation/(TP_optimisation+FP_optimisation);
-        optimisation_matrix_precision(iii,iv) = Precision;
+  
+  %% 7. Calculate precision as a function of score
+  % Algorithm: Identify when precision(score) crosses desired precision level. Do this roughly and
+  % quickly. Iteratively zoom in on those regions of precision(score) to get a more precise value.
+  tic
+  fprintf('        7. Calculate precision as a function of score')
+  
+  nn = 25;
+  dR = linspace(min(score),max(score),nn); % start off with coarse search
+  Tol = 0.001; % get within 0.1% precision
+  maxIter = 20; % zoom in 20 times at most
+  
+  xcutoff = nan(size(desiredPrecision));
+  calcprec = zeros(size(xcutoff));
+  for di = 1:length(desiredPrecision)
+    calcTol = 10^10;
+    iter = 0;
+    while calcTol>Tol && iter<maxIter
+      iter=iter+1;
+      rec = nan(nn,1);
+      prec = nan(nn,1);
+      for dd =1:length(dR)
+        TP = sum(score>dR(dd) & class==1);
+        FP = sum(score>dR(dd) & class==0);
+        FN = sum(score<dR(dd) & class==1);
+        prec(dd) = TP/(TP+FP);
+        rec(dd) = TP/(TP + FN);
       end
+      
+      % Calculate how close to desiredPrecision(di) you got
+      [calcTol,I] = min(abs(prec - desiredPrecision(di)));
+      
+      % Zoom in on region of interest
+      i1 = find(prec>desiredPrecision(di));
+      if isempty(i1);
+        mx = max(x);
+      else
+        mx = dR(i1(1));
+      end
+      i2 = find(prec<desiredPrecision(di));
+      if isempty(i2);
+        mn = min(x);
+      else
+        mn = dR(i2(end));
+      end
+      dR = linspace(mn,mx,nn);
     end
-  else
-    % Takes a while! Just load it for now
-    a = ['/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Replicate' ...
-      num2str(replicate_counter) '/ROC analysis data/optimisation_matrix_interaction_numbers_replicate' ...
-      num2str(replicate_counter) '.csv'];
-    optimisation_matrix_number_interaction = importdata(a);
-    
-    b = ['/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Replicate' ...
-      num2str(replicate_counter) '/ROC analysis data/optimisation_matrix_precision_numbers_replicate' ...
-      num2str(replicate_counter) '.csv'];
-    optimisation_matrix_precision = importdata(b);
+    xcutoff(di) = dR(I);
+    calcprec(di) = prec(I);
+    calcrec(di) = rec(I);
   end
+  
+%   % i. Make interactions_based_only_Ecldian_distance at 80% precision
+%   xDist = linspace(0,max(Dist.Euc(:)),nr);
+%   prec_thresh = 0.80;
+%   Precision = Precision_out.Euc; % Precision_out.Euc
+%   
+%   %Test if the Euclidian distance ever gives a precision above 0.8
+%   if max(Precision) < prec_thresh
+%     idx=1;
+%     goodDist = xDist(idx); %determines the Eucldian distance which gives a precision closest to 0.8
+%   else    
+%     % interpolate to find goodDist
+%     p1 = Precision - prec_thresh;
+%     segments = find(diff(sign(p1)) == -2);
+%     segments = segments(end);
+%     x(1) = xDist(segments);
+%     x(2) = xDist(segments+1);
+%     y(1) = p1(segments);
+%     y(2) = p1(segments+1);
+%     m = (y(2)-y(1))/(x(2)-x(1));
+%     n = y(2) - m * x(2);
+%     goodDist = -n/m;
+%   end
+%   
+%   %Determine interactions within precision of >0.80 based on Eu distance
+%   Interactions_detected_due_to_High_Eucldian_distance = Dist.Euc < goodDist;
+%   Interactions_Based_only_Eucldian_distance = (Interactions_detected_due_to_High_Eucldian_distance & inverse_self & (Dist.Center < 2));
+%   
+%   %create matrix for Eu dis interactions with precision >0.8
+%   Final_Interactions_Based_only_Eucldian_distance = Interactions_Based_only_Eucldian_distance;
+%   
+%   
+%   % ii. Make optimisation_matrix_precision
+%   Height_Distance = 20.0; % As height has very little effect on interaction determination, this has been set very large
+%   Width_Distangce = 20.0; % As width has very little effect on interaction determination, this has been set very large
+%   MatrixHeight = Dist.Height < Height_Distance;
+%   MatrixWidth = Dist.Width < Width_Distangce;
+%   %Determine interactions for a FPR of 0.5%
+%   [~, idx] = min(abs(FPR_out.Euc - 0.05)); %determines the postion which gives a FPR of 0.5%
+%   Eucldian_distance_with_0_05FPR = ceil(xDist(idx)); %determines the Eucldian distance which gives a FPR of 0.5%
+%   %Define number of data points
+%   Optimisation_Dimension = Eucldian_distance_with_0_05FPR/0.025;
+%   %optimisation_matrix_number_interaction = zeros(Optimisation_Dimension,Optimisation_Dimension);
+%   %optimisation_matrix_precision = zeros(Optimisation_Dimension,Optimisation_Dimension);
+%   Euclidian_Distance_optimisation = 0.025:0.025:Eucldian_distance_with_0_05FPR;
+%   Gaussian_fit_Distance_optimisation = 0.025:0.025:Eucldian_distance_with_0_05FPR;
+%   if 0
+%     for iii=1:Optimisation_Dimension
+%       for iv=1:Optimisation_Dimension
+%         NS1 = Euclidian_Distance_optimisation(iii); % e-6
+%         NS2 = Gaussian_fit_Distance_optimisation(iv); % e-6
+%         MatrixGaussian = Dist.Gaussian_fits < NS1; % e-2
+%         Matrix_Distance = Dist.Euc < NS2; % e-2
+%         Interactions_optimisation_counter = (MatrixGaussian & MatrixHeight & MatrixWidth & Matrix_Distance & inverse_self); % e-2
+%         total_interaction_number = length(find(triu(Interactions_optimisation_counter==1))); % e-2
+%         optimisation_matrix_number_interaction(iii,iv) = total_interaction_number;
+%         %Calculate true positives
+%         TP_Matrix_Int_optimisation = (Interactions_optimisation_counter & TP_Matrix);
+%         TP_optimisation = length(find(TP_Matrix_Int_optimisation==1));
+%         %Calculate false positives
+%         Int2_matrix_optimisation = (Interactions_optimisation_counter & Int_matrix);
+%         Int3_matrix_optimisation = (Int2_matrix_optimisation & inverse_self);
+%         FP_optimisation = length(find(Int3_matrix_optimisation==1))-TP_optimisation;
+%         %Precision
+%         Precision = TP_optimisation/(TP_optimisation+FP_optimisation);
+%         optimisation_matrix_precision(iii,iv) = Precision;
+%       end
+%     end
+%   else
+%     % Takes a while! Just load it for now
+%     a = ['/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Replicate' ...
+%       num2str(replicate_counter) '/ROC analysis data/optimisation_matrix_interaction_numbers_replicate' ...
+%       num2str(replicate_counter) '.csv'];
+%     optimisation_matrix_number_interaction = importdata(a);
+%     
+%     b = ['/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Replicate' ...
+%       num2str(replicate_counter) '/ROC analysis data/optimisation_matrix_precision_numbers_replicate' ...
+%       num2str(replicate_counter) '.csv'];
+%     optimisation_matrix_precision = importdata(b);
+%   end
   
 %   % iii. Make Precision_replicate_level
 %   minimum_precision=(ceil(min(min(optimisation_matrix_precision))*100))/100;
@@ -710,17 +723,16 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   
   
   
-  %% 7. Determine interactions at a pre-set precision
+  %% 8. Determine interactions at a pre-set precision
   % What variables need to be saved in the precision loop?
   % - Sorted_of_final_interactions_Protein_70pc
   % - Sorted_of_final_interactions_Center_70pc
   % - List_of_final_interactions_Protein_70pc
   
   tic
-  s = ['        7. Determine interactions at a pre-set precision.'];
-  fprintf(s)
+  fprintf('        8. Determine interactions at a pre-set precision.')
   
-  for pri = 1:length(precision_range)
+  for pri = 1:length(desiredPrecision)
     
     % pre-allocate
     clear Sorted_of_final_interactions_Protein Sorted_of_final_interactions_Center List_of_final_interactions_Protein
@@ -728,58 +740,58 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     fn_count = 0; % false negative interaction counter, used in 7b
     interaction_count = 0; % interaction counter, used in 7c
     
-    %Determine interactions within precision of >0.70 based on Eu distance
-    prec_thresh = precision_range(pri);
-    
-    % Define precision required
-    %note This module has been to designed to use the settings which give the highest number of high precision interactions with the widest Euc
-    Result_matrix = nan(size(optimisation_matrix_number_interaction));
-    I = optimisation_matrix_precision > prec_thresh;
-    Result_matrix(I) = optimisation_matrix_number_interaction(I);
-    
-    s = ['\n            ' num2str(prec_thresh*100) ' %% precision'];
-    fprintf(s)
-    
-    % 7a. Get the Euc,Dist for this precision; calculate recall
-    tic
-    fprintf('\n            7a. Find binary interactions')
-    
-    %determine the Euc and Center which give the user defined precision
-    %maximum_counter = Optimisation_Dimension; %define based on the optimisation_matrix number
-    maximum_counter = size(Result_matrix,1);
-    Interactions_based_one_summed_precisions = zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
-    parfor vi=1:maximum_counter   % scan down the Euc row and find which values results the required precision and maximum number of interactions
-      Maximum_interactions_at_given_Center = max(Result_matrix(vi,:));
-      if ~isnan(Maximum_interactions_at_given_Center)
-        inds = find(Result_matrix(vi,:)==Maximum_interactions_at_given_Center);
-        [col] = inds(1); %this takes the first number of inds thus ensure the most conservative Center will be used
-        optimised_center = Gaussian_fit_Distance_optimisation(vi);
-        optimised_Euc = Euclidian_Distance_optimisation(col);
-        
-        %use optimisation code to maximum out
-        MatrixGaussian = Dist.Gaussian_fits < optimised_center;
-        Matrix_Distance = Dist.Euc < optimised_Euc;
-        
-        % determine final interaction matrices
-        Interactions__precisions = (MatrixGaussian & MatrixHeight & MatrixWidth & Matrix_Distance & inverse_self);
-        Interactions_based_one_summed_precisions = (Interactions_based_one_summed_precisions | Interactions__precisions);
-      end
-    end
-    clear MatrixGaussian Matrix_Distance MatrixHeight MatrixWidth
-    
-    tt = toc;
-    fprintf('  ...  %.2f seconds\n',tt)
-    
+%     %Determine interactions within precision of >0.70 based on Eu distance
+%     prec_thresh = desiredPrecision(pri);
+%     
+%     % Define precision required
+%     %note This module has been to designed to use the settings which give the highest number of high precision interactions with the widest Euc
+%     Result_matrix = nan(size(optimisation_matrix_number_interaction));
+%     I = optimisation_matrix_precision > prec_thresh;
+%     Result_matrix(I) = optimisation_matrix_number_interaction(I);
+%     
+%     s = ['\n            ' num2str(prec_thresh*100) ' %% precision'];
+%     fprintf(s)
+%     
+%     % 7a. Get the Euc,Dist for this precision; calculate recall
+%     tic
+%     fprintf('\n            7a. Find binary interactions')
+%     
+%     %determine the Euc and Center which give the user defined precision
+%     %maximum_counter = Optimisation_Dimension; %define based on the optimisation_matrix number
+%     maximum_counter = size(Result_matrix,1);
+%     Interactions_based_one_summed_precisions = zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
+%     parfor vi=1:maximum_counter   % scan down the Euc row and find which values results the required precision and maximum number of interactions
+%       Maximum_interactions_at_given_Center = max(Result_matrix(vi,:));
+%       if ~isnan(Maximum_interactions_at_given_Center)
+%         inds = find(Result_matrix(vi,:)==Maximum_interactions_at_given_Center);
+%         [col] = inds(1); %this takes the first number of inds thus ensure the most conservative Center will be used
+%         optimised_center = Gaussian_fit_Distance_optimisation(vi);
+%         optimised_Euc = Euclidian_Distance_optimisation(col);
+%         
+%         %use optimisation code to maximum out
+%         MatrixGaussian = Dist.Gaussian_fits < optimised_center;
+%         Matrix_Distance = Dist.Euc < optimised_Euc;
+%         
+%         % determine final interaction matrices
+%         Interactions__precisions = (MatrixGaussian & MatrixHeight & MatrixWidth & Matrix_Distance & inverse_self);
+%         Interactions_based_one_summed_precisions = (Interactions_based_one_summed_precisions | Interactions__precisions);
+%       end
+%     end
+%     clear MatrixGaussian Matrix_Distance MatrixHeight MatrixWidth
+%     
+%     tt = toc;
+%     fprintf('  ...  %.2f seconds\n',tt)
     
     
     % 7b. Calculate recall and precision, negative interactions
     %Determine the false "binary" interaction list
     tic
-    fprintf('            7b. Calculate recall and precision, negative interactions')
+    fprintf('\n            b. Calculate recall and precision, negative interactions')
     
     % determine final interaction matrices
-    Final_interactions = (Final_Interactions_Based_only_Eucldian_distance | Interactions_based_one_summed_precisions); %test just interactions on Euc dist
-    
+    %Final_interactions = (Final_Interactions_Based_only_Eucldian_distance | Interactions_based_one_summed_precisions); %test just interactions on Euc dist
+    Final_interactions = scoreMatrix>xcutoff(pri) & possibleInts;
+
     % Calculate True possitives
     TP_Matrix_Int = (Final_interactions & TP_Matrix);
     TP = length(find(TP_Matrix_Int==1));
@@ -852,7 +864,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     % G: What happens with this output?
     % G: It's read in after the replicate loop and combined
     tic
-    fprintf('            7c. Find binary interactions')
+    fprintf('            c. Find binary interactions')
     
     Protein_elution= strcat(num2str(C),'*',Protein.Isoform);
     [n,m]=size(Dist.Euc);
@@ -890,7 +902,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     
     
     tic
-    fprintf('            7d. Combine binary interactions')
+    fprintf('            d. Combine binary interactions')
     % List of interactions
     % A - B,C,Q; B - A; C - A,Q,D; ...
     % G: What happens with this output?
@@ -1030,13 +1042,14 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     fprintf('  ...  %.2f seconds\n',tt)
     
     
+    pause
     
     
     tic
-    s = ['            7e. Write binary interactions, rep' num2str(replicate_counter) ' pc' num2str(round(precision_range(pri)*100))];
+    s = ['            e. Write binary interactions, rep' num2str(replicate_counter) ' pc' num2str(round(desiredPrecision(pri)*100))];
     fprintf(s)
     
-    p = round(precision_range(pri)*100);
+    p = round(desiredPrecision(pri)*100);
     sf = [datadir2 'Interaction_list_pc' num2str(p) '_rep' num2str(replicate_counter) '.mat'];
     save(sf,'FNBinaryInteractions','BinaryInteractions','List_of_final_interactions_Protein')
     clear FNBinaryInteractions BinaryInteractions List_of_final_interactions_Protein
@@ -1073,7 +1086,7 @@ fprintf('    8. Make final interaction list')
 binary_interaction_list = [];
 FN_binary_interaction_list = [];
 
-for pri = 1:length(precision_range)
+for pri = 1:length(desiredPrecision)
   s = ['\n       ' num2str(prec_thresh*100) ' %% precision'];
   fprintf(s)
   
