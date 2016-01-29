@@ -2,15 +2,14 @@ function score = scorenb(Dist,possibleInts,TP_Matrix)
 % Use an SVM classifier to predict protein interactions.
 
 % Get data
-I = possibleInts;
-labels = TP_Matrix(I(:));
+I = possibleInts(:);
+labels = TP_Matrix(:);
 y = labels(:);
 y(y>0) = 1;
 y(y~=1) = -1;
-data1 = Dist.R2(I(:)); % 1 - R^2
-data2 = Dist.Euc(I(:));
-data3 = Dist.Center(I(:));
-%data4 = Dist.dtw(I(:));
+data1 = Dist.R2(:); % 1 - R^2
+data2 = Dist.Euc(:);
+data3 = Dist.Center(:);
 X = [data1 data2 data3];
 Nd = size(X,2);
 
@@ -32,7 +31,7 @@ for iter = 1:iterMax
   % % Make training and testing data
   nn = 1000; % length of training data
   % balance training data
-  I1 = find(y==1);
+  I1 = find(y==1 & I);
   I1 = I1(randsample(length(I1),nn/2));
   I0 = find(y==-1);
   I0 = I0(randsample(length(I0),nn/2));
@@ -48,3 +47,4 @@ for iter = 1:iterMax
   
   score(Ipred,iter) = scoretmp(:,2);
 end
+

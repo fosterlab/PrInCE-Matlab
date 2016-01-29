@@ -8,7 +8,7 @@ myC= [30/255 144/255 255/255
   193/255 205/255 193/255];
 
 figure
-f1=subplot(2,1,1);
+subplot(2,1,1);
 f1_figure=bar(1:(number_of_replicates*number_of_channels), [Interaction_in_corum_not_detected(:,1) (Precision_array(:,2)) Interaction_not_in_corum(:,1)], 0.6, 'stack');
 
 for k=1:3
@@ -33,5 +33,16 @@ ylabel('Number of interactions','FontSize', 8);
 xlabel('isotoplogue channels','FontSize', 8);
 
 % Save figure
-Final_Interaction_figure=strcat('Observed_interactions_across_replicates_',mat2str(Precision_values(precision_write_out_counter)),'_precision.png');
+Final_Interaction_figure=[figdir1 'Observed_interactions_across_replicates_' mat2str(Precision_values(precision_write_out_counter)) '_precision.png'];
 saveas(f1, Final_Interaction_figure);
+
+
+
+%% Final precision-recall curves
+
+
+% One for each replicate
+
+
+% One for all replicates
+

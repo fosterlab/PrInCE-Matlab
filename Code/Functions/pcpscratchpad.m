@@ -14,7 +14,7 @@ data1 = Dist.R2(I(:)); % 1 - R^2
 data2 = Dist.Euc(I(:));
 data3 = Dist.Center(I(:));
 data4 = Dist.dtw(I(:));
-X = [data1 data2 data3 data4];
+X = [data1 data2 data3];
 %X = data1;
 Nd = size(X,2);
 
@@ -215,10 +215,10 @@ set(gcf,'units','normalized','position',[.1 .1 .8 .6])
 
 clear nint
 for oi = 1:size(TP_Matrix,1)-201
-pri = (1:180) + oi;
-I = inverse_self(pri,pri) & Int_matrix(pri,pri);
-tpm = TP_Matrix(pri,pri);
-nint(oi) = sum(tpm(:));
+  pri = (1:180) + oi;
+  I = inverse_self(pri,pri) & Int_matrix(pri,pri);
+  tpm = TP_Matrix(pri,pri);
+  nint(oi) = sum(tpm(:));
 end
 [~,offs] = max(nint);
 pri = (1:180) + offs;
@@ -292,7 +292,7 @@ Xtr = X(Itrain,:);
 ytr = y(Itrain);
 Xnew = X(Ipred,:);
 ynew = y(Ipred);
-% 
+%
 % % weight features by F-ratio
 % ww = IndFeat(X,y);
 % for jj = 1:Nd
@@ -353,3 +353,126 @@ hl = legend('SVM, R2','Naive Bayes, R2','SVM, all','Naive Bayes, all','location'
 set(hl,'fontsize',13)
 title('Comparing classifiers SVM and NB','fontsize',13)
 set(gcf,'units','normalized','position',[.55 .2 .4 .5])
+
+
+%% scratchpad for updating ROC_PCPSILAC.m
+
+x = score_nb(:,2);
+dR1 = log10(linspace(min(10.^x),max(10.^x)*.9,100));
+dR2 = log10(linspace(max(10.^x)*.9,max(10.^x)*.99,300));
+dR3 = log10(linspace(max(10.^x)*.99,max(10.^x),800));
+dR = [dR1 dR2 dR3];
+
+rec = nan(size(dR));
+prec = nan(size(dR));
+for di = 1:length(dR)
+  D = dR(di);
+  TP = sum(x>D & ynew==1);
+  FP = sum(x>D & ynew==-1);
+  TN = sum(x<D & ynew==-1);
+  FN = sum(x<D & ynew==1);
+  
+  rec(di) = TP/(TP+FN);
+  prec(di) = TP/(TP+FP);
+end
+
+figure
+plot(rec,prec)
+
+%%
+
+x = score_svm(:,2);
+%x = 1-Xnew(:,1);
+dR = zeros(1,2000);
+dx1 = (max(x) - min(x))/length(dR);
+mindx = dx1/100;
+maxdx = dx1*2;
+rec = zeros(1,length(dR));
+prec = zeros(1,length(dR));
+di = 1;
+prec0 = 0;
+dR0 = 0;
+while prec0<0.95 && dR0<max(x)
+  
+  % build next D
+  if di>2
+    m = diff(prec([di-2 di-1])) / diff(dR([di-2 di-1]));
+    dx = max(mindx, 1/length(dR)/m);
+    dx = min(maxdx, dx);
+  end
+  
+  if di==1
+    dR(di) = min(x);
+  elseif di==2
+    dR(di) = dR(di) + dx1;
+  else
+    dR(di) = dR(di-1) + dx;
+  end
+  
+  
+  %D = dR(di);
+  TP = sum(x>dR(di) & ynew==1);
+  FP = sum(x>dR(di) & ynew==-1);
+  TN = sum(x<dR(di) & ynew==-1);
+  FN = sum(x<dR(di) & ynew==1);
+  
+  rec(di) = TP/(TP+FN);
+  prec(di) = TP/(TP+FP);
+  prec0 = prec(di);
+  dR0 = dR(di);
+  di = di+1
+end
+prec = prec(1:di-1);
+rec = rec(1:di-1);
+dR = dR(1:di-1);
+
+% sort dR ascending
+[~,I] = sort(dR,'ascend');
+dR = dR(I);
+prec = prec(I);
+rec = rec(I);
+
+figure
+plot(rec,prec)
+
+
+
+%% How do I average svm models?
+
+I = inverse_self & Int_matrix;
+labels = TP_Matrix(I(:));
+y = labels(:);
+y(y>0) = 1;
+y(y~=1) = -1;
+data1 = Dist.R2(I(:)); % 1 - R^2
+data2 = Dist.Euc(I(:));
+data3 = Dist.Center(I(:));
+data4 = Dist.dtw(I(:));
+X = [data1 data2 data3];
+%X = data1;
+Nd = size(X,2);
+
+maxIter = 10;
+scoreMatrix = nan(size(X,1),maxIter);
+
+for iter = 1:maxIter
+  % % Make training and testing data
+  nn = 10000; % length of training data
+  % balance training data
+  I1 = find(y==1);
+  I1 = I1(randsample(length(I1),nn/2));
+  I0 = find(y==-1);
+  I0 = I0(randsample(length(I0),nn/2));
+  Itrain = ismember(1:length(y),[I1;I0]);
+  Ipred = ~Itrain;
+  Xtr = X(Itrain,:);
+  ytr = y(Itrain);
+  Xnew = X(Ipred,:);
+  
+  % Fit svm model
+  svm = fitcsvm(Xtr,ytr,'Standardize',true);
+  [~,score] = predict(svm,Xnew);
+  
+  % Combine scores
+  scoreMatrix(Ipred,iter) = score(:,2);
+end
