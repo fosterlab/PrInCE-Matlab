@@ -1,4 +1,4 @@
-function score = scorenb(Dist,possibleInts,TP_Matrix)
+function [score, feats] = scorenb(Dist,possibleInts,TP_Matrix)
 % Use an SVM classifier to predict protein interactions.
 
 % Get data
@@ -7,10 +7,11 @@ labels = TP_Matrix(:);
 y = labels(:);
 y(y>0) = 1;
 y(y~=1) = -1;
-data1 = Dist.R2(:); % 1 - R^2
-data2 = Dist.Euc(:);
-data3 = Dist.Center(:);
-X = [data1 data2 data3];
+%data1 = Dist.R2(:); % 1 - R^2
+%data2 = Dist.Euc(:);
+%data3 = Dist.Center(:);
+%X = [Dist.R2(:) Dist.Euc(:) Dist.Center(:) Dist.Ngauss(:) Dist.CoApex(:) Dist.AUC(:)];
+X = [Dist.R2(:) Dist.Euc(:) Dist.CoApex(:) Dist.Center(:) Dist.Ngauss(:) Dist.AUC(:)];
 Nd = size(X,2);
 
 % Soft whiten data
@@ -24,10 +25,11 @@ for ii = 1:Nd
 end
 
 
-iterMax = 10;
-score = nan(size(X,1),iterMax);
-for iter = 1:iterMax
-
+Nmodel = 15;
+score = nan(size(X,1),Nmodel);
+feats = nan(Nmodel,size(X,2));
+for iter = 1:Nmodel
+  iter
   % % Make training and testing data
   nn = 1000; % length of training data
   % balance training data
@@ -41,9 +43,13 @@ for iter = 1:iterMax
   ytr = y(Itrain);
   Xnew = X(Ipred,:);
   
+  % Feature selection
+  feats(iter,:) = IndFeat(Xtr,ytr);
+  f2consider = find(feats(iter,:) > 5);
+  
   % Fit Naive Bayes model
-  nab = fitcnb(Xtr,ytr);
-  [~,scoretmp] = predict(nab,Xnew);
+  nab = fitcnb(Xtr(:,f2consider),ytr);
+  [~,scoretmp] = predict(nab,Xnew(:,f2consider));
   
   score(Ipred,iter) = scoretmp(:,2);
 end
