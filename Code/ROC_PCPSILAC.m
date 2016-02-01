@@ -542,11 +542,11 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   %scoreMatrix = nanmean(scoreMatrix,2);
   %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
   scoreMatrix = scorenb(Dist,possibleInts,TP_Matrix);
-  scoreMatrix = nanmean(scoreMatrix,2);
-  scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
+  %scoreMatrix = nanmean(scoreMatrix,2);
+  %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
   
-  score = scoreMatrix(possibleInts(:));
-        
+  score = scoreMatrix(possibleInts(:),:);
+  
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   
@@ -560,7 +560,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   
   class = TP_Matrix(possibleInts(:));
   nn = 25;
-  ds = linspace(min(score),max(score),nn); % start off with coarse search
+  ds = linspace(min(score(:)),max(score(:)),nn); % start off with coarse search
   Tol = 0.001; % get within 0.1% precision
   maxIter = 20; % zoom in 20 times at most
   
@@ -584,9 +584,15 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
       rec = nan(nn,1);
       prec = nan(nn,1);
       for dd =1:length(ds)
-        TP = sum(score>ds(dd) & class==1);
-        FP = sum(score>ds(dd) & class==0);
-        FN = sum(score<ds(dd) & class==1);
+        % ensemble VOTING
+        pos = sum(score>ds(dd),2) > sum(score<ds(dd),2);
+        TP = sum(pos & class==1);
+        FP = sum(pos & class==0);
+        FN = sum(~pos & class==1);
+        
+        %TP = sum(score>ds(dd) & class==1);
+        %FP = sum(score>ds(dd) & class==0);
+        %FN = sum(score<ds(dd) & class==1);
         prec(dd) = TP/(TP+FP);
         rec(dd) = TP/(TP+FN);
       end
@@ -604,13 +610,13 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
       % Zoom in on region of interest
       i1 = find(prec>desiredPrecision(di));
       if isempty(i1);
-        mx = max(score);
+        mx = max(score(:));
       else
         mx = ds(i1(1));
       end
       i2 = find(prec<desiredPrecision(di));
       if isempty(i2);
-        mn = min(score);
+        mn = min(score(:));
       else
         mn = ds(i2(end));
       end
@@ -842,7 +848,9 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     
     % determine final interaction matrices
     %Final_interactions = (Final_Interactions_Based_only_Eucldian_distance | Interactions_based_one_summed_precisions); %test just interactions on Euc dist
-    Final_interactions = scoreMatrix>xcutoff(pri) & inverse_self;
+    pos = sum(scoreMatrix>xcutoff(pri),2) > sum(scoreMatrix<xcutoff(pri),2);
+    pos = reshape(pos,size(Dist.R2,1),size(Dist.R2,1));
+    Final_interactions = pos & inverse_self;
 
     % Calculate True possitives
     TP_Matrix_Int = (Final_interactions & TP_Matrix);
@@ -873,6 +881,8 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     No_Int(replicate_counter,pri) = length(find(triu(Final_interactions==1)));
     
     % Predicted negative interactions
+    scoreMatrix = median(scoreMatrix,2);
+    scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
     Protein_elution = strcat(num2str(C),'*',Protein.Isoform);
     U1 = triu(Negative2_matrix); %Take half of matrix therefor unique interactions
     [ia,ib] = find(U1 == 1); % protein1, protein2 indices in false negatives
