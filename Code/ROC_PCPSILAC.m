@@ -198,20 +198,45 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Chromatograms = Chromatograms_raw(~Ibad,:);
   
   % Make normalized gaussians
-  x = 0.25:0.25:100;
-  gaussian_fit=zeros(length(H),length(x));
-  for ii = 1:length(H)
-    gaussian_fit(ii,:) = 1*exp(-(x- C(ii)).^2 /2/(W(ii).^2));
+  %   x = 0.25:0.25:100;
+  %   gaussian_fit=zeros(length(H),length(x));
+  %   for ii = 1:length(H)
+  %     gaussian_fit(ii,:) = 1*exp(-(x- C(ii)).^2 /2/(W(ii).^2));
+  %   end
+  
+  % How many Gaussians?
+  I = find(~Ibad);
+  unique_names = Gaus_import_reshaped(I+1,1);
+  X = repmat(unique_names,1,length(unique_names));
+  Ngauss = sum(strcmp(X,X'),1)';
+  clear X unique_names
+  
+  % Co-Apex score = norm(C) / sqrt(length(C))
+  I = find(abs(diff(Ngauss))>0 | Ngauss(2:end)==1);
+  I = [1; I+1];
+  I0 = 0;
+  CoApex = zeros(size(Ngauss));
+  for ii = 1:length(I)
+    I2 = I0+1 : I0 + Ngauss(I(ii));
+    CoApex(I2) = norm(C(I2)) / sqrt(length(I2));
+    I0 = max(I2);
   end
   
-  %Calculate distances
+  % Area under the chromatogram
+  auc = sum(Chromatograms,2);
+  
+  % Calculate distance matrices
   Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));
   Dist.Center = squareform(pdist(C,'euclidean'));
-  Dist.Height = squareform(pdist(H,'euclidean'));
-  Dist.Width = squareform(pdist(W,'euclidean'));
-  Dist.Gaussian_fits = squareform(pdist(gaussian_fit,'euclidean'));
   Dist.R2 = 1 - corr(Chromatograms').^2; % one minus R squared
-  Dist.dtw = ones(size(Dist.R2))*100;
+  Dist.Ngauss = squareform(pdist(Ngauss));
+  Dist.CoApex = squareform(pdist(CoApex));
+  Dist.AUC = squareform(pdist(auc));
+  
+  %Dist.Height = squareform(pdist(H,'euclidean'));
+  %Dist.Width = squareform(pdist(W,'euclidean'));
+  %Dist.Gaussian_fits = squareform(pdist(gaussian_fit,'euclidean'));
+%  Dist.dtw = ones(size(Dist.R2))*100;
 %   for ii = 1:size(Chromatograms,1)
 %     if mod(ii,100)==0;disp(num2str(ii));end
 %     for jj = 1:size(Chromatograms,1)
