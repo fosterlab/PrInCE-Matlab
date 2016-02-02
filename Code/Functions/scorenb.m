@@ -10,8 +10,8 @@ y(y~=1) = -1;
 %data1 = Dist.R2(:); % 1 - R^2
 %data2 = Dist.Euc(:);
 %data3 = Dist.Center(:);
-%X = [Dist.R2(:) Dist.Euc(:) Dist.Center(:) Dist.Ngauss(:) Dist.CoApex(:) Dist.AUC(:)];
-X = [Dist.R2(:) Dist.Euc(:) Dist.CoApex(:) Dist.Center(:) Dist.Ngauss(:) Dist.AUC(:)];
+X = [Dist.R2(:) Dist.Euc(:) Dist.Center(:) Dist.Ngauss(:) Dist.CoApex(:) Dist.AUC(:)];
+%X = [Dist.R2(:) Dist.Euc(:) Dist.CoApex(:) Dist.Ngauss(:) Dist.AUC(:)];
 Nd = size(X,2);
 
 % Soft whiten data
@@ -30,7 +30,7 @@ score = nan(size(X,1),Nmodel);
 feats = nan(Nmodel,size(X,2));
 for iter = 1:Nmodel
   iter
-  % % Make training and testing data
+  % Make training and testing data
   nn = 1000; % length of training data
   % balance training data
   I1 = find(y==1 & I);
@@ -45,7 +45,7 @@ for iter = 1:Nmodel
   
   % Feature selection
   feats(iter,:) = IndFeat(Xtr,ytr);
-  f2consider = find(feats(iter,:) > 5);
+  f2consider = find(feats(iter,:) > 2);
   
   % Fit Naive Bayes model
   nab = fitcnb(Xtr(:,f2consider),ytr);

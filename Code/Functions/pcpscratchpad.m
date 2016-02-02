@@ -476,3 +476,124 @@ for iter = 1:maxIter
   % Combine scores
   scoreMatrix(Ipred,iter) = score(:,2);
 end
+
+
+%% Compare ensemble averaging and voting
+
+disp('Calculating scoreMatrix...')
+[scoreMatrix, feats] = scorenb(Dist,possibleInts,TP_Matrix);
+scoreMatrix = scoreMatrix(possibleInts(:),:);
+
+desiredPrecision = [0.4 0.6 0.8 0.95];
+class = TP_Matrix(possibleInts(:));
+nn = 25;
+Tol = 0.01; % get within 1% of precision
+maxIter = 20; % zoom in 20 times at most
+
+% single model, negative control
+score_neg = scoreMatrix(:,2);
+
+% vote, most extreme wins
+%score_vote = scoreMatrix;
+
+% average 1
+score_avg1 = mean(scoreMatrix(:,1:ceil(size(scoreMatrix,2)/2)),2);
+% average 2
+score_avg2 = mean(scoreMatrix,2);
+
+disp('Calculating precision/recall...')
+scores = {scoreMatrix score_avg1 score_avg2 scoreMatrix(:,1)};
+precSave = cell(size(scores));
+recSave = cell(size(scores));
+scoreSave = cell(size(scores));
+for si = 1:length(scores)
+  si
+  score = scores{si};
+  ds = linspace(min(score(:)),max(score(:)),nn); % start off with coarse search
+
+  xcutoff = nan(size(desiredPrecision));
+  calcprec = zeros(size(xcutoff));
+  calcrec = zeros(size(xcutoff));
+  scoreRange = nan(nn*maxIter*length(desiredPrecision),1);  % Save these for
+  precRange = nan(size(scoreRange));                        % plotting
+  recRange = nan(size(scoreRange));                         % later.
+  for di = 1:length(desiredPrecision)
+    calcTol = 10^10;
+    iter = 0;
+    deltaPrec = 1;
+    prec0 = zeros(nn,1);
+    % Stop zooming in when one of three things happens:
+    % i) you get close enough to the desired precision (within calcTol)
+    % ii) you've been through maxIter iterations
+    % iii) zooming in stops being useful (precision changes by less than deltaPrec b/w iterations)
+    while calcTol>Tol && iter<maxIter && deltaPrec>1e-3
+      iter=iter+1;
+      rec = nan(nn,1);
+      prec = nan(nn,1);
+      for dd =1:length(ds)
+        if si ==1 % vote, i.e. have 2D score
+          pos = sum(score>ds(dd),2) > sum(score<ds(dd),2);
+          TP = sum(pos & class==1);
+          FP = sum(pos & class==0);
+          FN = sum(~pos & class==1);
+        else % average, i.e. 1D score
+          TP = sum(score>ds(dd) & class==1);
+          FP = sum(score>ds(dd) & class==0);
+          FN = sum(score<ds(dd) & class==1);
+        end
+        prec(dd) = TP/(TP+FP);
+        rec(dd) = TP/(TP+FN);
+      end
+      deltaPrec = nanmean(abs(prec - prec0));
+      
+      % Save vectors for plotting
+      i1 = find(isnan(scoreRange),1,'first');
+      I = i1 : i1+nn-1;
+      scoreRange(I) = ds;
+      precRange(I) = prec;
+      recRange(I) = rec;
+      
+      % Calculate how close to desiredPrecision(di) you got
+      [calcTol,I] = min(abs(prec - desiredPrecision(di)));
+      
+      % Zoom in on region of interest
+      i1 = find(prec>desiredPrecision(di));
+      if isempty(i1);
+        mx = max(score(:));
+      else
+        mx = ds(i1(1));
+      end
+      i2 = find(prec<desiredPrecision(di));
+      if isempty(i2);
+        mn = min(score(:));
+      else
+        mn = ds(i2(end));
+      end
+      ds = linspace(mn,mx,nn);
+      prec0 = prec;
+    end
+    xcutoff(di) = ds(I);
+    calcprec(di) = prec(I);
+    calcrec(di) = rec(I);
+  end
+  
+  [scoreRange,I] = sort(scoreRange);
+  precRange = precRange(I);
+  recRange = recRange(I);
+  
+  precSave{si} = precRange;
+  recSave{si} = recRange;
+  scoreSave{si} = scoreRange;
+end
+
+
+figure,hold on
+plot(recSave{1},precSave{1},'r')
+plot(recSave{2},precSave{2},'g')
+plot(recSave{3},precSave{3},'c')
+plot(recSave{4},precSave{4},'k')
+legend('vote','avg1','avg2','neg')
+title(['N = ' num2str(size(scoreMatrix,2)) ' models'])
+set(gca,'xtick',0:.01:0.15)
+axis([0 0.15 0.5 1])
+grid on

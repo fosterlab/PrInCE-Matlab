@@ -7,7 +7,7 @@ spl = 0;
 % fn = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Combined results/Interactions_across_replicate_70pc.csv';
 % dataOld = importdata(fn);
 % dataOld.textdata(1) = [];
-% 
+%
 % % Load in Nick's interactions
 % fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Interactions_across_replicate_70pcb.csv';
 % dataNew = importdata(fn);
@@ -363,30 +363,98 @@ end
 %% Calculate precision/recall for each replicate
 % This is really just a check that they're all at the desired level
 if 0
-for rep = 1:6
-  sf = [datadir2 'Interaction_list_pc70_rep' num2str(rep) '.mat'];
-  load(sf)
-  
-  clear FNBinaryInteractions List_of_final_interactions_Protein I I2
-  for ii = 1:size(BinaryInteractions,1)
-    I(ii) = BinaryInteractions{ii,6};
-    I2(ii) = BinaryInteractions{ii,7};
+  for rep = 1:6
+    sf = [datadir2 'Interaction_list_pc70_rep' num2str(rep) '.mat'];
+    load(sf)
+    
+    clear FNBinaryInteractions List_of_final_interactions_Protein I I2
+    for ii = 1:size(BinaryInteractions,1)
+      I(ii) = BinaryInteractions{ii,6};
+      I2(ii) = BinaryInteractions{ii,7};
+    end
+    TP = sum(I & I2);
+    FP = sum(I & ~I2);
+    prec(rep) = TP/(TP+FP);
+    length(I)
   end
-  TP = sum(I & I2);
-  FP = sum(I & ~I2);
-  prec(rep) = TP/(TP+FP);
-  length(I)
+  figure,hold on
+  bar(prec)
+  x = xlim;
+  plot(x,[0.7 0.7],'--r')
+  xlim(x)
+  ylim([0 1])
+  
+  if spl
+    set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+    graphdir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Figures/Test/';
+    saveas(gcf,[graphdir 'ROC_fig7'],'jpg')
+  end
 end
-figure,hold on
-bar(prec)
-x = xlim;
-plot(x,[0.7 0.7],'--r')
-xlim(x)
-ylim([0 1])
 
-if spl
-  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-  graphdir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Figures/Test/';
-  saveas(gcf,[graphdir 'ROC_fig7'],'jpg')
+
+%% Visualize TP,FP,TN,FN
+
+tp = find(Final_interactions & TP_Matrix & inverse_self);
+fp = find(Final_interactions & ~TP_Matrix & inverse_self);
+tn = find(~Final_interactions & ~TP_Matrix & inverse_self);
+fn = find(~Final_interactions & TP_Matrix & inverse_self);
+a = randsample(length(tp),length(tp));
+tp = tp(a);
+[tp1, tp2] = ind2sub(size(Dist.R2),tp);
+
+a = randsample(length(fp),length(fp));
+fp = fp(a);
+[fp1, fp2] = ind2sub(size(Dist.R2),fp);
+
+a = randsample(length(tn),length(tn));
+tn = tn(a);
+[tn1, tn2] = ind2sub(size(Dist.R2),tn);
+
+a = randsample(length(fn),length(fn));
+fn = fn(a);
+[fn1, fn2] = ind2sub(size(Dist.R2),fn);
+
+figure
+subplot(2,2,1),hold on
+plot(Chromatograms(tp1(1),:),'r')
+plot(Chromatograms(tp2(1),:),'g')
+title('TP')
+subplot(2,2,2),hold on
+plot(Chromatograms(fp1(1),:),'r')
+plot(Chromatograms(fp2(1),:),'g')
+title('FP')
+subplot(2,2,3),hold on
+plot(Chromatograms(fn1(1),:),'r')
+plot(Chromatograms(fn2(1),:),'g')
+title('FN')
+subplot(2,2,4),hold on
+plot(Chromatograms(tn1(1),:),'r')
+plot(Chromatograms(tn2(1),:),'g')
+title('TN')
+
+
+figure
+for ii = 1:8
+  subplot(4,8,ii),hold on
+  plot(Chromatograms(tp1(ii),:),'r')
+  plot(Chromatograms(tp2(ii),:),'g')
+  if ii==1;ylabel('TP');end
+  
+  subplot(4,8,ii+8),hold on
+  plot(Chromatograms(fp1(ii),:),'r')
+  plot(Chromatograms(fp2(ii),:),'g')
+  if ii==1;ylabel('FP');end
+  
+  subplot(4,8,ii+8*2),hold on
+  plot(Chromatograms(fn1(ii),:),'r')
+  plot(Chromatograms(fn2(ii),:),'g')
+  if ii==1;ylabel('FN');end
+  
+  subplot(4,8,ii+8*3),hold on
+  plot(Chromatograms(tn1(ii),:),'r')
+  plot(Chromatograms(tn2(ii),:),'g')
+  if ii==1;ylabel('TN');end
 end
-end
+set(gcf,'units','normalized','position',[.05 .025 .9 .95])
+set(gcf,'paperunits','normalized','paperposition',[.1 .1 .8 .5])
+

@@ -225,6 +225,16 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   % Area under the chromatogram
   auc = sum(Chromatograms,2);
   
+  % Reduce variables from gaussian-level to protein-level
+%   Ireduce = find(abs(diff(Ngauss))>0 | Ngauss(2:end)==1);
+%   Ireduce = [1; Ireduce+1];
+%   Chromatograms = Chromatograms(Ireduce,:);
+%   C = C(Ireduce,:);
+%   Ngauss = Ngauss(Ireduce);
+%   CoApex = CoApex(Ireduce);
+%   auc = auc(Ireduce,:);
+%   Gaus_import_reshaped(2:end,:) = Gaus_import_reshaped(Ireduce+1,:);
+  
   % Calculate distance matrices
   Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));
   Dist.Center = squareform(pdist(C,'euclidean'));
@@ -1271,7 +1281,7 @@ for pri = 1:length(desiredPrecision)
   fprintf('  ...  %.2f seconds\n',tt)
   
   
-  mySound
+  
   % Calculate TP, FP, FN and TN
   tic
   fprintf('       8c. Calculate TP, FP, FN and TN')

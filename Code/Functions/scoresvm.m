@@ -24,10 +24,10 @@ for ii = 1:Nd
 end
 
 
-iterMax = 10;
+iterMax = 15;
 score = nan(size(X,1),iterMax);
 for iter = 1:iterMax
-
+  iter
   % Make training and testing data
   nn = 1000; % length of training data
   % balance training data
