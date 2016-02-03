@@ -34,15 +34,70 @@ xlabel('isotoplogue channels','FontSize', 8);
 
 % Save figure
 Final_Interaction_figure=[figdir1 'Observed_interactions_across_replicates_' mat2str(Precision_values(precision_write_out_counter)) '_precision.png'];
-saveas(f1, Final_Interaction_figure);
+saveas(gcf, Final_Interaction_figure);
 
 
 
-%% Final precision-recall curves
+%% Final precision-recall, ROC curves
+
+figure,hold on
+plot(recRange,precRange)
+xlabel('Recall','fontsize',12)
+ylabel('Precision','fontsize',12)
+for ii = 1:length(desiredPrecision)
+  plot([0 1],[1 1].*desiredPrecision(ii),'--r')
+  plot([1 1].*calcrec(ii),[0 desiredPrecision(ii)],'--k')
+  text(.8,desiredPrecision(ii)+.02,['precision = ' num2str(round(desiredPrecision(ii)*100)) '%'])
+end
+axis([0 1 0 1])
+
+% Save figure
+set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+sf=[figdir1 'Final_PrecisionRecall'];
+saveas(gcf, sf, 'png');
 
 
-% One for each replicate
+figure,hold on
+plot(fprRange,tprRange)
+plot([0 1],[0 1],'--r')
+xlabel('False positive rate, FP/(FP+TN)','fontsize',12)
+ylabel('True positive rate, TP/(TP+FN)','fontsize',12)
+axis([0 1 0 1])
+
+% Save figure
+set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+sf=[figdir1 'Final_ROC'];
+saveas(gcf, sf, 'png');
 
 
-% One for all replicates
 
+%% Histogram of score for class=0, class=1
+
+x = linspace(min(score),max(score),201);
+h1 = hist(score(class==1),x);
+h0 = hist(score(class==0),x);
+
+figure,hold on
+p0 = patch([0 x x(end)],[0 h0/sum(h0) 0],'r');
+p1 = patch([0 x x(end)],[0 h1/sum(h1) 0],'g');
+ax = axis;
+for ii = 1:length(desiredPrecision)
+  plot([1 1].*xcutoff(ii),[ax(3) ax(4)],'--r')
+  h = text(xcutoff(ii)-diff(ax(1:2))*.02,ax(3)+diff(ax(3:4))*.75,...
+    ['precision = ' num2str(round(desiredPrecision(ii)*100)) '%']);
+  set(h, 'rotation', 90)
+end
+axis(ax)
+p0.FaceAlpha = 0.4;
+p1.FaceAlpha = 0.4;
+grid on
+hl = legend('Known non-interaction','Known interaction','location','northwest');
+set(hl,'fontsize',12)
+xlabel('Interaction score','fontsize',12)
+ylabel('Count','fontsize',12)
+title('Histogram of interaction scores for protein pairs in CORUM','fontsize',12) 
+
+% Save figure
+set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+sf=[figdir1 'ScoreHistogram'];
+saveas(gcf, sf, 'png');

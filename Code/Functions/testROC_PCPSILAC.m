@@ -14,7 +14,8 @@ spl = 0;
 % dataNew.textdata(1) = [];
 
 % Load in New interactions
-fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Final_Interactions_list_70_precisionb.csv';
+%fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Final_Interactions_list_70_precisionb.csv';
+fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Final_Interactions_list_47_precisionb.csv';
 dataNew.data = zeros(20000,8);
 dataNew.text = cell(20000,3);
 j = 0;
@@ -241,6 +242,13 @@ subplot(2,1,2),hold on
 scatter(Precold(:,1),Precold(:,2),'g','filled')
 scatter(Precnew(:,1),Precnew(:,2),'r','filled')
 
+if spl
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+  graphdir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Figures/Test/';
+  saveas(gcf,[graphdir 'ROC_fig3'],'jpg')
+end
+
+
 Precold = zeros(6,2);
 Precnew = zeros(6,2);
 for ii=1:6
@@ -256,13 +264,6 @@ for ii=1:6
   Precnew(ii,1) = TP/(TP+FP);
   Precnew(ii,2) = TP+FP;
 end
-
-if spl
-  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-  graphdir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Figures/Test/';
-  saveas(gcf,[graphdir 'ROC_fig3'],'jpg')
-end
-
 
 figure
 subplot(2,1,1),hold on
@@ -330,7 +331,7 @@ legend('FP','TP','New')
 grid on
 ylabel('Count')
 title('Number of interactions found in at least N replicates')
-set(gca,'xtick',1:6,'xticklabel',{'1' '>=2' '>=3' '>=4' '>=5' '6'})
+set(gca,'xtick',1:6,'xticklabel',{'>=1' '>=2' '>=3' '>=4' '>=5' '6'})
 
 subplot(2,1,2),hold on
 B1 = bar(x-0.125,a,0.25,'stacked');
@@ -351,7 +352,7 @@ legend('FP','TP','New')
 grid on
 xlabel('Number of replicates')
 ylabel('Count')
-set(gca,'xtick',1:6,'xticklabel',{'1' '>=2' '>=3' '>=4' '>=5' '6'})
+set(gca,'xtick',1:6,'xticklabel',{'>=1' '>=2' '>=3' '>=4' '>=5' '6'})
 
 if spl
   set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
@@ -400,19 +401,19 @@ tn = find(~Final_interactions & ~TP_Matrix & inverse_self);
 fn = find(~Final_interactions & TP_Matrix & inverse_self);
 a = randsample(length(tp),length(tp));
 tp = tp(a);
-[tp1, tp2] = ind2sub(size(Dist.R2),tp);
+[tp1, tp2] = ind2sub(size(TP_Matrix),tp);
 
 a = randsample(length(fp),length(fp));
 fp = fp(a);
-[fp1, fp2] = ind2sub(size(Dist.R2),fp);
+[fp1, fp2] = ind2sub(size(TP_Matrix),fp);
 
 a = randsample(length(tn),length(tn));
 tn = tn(a);
-[tn1, tn2] = ind2sub(size(Dist.R2),tn);
+[tn1, tn2] = ind2sub(size(TP_Matrix),tn);
 
 a = randsample(length(fn),length(fn));
 fn = fn(a);
-[fn1, fn2] = ind2sub(size(Dist.R2),fn);
+[fn1, fn2] = ind2sub(size(TP_Matrix),fn);
 
 figure
 subplot(2,2,1),hold on
@@ -457,4 +458,9 @@ for ii = 1:8
 end
 set(gcf,'units','normalized','position',[.05 .025 .9 .95])
 set(gcf,'paperunits','normalized','paperposition',[.1 .1 .8 .5])
+
+
+
+%% 
+
 

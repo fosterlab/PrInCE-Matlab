@@ -597,3 +597,18 @@ title(['N = ' num2str(size(scoreMatrix,2)) ' models'])
 set(gca,'xtick',0:.01:0.15)
 axis([0 0.15 0.5 1])
 grid on
+
+
+%% Is voting the same thing as taking the median score?
+% Answer: Yes!!
+
+a = rand(1000,15);
+amed = median(a,2);
+ds = linspace(0,1,101);
+for di = 1:length(ds)
+  svote(di) = sum(sum(a>ds(di),2) > sum(a<ds(di),2));
+  smed(di) = sum(amed>ds(di));
+end
+figure,hold on
+plot(ds,svote,'r')
+plot(ds,smed+10,'g')
