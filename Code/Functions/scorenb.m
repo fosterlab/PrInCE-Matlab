@@ -7,10 +7,7 @@ labels = TP_Matrix(:);
 y = labels(:);
 y(y>0) = 1;
 y(y~=1) = -1;
-%data1 = Dist.R2(:); % 1 - R^2
-%data2 = Dist.Euc(:);
-%data3 = Dist.Center(:);
-X = [Dist.R2(:) Dist.Euc(:) Dist.Center(:) Dist.Ngauss(:) Dist.CoApex(:) Dist.AUC(:)];
+X = [Dist.R2(:) Dist.Euc(:) Dist.Center(:) Dist.Ngauss(:) Dist.CoApex(:) Dist.AUC(:)];% Dist.RawOverlap(:) Dist.R2raw(:)];
 %X = [Dist.R2(:) Dist.Euc(:) Dist.CoApex(:) Dist.Ngauss(:) Dist.AUC(:)];
 Nd = size(X,2);
 
