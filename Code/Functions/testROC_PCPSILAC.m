@@ -16,7 +16,7 @@ spl = 0;
 % Load in New interactions
 %fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Final_Interactions_list_70_precisionb.csv';
 fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Final_Interactions_list_47_precisionb.csv';
-dataNew.data = zeros(20000,8);
+dataNew.data = zeros(20000,9);
 dataNew.text = cell(20000,3);
 j = 0;
 fid = fopen(fn,'r');
@@ -31,6 +31,7 @@ while 1
   for ii=1:6
     dataNew.data(j,2+ii) = ismember(num2str(ii),t1{6}); % interaction in corum?
   end
+  dataNew.data(j,9) = str2num(t1{14});
   dataNew.text{j,1} = t1{1};
   dataNew.text{j,2} = t1{2};
   dataNew.text{j,3} = t1{3};
@@ -461,6 +462,20 @@ set(gcf,'paperunits','normalized','paperposition',[.1 .1 .8 .5])
 
 
 
-%% 
+%% Visually check a few interactions
+
+replicate_counter = 5;
+sf = [datadir2 'score_rep' num2str(replicate_counter) '.mat'];
+load(sf)
+scoreMatrix = reshape(scoreMatrix,length(Protein.Center),length(Protein.Center));
+
+prot1i = find(strcmp(Protein.Isoform,'O43660-2'));
+prot2i = find(strcmp(Protein.Isoform,'P36578'));
+
+figure,hold on
+plot(Chromatograms(prot1i(1),:))
+plot(Chromatograms(prot2i(1),:))
+title(['Score = ' num2str(scoreMatrix(prot1i(1),prot2i(1)))])
+xlim([0 65])
 
 

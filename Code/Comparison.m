@@ -22,10 +22,6 @@
 %
 %
 %%%%%%%%%%%%%%% Small changes:
-% 1. Make all file references and directories absolute. Remove 'cd'. Make this directory-independent!
-% 2. Removed the section for Alignment_binary==0. This just adds 5 nans to either side... but this
-%    is already done by cleanChromatograms.m in GaussBuild. Don't need it here.
-% 3. Removed the missing value imputation. We're already using cleaned chromatograms!
 % 4. Replace Adjusted_HvsL_Raw_data_maxquant_modified.xlsx with Adjusted_HvsL_Raw_data_maxquant.csv
 % 5. Turn variables like Gaus_MvsL into matrices. Remove the top header.
 % 6. Make section 10 (ttest + mwwtest) handle replicates better. Automate.
@@ -34,7 +30,6 @@
 %
 %
 %%%%%%%%%%%%%%% Big changes:
-% 1. Make the code able to handle any number of replicates. Automation!
 %
 %
 %%%%%%%%%%%%%%% Questions:
@@ -51,6 +46,20 @@
 % 6. What happens to a Gaussian that's only in one replicate?
 
 
+% AUTOMATION
+% - Correct for 5 leading nans. Do this dynamically (not just "+5")
+% S2. MvsL_Gaussians -> Gaussians{1}, HvsL_Gaussians -> Gaussians{2}
+% S3. Total rewrite. This whole section needs to be automated... I think it's just looking for
+%     overlapping proteins between the comparison pairs.
+% S4. Remove reference to HvsM, replace with {2}/{1}. Confirm that HvsM = HvsL/MvsL.
+% S5. Almost no change.
+% S6. I think this one's easy. Two big chunks for 'HvsL' and 'MvsL', turn them into a loop.
+% S7. Lots to do here. Many variables to change. Need replicate and channel loops.
+% S8. This one's easy! Loops over Master Gaussian List, i.e. not replicate or channel. Might not
+%     need to change anything.
+% S9. 
+
+
 disp('Comparison.m')
 tic
 
@@ -58,14 +67,46 @@ tic
 %% 0. Initialize
 fprintf('\n    0. Initialize')
 
+
+% Load user settings
+maindir = user.maindir;
+User_Window = user.userwindow;
+Experimental_channels = user.silacratios;
+User_alignment_window1 = user.userwindow; % User defined window to consider Guassian the same
+
+
+% Define folders, i.e. define where everything lives.
+codedir = [maindir 'Code/']; % where this script lives
+funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
+datadir = [maindir 'Data/']; % where data files live
+datadir1 = [datadir 'Comparison/']; % where data files live
+datadir2 = [datadir 'Comparison/forROC/']; % where data files live
+datadir3 = [datadir 'Alignment/']; % where data files live
+figdir1 = [maindir 'Figures/Comparison/']; % where figures live
+figdir2 = [maindir 'Figures/Comparison/ProteinGaussianMaps/']; % where figures live
+% Make folders if necessary
+if ~exist(codedir, 'dir'); mkdir(codedir); end
+if ~exist(funcdir, 'dir'); mkdir(funcdir); end
+if ~exist(datadir, 'dir'); mkdir(datadir); end
+if ~exist(datadir1, 'dir'); mkdir(datadir1); end
+if ~exist(datadir2, 'dir'); mkdir(datadir2); end
+if ~exist(figdir1, 'dir'); mkdir(figdir1); end
+if ~exist(figdir2, 'dir'); mkdir(figdir2); end
+
+% List all input files. These contain data that will be read by this script.
+InputFile{1}=[datadir 'Adjusted_MvsL_Raw_data_maxquant_modified.xlsx']; % from Alignment
+InputFile{2}=[datadir 'Adjusted_HvsL_Raw_data_maxquant_modified.xlsx']; % from Alignment
+InputFile{3}=[datadir 'Adjusted_HvsM_Raw_data_maxquant_modified.xlsx']; % from Alignment
+InputFile{4}=[datadir 'Alignment/Adjusted_MvsL_Combined_OutputGaus.csv']; % from Alignment
+InputFile{5}=[datadir 'Alignment/Adjusted_HvsL_Combined_OutputGaus.csv']; % from Alignment
+
 % User defined variables
 replicate_num=3; %Number of replicates to compare
 position_fraction1=6; %Denote the position of the first fraction in fraction_to_plot of aligned samples
 fraction_to_plot=55; %For figure define fraction to plot and to considered, all Gaussian under this value will be ignored
 %Compare the Areas of the Gaussian curves to use for downstream analysis
 Diltuion_factor_master_mix=0.70; %Define the precentage of standard mixed into samples
-User_Window=2; %User defined window to consider Guassian the same
-SILAC_ratio_combinations={'MvsL','HvsL','HvsM'};
+%SILAC_ratio_combinations={'MvsL','HvsL','HvsM'};
 
 
 % Plotting variables
@@ -87,38 +128,12 @@ colour_to_use=[0.254 0.411 0.882 %Colour: Royal Blue
   219/255 112/255 147/255]; %Colour: Pale Violet Red
 
 
-% Define folders, i.e. define where everything lives.
-maindir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/'; % where everything lives
-codedir = [maindir 'Code/']; % where this script lives
-funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
-datadir = [maindir 'Data/']; % where data files live
-datadir1 = [datadir 'Comparison/']; % where data files live
-datadir2 = [datadir 'Comparison/forROC/']; % where data files live
-figdir1 = [maindir 'Figures/Comparison/']; % where figures live
-figdir2 = [maindir 'Figures/Comparison/ProteinGaussianMaps/']; % where figures live
-% Make folders if necessary
-if ~exist(codedir, 'dir'); mkdir(codedir); end
-if ~exist(funcdir, 'dir'); mkdir(funcdir); end
-if ~exist(datadir, 'dir'); mkdir(datadir); end
-if ~exist(datadir1, 'dir'); mkdir(datadir1); end
-if ~exist(datadir2, 'dir'); mkdir(datadir2); end
-if ~exist(figdir1, 'dir'); mkdir(figdir1); end
-if ~exist(figdir2, 'dir'); mkdir(figdir2); end
-
-% List all input files. These contain data that will be read by this script.
-InputFile{1}=[datadir 'Adjusted_MvsL_Raw_data_maxquant_modified.xlsx']; % from Alignment
-InputFile{2}=[datadir 'Adjusted_HvsL_Raw_data_maxquant_modified.xlsx']; % from Alignment
-InputFile{3}=[datadir 'Adjusted_HvsM_Raw_data_maxquant_modified.xlsx']; % from Alignment
-InputFile{4}=[datadir 'Alignment/Adjusted_MvsL_Combined_OutputGaus.csv']; % from Alignment
-InputFile{5}=[datadir 'Alignment/Adjusted_HvsL_Combined_OutputGaus.csv']; % from Alignment
-
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
 %% 1. Read input
 fprintf('    1. Read input')
-
 
 % Import data from input files
 [num_val_MvsL,txt_MvsL] = xlsread(InputFile{1}); %Import file aligned output, NB 1st column is replicate
@@ -235,7 +250,6 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 %% 2. Make HvsL_Gaussians, MvsL_Gaussians structures
 fprintf('    2. Make HvsL_Gaussians, MvsL_Gaussians structures')
-
 
 %Varible related to gaussians
 unique_MvsL_guassians=unique(Gaus_MvsL(2:Gaussian_number_MvsL+1,2));
@@ -636,7 +650,6 @@ for guassian_counter2 = 1:Dimension_of_array(1)
     col_check = nnz(Centres_HvsL_protein);
     ready = (row_check == 0 && col_check == 0);
   end
-  
 end
 
 %Total number of Gaussians
@@ -1134,10 +1147,10 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 
-%% 6. Shared gaussian across replicate.
+%% 6. Create Gaussian Master List, combinining replicates.
 % Comparsion 3 Part A:  Determine which Gaussians are shared across replicates
 % Aim: determined gaussians which are shared
-fprintf('    6. Shared gaussian across replicate (BETWEEN REPLICATES)')
+fprintf('    6. Create Gaussian Master List, combinining replicates.')
 
 
 %Create array of master gaussian list
@@ -2502,9 +2515,9 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 
-%% 9. Use mwwtest and ttest to determine if complexes change
-fprintf('    9. Use mwwtest and ttest to determine if complexes change (BETWEEN REPLICATES)')
 
+%% 8. Use mwwtest and ttest to determine if complexes change
+fprintf('    8. Use mwwtest and ttest to determine if complexes change (BETWEEN REPLICATES)')
 
 %Count the number of unique gaussian detected
 Unique_final_gaussian_counter=0;
@@ -2830,8 +2843,8 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 
-%% 10. Determine the coverage (number of datapoint observed) for reach protein of each replicate
-fprintf('    10. Determine the coverage (number of datapoint observed) (BETWEEN REPLICATES)')
+%% 9. Determine the coverage (number of datapoint observed) for reach protein of each replicate
+fprintf('    9. Determine the coverage (number of datapoint observed) (BETWEEN REPLICATES)')
 
 %Determine size of values to caliculate percentage
 size_of_num_val_MvsL_for_figures=size(num_val_MvsL_for_figures);
@@ -3493,10 +3506,10 @@ fprintf('    12. Make figures')
 %Figure showing changes in response to treatment
 
 %Graph data as log2 scatter
-f5=figure;
+figure
 log2_sorted=sort(normaliased_log_2_fold_comparsion_of_gaussian(:));
-f5=subplot(2,1,1)
-P4 =scatter([1:Total_number_of_unique_gaussians],log2_sorted(:),8,'fill');
+f5=subplot(2,1,1);
+P4 =scatter(1:Total_number_of_unique_gaussians,log2_sorted(:),8,'fill');
 title('Log2 changes between replicate: BN-PAGE Mitochondira Fas treated','FontSize', 10);
 ylabel('Normalised Log2 ratio','FontSize', 10);
 xlabel('Gaussians identified','FontSize', 10);

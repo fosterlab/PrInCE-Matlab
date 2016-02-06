@@ -30,13 +30,20 @@ disp('Gauss_Build.m')
 tic
 fprintf('\n    0. Initialize')
 
-% User defined variables
-MaxIter = 5;                          % Number of iterations in holdout analysis
-experimental_channels = {'MvsL' 'HvsL'};
+
+% Load user settings
+maindir = user.maindir;
+experimental_channels = user.silacratios;
+InputFile{1} = user.MQfiles{1};
+InputFile{2} = user.MQfiles{2};
+InputFile{3} = user.calfile;
+
+
 Nchannels = length(experimental_channels);
 
 % Define folders, i.e. define where everything lives.
-maindir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/'; % where everything lives
+%maindir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/'; % where everything lives
+%maindir = '/Users/Mercy/Academics/Foster/Jenny_PCPSILAC/PCPSILAC_Analysis/'; % where everything lives
 codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
 datadir0 = [maindir 'Data/']; % where data files live
@@ -55,10 +62,6 @@ if ~exist(datadir3, 'dir'); mkdir(datadir3); end
 if ~exist(datadir4, 'dir'); mkdir(datadir4); end
 
 
-% List all input files. These contain data that will be read by this script.
-InputFile{1} = [datadir0 'Combined_replicates_2014_04_22_contaminates_removed_for_MvsL_scripts.xlsx'];
-InputFile{2} = [datadir0 'Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.xlsx'];
-InputFile{3} = [datadir0 'SEC_alignment.xlsx'];
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
@@ -101,8 +104,8 @@ fprintf('\n    2. Clean the chromatograms')
 
 % store all clean chromatograms in cleandata
 cleandata = cell(size(rawdata));
-Xraw = (1:55)';
-Xclean = (1:65)' - 5;
+Xraw = (1:Nfractions)';
+Xclean = (1:Nfractions+10)' - 5;
 
 % a couple of housekeeping variables
 tmp1 = cell(size(rawdata));
@@ -173,9 +176,11 @@ for ci = 1:Nchannels % loop over channels
   end
 end
 
-% make protgausI{ci}, where each row is for a Gaussian: [protein number, gaussian number, replicate number]
-protgausI = cell(Nchannels,1); % just an indexing variable. matches up gaussians to protein number
-for ci = 1:Nchannels % loop over channels
+% Make protgausI{ci}, where each row is for a Gaussian: [protein number, gaussian number, replicate number]
+% It's just an indexing variable, that matches up gaussians to protein number.
+protgausI = cell(Nchannels,1); 
+Ngauss = zeros(Nchannels,1);
+for ci = 1:Nchannels
   protgausI{ci} = zeros(100,3);
   gausscount = 0;
   for ri = 1:Nproteins % loop over proteins
@@ -189,6 +194,7 @@ for ci = 1:Nchannels % loop over channels
       end
     end
   end
+  Ngauss(ci) = gausscount;
 end
 
 tt = toc;

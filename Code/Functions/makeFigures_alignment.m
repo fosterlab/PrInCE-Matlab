@@ -52,33 +52,37 @@ saveas(Image, Image_name)
 
 
 
-%% Divergence histogram
+%% Divergence histograms
 
 raw_bin_values=1:50;
 
 for ci = 1:Number_of_experimental_channels
   figure
   
-  subplot(2,2,1)
-  raw_divergent=abs(Delta_height{ci,1,2})+abs(Delta_width{ci,1,2})+abs(Delta_center{ci,1,2});
-  hist(raw_divergent,raw_bin_values)
-  title('Divergence between rep1 and rep2')
-  xlabel('Divergence');
-  ylabel('Number of identifications');
+  for ii = 1:Nreplicates
+    subplot(Nreplicates,1,ii)
+    raw_divergent=abs(Delta_height{ci,replicate_to_align_against(ci),ii}) ...
+      + abs(Delta_width{ci,replicate_to_align_against(ci),ii})...
+      + abs(Delta_center{ci,replicate_to_align_against(ci),ii});
+    hist(raw_divergent,raw_bin_values)
+    title('Divergence between rep1 and rep2')
+    xlabel('Divergence');
+    ylabel('Number of identifications');
+  end
   
-  subplot(2,2,2)
-  raw_divergent=abs(Delta_height{ci,1,3})+abs(Delta_width{ci,1,3})+abs(Delta_center{ci,1,3});
-  hist(raw_divergent,raw_bin_values)
-  title('Divergence between rep1 and rep2')
-  xlabel('Divergence');
-  ylabel('Number of identifications');
-  
-  subplot(2,2,3)
-  raw_divergent=abs(Delta_height{ci,3,2})+abs(Delta_width{ci,3,2})+abs(Delta_center{ci,3,2});
-  hist(raw_divergent,raw_bin_values)
-  title('Divergence between rep1 and rep2')
-  xlabel('Divergence');
-  ylabel('Number of identifications');
+  %   subplot(2,2,2)
+  %   raw_divergent=abs(Delta_height{ci,1,3})+abs(Delta_width{ci,1,3})+abs(Delta_center{ci,1,3});
+  %   hist(raw_divergent,raw_bin_values)
+  %   title('Divergence between rep1 and rep2')
+  %   xlabel('Divergence');
+  %   ylabel('Number of identifications');
+  %
+  %   subplot(2,2,3)
+  %   raw_divergent=abs(Delta_height{ci,3,2})+abs(Delta_width{ci,3,2})+abs(Delta_center{ci,3,2});
+  %   hist(raw_divergent,raw_bin_values)
+  %   title('Divergence between rep1 and rep2')
+  %   xlabel('Divergence');
+  %   ylabel('Number of identifications');
   
   Image_name=[figdir1 'DivergenceHist_between_replicates' Experimental_channels{ci} '.png'];
   saveas(gcf, Image_name, 'png');
@@ -88,7 +92,10 @@ end
 
 %% Delta_C, _H, _W, _Euc histogram
 
-comparisons = [1 2; 1 3; 2 3];
+comparisons = nan(Nreplicates,2);
+for ii = 1:Nreplicates
+  comparisons(ii,:) = [replicate_to_align_against(ci) ii];
+end
 
 for ci = 1:Number_of_experimental_channels
   for rr = 1:size(comparisons,1)
@@ -152,44 +159,45 @@ for ci = 1:Number_of_experimental_channels
   figure
   RR = replicate_to_align_against(ci);
   
-  ri = 1;
-  subplot(3,1,ri),hold on
-  plot([0 55],[0 55],'--r')
-  overlap = intersect(summerised_names_G1{ci,ri},summerised_names_G1{ci,RR});
-  overlap([1 2]) = [];
-  Ia = find(ismember(Gaus_import{ci,ri}.textdata(:,4),overlap));
-  Ib = find(ismember(Gaus_import{ci,RR}.textdata(:,4),overlap));
-  x = Gaus_import{ci,ri}.data(Ia-1,2);
-  y = Gaus_import{ci,RR}.data(Ib-1,2);
-  scatter(x,y,20,abs(x-y),'filled')
-  xlabel('replicate 1')
-  ylabel('alignment replicate')
+  for ri = 1:Nreplicates
+    subplot(Nreplicates,1,ri),hold on
+    plot([0 55],[0 55],'--r')
+    overlap = intersect(summerised_names_G1{ci,ri},summerised_names_G1{ci,RR});
+    overlap([1 2]) = [];
+    Ia = find(ismember(Gaus_import{ci,ri}.textdata(:,4),overlap));
+    Ib = find(ismember(Gaus_import{ci,RR}.textdata(:,4),overlap));
+    x = Gaus_import{ci,ri}.data(Ia-1,2);
+    y = Gaus_import{ci,RR}.data(Ib-1,2);
+    scatter(x,y,20,abs(x-y),'filled')
+    xlabel('replicate 1')
+    ylabel('alignment replicate')
+  end
   
-  ri = 2;
-  subplot(3,1,ri),hold on
-  plot([0 55],[0 55],'--r')
-  overlap = intersect(summerised_names_G1{ci,ri},summerised_names_G1{ci,RR});
-  overlap([1 2]) = [];
-  Ia = find(ismember(Gaus_import{ci,ri}.textdata(:,4),overlap));
-  Ib = find(ismember(Gaus_import{ci,RR}.textdata(:,4),overlap));
-  x = Gaus_import{ci,ri}.data(Ia-1,2);
-  y = Gaus_import{ci,RR}.data(Ib-1,2);
-  scatter(x,y,20,abs(x-y),'filled')
-  xlabel('replicate 2')
-  ylabel('alignment replicate')
-  
-  ri = 3;
-  subplot(3,1,ri),hold on
-  plot([0 55],[0 55],'--r')
-  overlap = intersect(summerised_names_G1{ci,ri},summerised_names_G1{ci,RR});
-  overlap([1 2]) = [];
-  Ia = find(ismember(Gaus_import{ci,ri}.textdata(:,4),overlap));
-  Ib = find(ismember(Gaus_import{ci,RR}.textdata(:,4),overlap));
-  x = Gaus_import{ci,ri}.data(Ia-1,2);
-  y = Gaus_import{ci,RR}.data(Ib-1,2);
-  scatter(x,y,20,abs(x-y),'filled')
-  xlabel('replicate 3')
-  ylabel('alignment replicate')
+  %   ri = 2;
+  %   subplot(3,1,ri),hold on
+  %   plot([0 55],[0 55],'--r')
+  %   overlap = intersect(summerised_names_G1{ci,ri},summerised_names_G1{ci,RR});
+  %   overlap([1 2]) = [];
+  %   Ia = find(ismember(Gaus_import{ci,ri}.textdata(:,4),overlap));
+  %   Ib = find(ismember(Gaus_import{ci,RR}.textdata(:,4),overlap));
+  %   x = Gaus_import{ci,ri}.data(Ia-1,2);
+  %   y = Gaus_import{ci,RR}.data(Ib-1,2);
+  %   scatter(x,y,20,abs(x-y),'filled')
+  %   xlabel('replicate 2')
+  %   ylabel('alignment replicate')
+  %
+  %   ri = 3;
+  %   subplot(3,1,ri),hold on
+  %   plot([0 55],[0 55],'--r')
+  %   overlap = intersect(summerised_names_G1{ci,ri},summerised_names_G1{ci,RR});
+  %   overlap([1 2]) = [];
+  %   Ia = find(ismember(Gaus_import{ci,ri}.textdata(:,4),overlap));
+  %   Ib = find(ismember(Gaus_import{ci,RR}.textdata(:,4),overlap));
+  %   x = Gaus_import{ci,ri}.data(Ia-1,2);
+  %   y = Gaus_import{ci,RR}.data(Ib-1,2);
+  %   scatter(x,y,20,abs(x-y),'filled')
+  %   xlabel('replicate 3')
+  %   ylabel('alignment replicate')
   
   Image_name=[figdir1 'Scatter_allreps_' Experimental_channels{ci} '.png'];
   saveas(gcf, Image_name, 'png');

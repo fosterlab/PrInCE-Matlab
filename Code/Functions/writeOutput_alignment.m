@@ -1,8 +1,3 @@
-function writeOutput_alignment(Experimental_channels,Nreplicates,...
-  datadir1,...
-  replicates,cleandata,txt_MvsL,txt_HvsL,txt_HvsM,Gaus_import,Summary_gausian_infomration,...
-  Adjusted_Gaus_import,adjusted_raw_data)
-
 % Handles all the output writing of Alignment.m
 %
 % Makes these files:
@@ -18,9 +13,9 @@ function writeOutput_alignment(Experimental_channels,Nreplicates,...
 % Made by Greg Stacey on Nov 25 2015.
 
 
-New_Fraction_numbering = -5:60;
+New_Fraction_numbering = -5:fraction_number+5;
 lenght_new_fraction = length(New_Fraction_numbering);
-protnames = {txt_MvsL, txt_HvsL, txt_HvsM};
+
 
 
 %%        'Adjusted_',Experimental_channel,'_Raw_data_maxquant_rep',mat2str(alignment_counter),'.csv'
@@ -68,7 +63,7 @@ for ci = 1:length(Experimental_channels)
       %find location of protein to write out
       location_Protein_in_Raw = ind2sub(length(Summary_gausian_infomration{ci,rr}.textdata(:,2)),...
         strmatch(Gaus_import{ci,rr}.textdata(Roc_counter+1,4),Summary_gausian_infomration{ci,rr}.textdata(:,2),'exact'));
-      locations_of_protein_data(Roc_counter) = location_Protein_in_Raw;
+      locations_of_protein_data(Roc_counter) = location_Protein_in_Raw(1);
     end
     
     fid9B_Name = [datadir1 'Adjusted_' Experimental_channel '_Raw_for_ROC_analysis_rep' mat2str(rr) '.csv'];
@@ -104,7 +99,7 @@ for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
   for rr = 1:Nreplicates
     
-    fid7_Name = [datadir1 Experimental_channel 'Adjusted_Combined_OutputGaus_rep' mat2str(rr) '.csv'];
+    fid7_Name = [datadir1  'Adjusted_Combined_OutputGaus_' Experimental_channel '_rep' mat2str(rr) '.csv'];
     fid7 = fopen(fid7_Name,'at');
     fprintf (fid7,'%s,%s,%s,%s,%s,%s,%s\n',...
       'Protein name', 'Height', 'Center','Width','SSE','adjrsquare', 'Complex Size');  %Write Header
@@ -152,15 +147,16 @@ disp('        Adjusted_*vsL_Raw_data_maxquant.csv')
 for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
   
-  fid11_Name = [datadir1 'Adjusted_' Experimental_channel '_Raw_data_maxquant.csv'];
+  fid11_Name = [datadir1 'Adjusted_' Experimental_channel '_Raw_data_maxquantb.csv'];
   fid11 = fopen(fid11_Name,'at');
   %fprintf (fid11,[Column_header, '\n'], Title_import2{:});  %Write Header
   % protein name, replicate, data(:)
+  fprintf(fid11,'%s,%s,%s\n','Protein name','Replicate','Ratios');
   
-  for combined_gaus_writeout = 2:size(adjusted_raw_data{ci},1)
-    fprintf(fid11, '%s,',  protnames{ci}{combined_gaus_writeout,1});
-    fprintf(fid11, '%6f,', replicates(combined_gaus_writeout));
-    fprintf(fid11, '%f,',  adjusted_raw_data{ci}(combined_gaus_writeout,:));
+  for ii = 1:size(adjusted_raw_data{ci},1)
+    fprintf(fid11, '%s,',  protnames{ci}{ii+1,1});
+    fprintf(fid11, '%6f,', replicates(ii));
+    fprintf(fid11, '%f,',  adjusted_raw_data{ci}(ii,:));
     fprintf(fid11,'\n');
   end
   fclose(fid11);

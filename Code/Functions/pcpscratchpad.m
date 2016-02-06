@@ -209,273 +209,6 @@ set(gcf,'units','normalized','position',[.1 .1 .8 .6])
 
 
 
-%% Try out DTW matrix
-% Make Dist.DTW using a subset of proteins.
-% Goal: 1000 interactions, 1000 non-interactions, run time <300s
-
-clear nint
-for oi = 1:size(TP_Matrix,1)-201
-  pri = (1:180) + oi;
-  I = inverse_self(pri,pri) & Int_matrix(pri,pri);
-  tpm = TP_Matrix(pri,pri);
-  nint(oi) = sum(tpm(:));
-end
-[~,offs] = max(nint);
-pri = (1:180) + offs;
-I = inverse_self(pri,pri) & Int_matrix(pri,pri);
-tpm = TP_Matrix(pri,pri);
-Nint = sum(tpm(:));
-runhat = 0.007 * numel(I);
-disp(['Number of interactions: ' num2str(Nint) ', Estimated run time: ' num2str(runhat) 's'])
-labels = tpm(I(:));
-y = labels(:);
-y(y>0) = 1;
-y(y~=1) = -1;
-
-
-Dist2.Euc = Dist.Euc(pri,pri);
-Dist2.Center = Dist.Center(pri,pri);
-Dist2.R2 = Dist.R2(pri,pri); % one minus R squared
-Dist2.dtw = ones(length(pri),length(pri));
-for ii = 1:length(pri)
-  if mod(ii,10)==0;disp(num2str(ii));end
-  i1 = pri(ii);
-  for jj = 1:length(pri)
-    j1 = pri(jj);
-    Dist2.dtw(ii,jj) = dtw_old(Chromatograms(i1,:),Chromatograms(j1,:));
-  end
-end
-
-
-
-data1 = Dist2.R2(I(:)); % 1 - R^2
-data2 = Dist2.Euc(I(:));
-data3 = Dist2.Center(I(:));
-data4 = Dist2.dtw(I(:));
-X = [data1 data2 data3 data4];
-Nd = size(X,2);
-
-if 1
-  % Soft whiten data
-  eps = 2e-16;
-  wmu = zeros(Nd,1);
-  wstd = zeros(Nd,1);
-  for ii = 1:Nd
-    wmu(ii) = mean(X(:,ii));
-    wstd(ii) = std(X(:,ii));
-    X(:,ii) = (X(:,ii) - wmu(ii)) / 2 / (wstd(ii) + eps);
-  end
-else
-  % Hard whiten data
-  eps = 2e-16;
-  mm = zeros(Nd,1);
-  mn = zeros(Nd,1);
-  mx = zeros(Nd,1);
-  for jj = 1:Nd
-    mm(jj) = mean(X(:,jj));
-    mn(jj) = min(X(:,jj));
-    mx(jj) = max(X(:,jj));
-    X(:,jj) = (X(:,jj) - mm(jj)) / (mx(jj) - mn(jj));
-  end
-end
-
-% Make training and testing data
-% balance training data
-nn = 1000;
-I1 = find(y==1);
-I1 = I1(randsample(length(I1),nn/2));
-I0 = find(y==-1);
-I0 = I0(randsample(length(I0),nn/2));
-Itrain = ismember(1:length(y),[I1;I0]);
-Ipred = ~Itrain;
-Xtr = X(Itrain,:);
-ytr = y(Itrain);
-Xnew = X(Ipred,:);
-ynew = y(Ipred);
-%
-% % weight features by F-ratio
-% ww = IndFeat(X,y);
-% for jj = 1:Nd
-%   X(:,jj) = X(:,jj) * ww(jj);
-% end
-
-% Fit models on just [R2]
-% Fit svm model
-svm = fitcsvm(Xtr(:,1),ytr);
-[~,score_svm] = predict(svm,Xnew(:,1));
-[precision_svm1,recall_svm1,~,pav1] = perfcurve(ynew,score_svm(:,2),1,'xcrit','prec');
-[fpr_svm1,tpr_svm1,~,av1] = perfcurve(ynew,score_svm(:,2),1);
-% Fit naive bayes model
-nab = fitcnb(Xtr(:,1),ytr);
-[~,score_nb] = predict(nab,Xnew(:,1));
-[precision_nb1,recall_nb1,~,pab1] = perfcurve(ynew,score_nb(:,2),1,'xcrit','prec');
-[fpr_nb1,tpr_nb1,~,ab1] = perfcurve(ynew,score_nb(:,2),1);
-
-% Fit models on [R2 Euc C DTW]
-% Fit svm model
-svm = fitcsvm(Xtr,ytr);
-[~,score_svm] = predict(svm,Xnew);
-[precision_svm2,recall_svm2,~,pav2] = perfcurve(ynew,score_svm(:,2),1,'xcrit','prec');
-[fpr_svm2,tpr_svm2,~,av2] = perfcurve(ynew,score_svm(:,2),1);
-% Fit naive bayes model
-nab = fitcnb(Xtr,ytr);
-[~,score_nb] = predict(nab,Xnew);
-[precision_nb2,recall_nb2,~,pab2] = perfcurve(ynew,score_nb(:,2),1,'xcrit','prec');
-[fpr_nb2,tpr_nb2,~,ab2] = perfcurve(ynew,score_nb(:,2),1);
-
-
-disp(['ROC AUC: ' num2str(av2-av1) ', ' num2str(ab2-ab1)])
-disp(['PR AUC: ' num2str(pav2-pav1) ', ' num2str(pab2-pab1)])
-
-
-figure
-hold on
-plot(recall_svm1,precision_svm1,'r')
-plot(recall_nb1,precision_nb1,'b')
-plot(recall_svm2,precision_svm2,'m','linewidth',2)
-plot(recall_nb2,precision_nb2,'c','linewidth',2)
-xlabel('Recall','fontsize',13)
-ylabel('Precision','fontsize',13)
-hl = legend('SVM, R2','Naive Bayes, R2','SVM, all','Naive Bayes, all');
-set(hl,'fontsize',13)
-title('Comparing classifiers SVM and NB','fontsize',13)
-set(gcf,'units','normalized','position',[.05 .2 .4 .5])
-
-figure
-hold on
-plot(fpr_svm1,tpr_svm1,'r')
-plot(fpr_nb1,tpr_nb1,'b')
-plot(fpr_svm2,tpr_svm2,'m','linewidth',2)
-plot(fpr_nb2,tpr_nb2,'c','linewidth',2)
-xlabel('FPR','fontsize',13)
-ylabel('TPR','fontsize',13)
-hl = legend('SVM, R2','Naive Bayes, R2','SVM, all','Naive Bayes, all','location','southeast');
-set(hl,'fontsize',13)
-title('Comparing classifiers SVM and NB','fontsize',13)
-set(gcf,'units','normalized','position',[.55 .2 .4 .5])
-
-
-%% scratchpad for updating ROC_PCPSILAC.m
-
-x = score_nb(:,2);
-dR1 = log10(linspace(min(10.^x),max(10.^x)*.9,100));
-dR2 = log10(linspace(max(10.^x)*.9,max(10.^x)*.99,300));
-dR3 = log10(linspace(max(10.^x)*.99,max(10.^x),800));
-dR = [dR1 dR2 dR3];
-
-rec = nan(size(dR));
-prec = nan(size(dR));
-for di = 1:length(dR)
-  D = dR(di);
-  TP = sum(x>D & ynew==1);
-  FP = sum(x>D & ynew==-1);
-  TN = sum(x<D & ynew==-1);
-  FN = sum(x<D & ynew==1);
-  
-  rec(di) = TP/(TP+FN);
-  prec(di) = TP/(TP+FP);
-end
-
-figure
-plot(rec,prec)
-
-%%
-
-x = score_svm(:,2);
-%x = 1-Xnew(:,1);
-dR = zeros(1,2000);
-dx1 = (max(x) - min(x))/length(dR);
-mindx = dx1/100;
-maxdx = dx1*2;
-rec = zeros(1,length(dR));
-prec = zeros(1,length(dR));
-di = 1;
-prec0 = 0;
-dR0 = 0;
-while prec0<0.95 && dR0<max(x)
-  
-  % build next D
-  if di>2
-    m = diff(prec([di-2 di-1])) / diff(dR([di-2 di-1]));
-    dx = max(mindx, 1/length(dR)/m);
-    dx = min(maxdx, dx);
-  end
-  
-  if di==1
-    dR(di) = min(x);
-  elseif di==2
-    dR(di) = dR(di) + dx1;
-  else
-    dR(di) = dR(di-1) + dx;
-  end
-  
-  
-  %D = dR(di);
-  TP = sum(x>dR(di) & ynew==1);
-  FP = sum(x>dR(di) & ynew==-1);
-  TN = sum(x<dR(di) & ynew==-1);
-  FN = sum(x<dR(di) & ynew==1);
-  
-  rec(di) = TP/(TP+FN);
-  prec(di) = TP/(TP+FP);
-  prec0 = prec(di);
-  dR0 = dR(di);
-  di = di+1
-end
-prec = prec(1:di-1);
-rec = rec(1:di-1);
-dR = dR(1:di-1);
-
-% sort dR ascending
-[~,I] = sort(dR,'ascend');
-dR = dR(I);
-prec = prec(I);
-rec = rec(I);
-
-figure
-plot(rec,prec)
-
-
-
-%% How do I average svm models?
-
-I = inverse_self & Int_matrix;
-labels = TP_Matrix(I(:));
-y = labels(:);
-y(y>0) = 1;
-y(y~=1) = -1;
-data1 = Dist.R2(I(:)); % 1 - R^2
-data2 = Dist.Euc(I(:));
-data3 = Dist.Center(I(:));
-data4 = Dist.dtw(I(:));
-X = [data1 data2 data3];
-%X = data1;
-Nd = size(X,2);
-
-maxIter = 10;
-scoreMatrix = nan(size(X,1),maxIter);
-
-for iter = 1:maxIter
-  % % Make training and testing data
-  nn = 10000; % length of training data
-  % balance training data
-  I1 = find(y==1);
-  I1 = I1(randsample(length(I1),nn/2));
-  I0 = find(y==-1);
-  I0 = I0(randsample(length(I0),nn/2));
-  Itrain = ismember(1:length(y),[I1;I0]);
-  Ipred = ~Itrain;
-  Xtr = X(Itrain,:);
-  ytr = y(Itrain);
-  Xnew = X(Ipred,:);
-  
-  % Fit svm model
-  svm = fitcsvm(Xtr,ytr,'Standardize',true);
-  [~,score] = predict(svm,Xnew);
-  
-  % Combine scores
-  scoreMatrix(Ipred,iter) = score(:,2);
-end
 
 
 %% Compare ensemble averaging and voting
@@ -510,7 +243,7 @@ for si = 1:length(scores)
   si
   score = scores{si};
   ds = linspace(min(score(:)),max(score(:)),nn); % start off with coarse search
-
+  
   xcutoff = nan(size(desiredPrecision));
   calcprec = zeros(size(xcutoff));
   calcrec = zeros(size(xcutoff));
@@ -599,16 +332,188 @@ axis([0 0.15 0.5 1])
 grid on
 
 
-%% Is voting the same thing as taking the median score?
-% Answer: Yes!!
 
-a = rand(1000,15);
-amed = median(a,2);
-ds = linspace(0,1,101);
-for di = 1:length(ds)
-  svote(di) = sum(sum(a>ds(di),2) > sum(a<ds(di),2));
-  smed(di) = sum(amed>ds(di));
+%% Try out the "new" feature
+
+% Get data
+I = possibleInts(:);
+y = TP_Matrix(I);
+y(y>0) = 1;
+y(y~=1) = -1;
+
+X2{1} = Dist.R2(I);
+X2{2} = [Dist.R2(I) Dist.Euc(I) Dist.Center(I) Dist.Ngauss(I) Dist.CoApex(I) Dist.AUC(I)];
+X2{3} = [Dist.R2(I) Dist.Euc(I) Dist.Center(I) Dist.Ngauss(I) Dist.CoApex(I) Dist.AUC(I) Dist.RealOverlap(I)];
+X2{4} = [Dist.R2(I) Dist.Euc(I) Dist.Center(I) Dist.Ngauss(I) Dist.CoApex(I) Dist.AUC(I) Dist.R2raw(I)];
+X2{5} = [Dist.R2(I) Dist.Euc(I) Dist.Center(I) Dist.Ngauss(I) Dist.CoApex(I) Dist.AUC(I) Dist.R2raw(I) Dist.RealOverlap(I)];
+
+clear scores
+for jj = 1:length(X2)
+  jj
+  X = X2{jj};
+  Nd = size(X,2);
+  
+  % Soft whiten data
+  eps = 2e-16;
+  wmu = zeros(Nd,1);
+  wstd = zeros(Nd,1);
+  for ii = 1:Nd
+    wmu(ii) = nanmean(X(:,ii));
+    wstd(ii) = nanstd(X(:,ii));
+    X(:,ii) = (X(:,ii) - wmu(ii)) / 2 / (wstd(ii) + eps);
+  end
+  
+  
+  Nmodel = 1;
+  score = nan(size(X,1),Nmodel);
+  feats = nan(Nmodel,size(X,2));
+  for iter = 1:Nmodel
+    
+    % Make training and testing data
+    nn = 1000; % length of training data
+    % balance training data
+    I1 = find(y==1 & sum(isnan(X),2)==0);
+    I1 = I1(randsample(length(I1),nn/2));
+    I0 = find(y==-1 & sum(isnan(X),2)==0);
+    I0 = I0(randsample(length(I0),nn/2));
+    Itrain = ismember(1:length(y),[I1;I0]);
+    Ipred = ~Itrain;
+    Xtr = X(Itrain,:);
+    ytr = y(Itrain);
+    Xnew = X(Ipred,:);
+    
+    % Feature selection
+    feats(iter,:) = IndFeat(Xtr,ytr);
+    f2consider = find(feats(iter,:) > 2);
+    
+    % Fit Naive Bayes model
+    nab = fitcnb(Xtr(:,f2consider),ytr);
+    [~,scoretmp] = predict(nab,Xnew(:,f2consider));
+    %nab = fitcnb(Xtr,ytr);
+    %[~,scoretmp] = predict(nab,Xnew);
+    
+    scores{jj}(Ipred,iter) = scoretmp(:,2);
+  end
 end
-figure,hold on
-plot(ds,svote,'r')
-plot(ds,smed+10,'g')
+
+
+
+disp('Calculating precision/recall...')
+precSave = cell(size(scores));
+recSave = cell(size(scores));
+scoreSave = cell(size(scores));
+desiredPrecision = [.5 .7 .95];
+maxIter = 7;
+nn = 25;
+for si = 1:length(scores)
+  si
+  score = scores{si};
+  
+  xcutoff = nan(size(desiredPrecision));
+  calcprec = zeros(size(xcutoff));
+  calcrec = zeros(size(xcutoff));
+  scoreRange = nan(nn*maxIter*length(desiredPrecision),1);  % Save these for
+  precRange = nan(size(scoreRange));                        % plotting
+  recRange = nan(size(scoreRange));                         % later.
+  fprRange = nan(size(scoreRange));                        % plotting
+  tprRange = nan(size(scoreRange));
+  for di = 1:length(desiredPrecision)
+    ds = linspace(min(score(:)),max(score(:)),nn); % start off with coarse search
+    calcTol = 10^10;
+    iter = 0;
+    deltaPrec = 1;
+    prec0 = zeros(nn,1);
+    % Stop zooming in when one of three things happens:
+    % i) you get close enough to the desired precision (within calcTol)
+    % ii) you've been through maxIter iterations
+    % iii) zooming in stops being useful (precision changes by less than deltaPrec b/w iterations)
+    while calcTol>Tol && iter<maxIter && deltaPrec>1e-3
+      iter=iter+1;
+      rec = nan(nn,1);
+      prec = nan(nn,1);
+      fpr = nan(nn,1);
+      tpr = nan(nn,1);
+      for dd =1:length(ds)
+        pos = score>ds(dd);
+        TP = sum(pos & y==1);
+        FP = sum(pos & y==-1);
+        FN = sum(~pos & y==1);
+        TN = sum(~pos & y==-1);
+        prec(dd) = TP/(TP+FP);
+        rec(dd) = TP/(TP+FN);
+        fpr(dd) = FP/(FP+TN);
+        tpr(dd) = TP/(TP+FN);
+      end
+      deltaPrec = nanmean(abs(prec - prec0));
+      
+      % Save vectors for plotting
+      i1 = find(isnan(scoreRange),1,'first');
+      I = i1 : i1+nn-1;
+      scoreRange(I) = ds;
+      precRange(I) = prec;
+      recRange(I) = rec;
+       fprRange(I) = fpr;
+      tprRange(I) = tpr;
+      
+      % Calculate how close to desiredPrecision(di) you got
+      [calcTol,I] = min(abs(prec - desiredPrecision(di)));
+      
+      % Zoom in on region of interest
+      i1 = find(prec>desiredPrecision(di));
+      if isempty(i1);
+        mx = max(score(:));
+      else
+        mx = ds(i1(1));
+      end
+      i2 = find(prec<desiredPrecision(di));
+      if isempty(i2);
+        mn = min(score(:));
+      else
+        mn = ds(i2(end));
+      end
+      ds = linspace(mn,mx,nn);
+      prec0 = prec;
+    end
+    xcutoff(di) = ds(I);
+    calcprec(di) = prec(I);
+    calcrec(di) = rec(I);
+  end
+  
+  [scoreRange,I] = sort(scoreRange);
+  precRange = precRange(I);
+  recRange = recRange(I);
+  tprRange = tprRange(I);
+  fprRange = fprRange(I);
+  
+  precSave{si} = precRange;
+  recSave{si} = recRange;
+  scoreSave{si} = scoreRange;
+  fprSave{si} = fprRange;
+  tprSave{si} = tprRange;
+end
+
+colordef black
+figure(1),hold on
+plot(recSave{1},precSave{1},'--w')
+plot(recSave{2},precSave{2},'--r')
+plot(recSave{3},precSave{3},'--g')
+plot(recSave{4},precSave{4},'--c')
+plot(recSave{5},precSave{5},'--m')
+legend('R2','All','All+Overlap','All+Raw','All+Overlap+Raw')
+title(['N = ' num2str(size(scoreMatrix,2)) ' models'])
+axis([0 1 0 1])
+grid on
+
+figure(2),hold on
+plot(fprSave{1},tprSave{1},'--w')
+plot(fprSave{2},tprSave{2},'--r')
+plot(fprSave{3},tprSave{3},'--g')
+plot(fprSave{4},tprSave{4},'--c')
+plot(fprSave{5},tprSave{5},'--m')
+plot([0 1],[0 1],'--w')
+legend('R2','All','All+Overlap','All+Raw','All+Overlap+Raw')
+title(['N = ' num2str(size(scoreMatrix,2)) ' models'])
+axis([0 1 0 1])
+grid on
+colordef white
+

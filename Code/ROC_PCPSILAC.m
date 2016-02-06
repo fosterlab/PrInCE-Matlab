@@ -48,17 +48,21 @@ disp('ROC_PCPSILAC.m')
 tic
 fprintf('\n    0. Initialize')
 
-% user defined variables
-number_of_replicates=3;
-number_of_channels=2;
-replicate_counter = 4; % Do a single replicate. This is Nick's loop index.
-%desiredPrecision = [.50 .60 .70]; % 50%, 60%, 70% precision
-desiredPrecision = .47; % 70% precision
-treatment_replicates=[4,5,6];
-untreatment_replicates=[1,2,3];
+
+
+% Load user settings
+maindir = user.maindir;
+Experimental_channels = user.silacratios;
+user.treatmentcondition;
+desiredPrecision = user.desiredPrecision;
+number_of_channels = length(user.silacratios);
+InputFile{1} = user.majorproteingroupsfile;
+InputFile{2} = user.corumfile;
+InputFile{4} = user.mastergaussian;
+
+
 
 % Define folders, i.e. define where everything lives.
-maindir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/'; % where everything lives
 codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
 datadir = [maindir 'Data/']; % where data files live
@@ -67,6 +71,7 @@ datadir2 = [datadir 'ROC/tmp/']; % where data files live
 datadir3 = [datadir 'ROC/CombinedResults/']; % where data files live
 figdir1 = [maindir 'Figures/ROC/']; % where figures live
 tmpdir = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/';
+%tmpdir = '/Users/Mercy/Academics/Foster/Jenny_PCPSILAC/PCPSILAC_Analysis/Data/Alignment/';
 % Make folders if necessary
 if ~exist(codedir, 'dir'); mkdir(codedir); end
 if ~exist(funcdir, 'dir'); mkdir(funcdir); end
@@ -75,12 +80,6 @@ if ~exist(datadir1, 'dir'); mkdir(datadir1); end
 if ~exist(datadir2, 'dir'); mkdir(datadir2); end
 if ~exist(datadir3, 'dir'); mkdir(datadir3); end
 if ~exist(figdir1, 'dir'); mkdir(figdir1); end
-
-% List all input files. These contain data that will be read by this script.
-InputFile{1} = [datadir '/Major_protein_groups.xlsx'];
-InputFile{2} = [datadir '/Corum_correctly_formated_Uniprot_IDs.csv'];
-%InputFile{3} = [datadir 'Input/Corum_2012_human.xlsx'];
-InputFile{4} = [datadir '/Master_guassian_list.csv'];
 
 %define Raw SILAC ratios data, This is the output from the alignment script
 MvsL_filename_Raw_rep1=[tmpdir 'MvsL_alignment/Realignment/Adjusted_MvsL_Raw_for_ROC_analysis_rep1.csv'];
@@ -99,6 +98,26 @@ List_of_Raw_filename={MvsL_filename_Raw_rep1,MvsL_filename_Raw_rep2,MvsL_filenam
   HvsL_filename_Raw_rep1,HvsL_filename_Raw_rep2,HvsL_filename_Raw_rep3};
 List_of_Gaus_filename={MvsL_filename_gaus_rep1,MvsL_filename_gaus_rep2,MvsL_filename_gaus_rep3,...
   HvsL_filename_gaus_rep1,HvsL_filename_gaus_rep2,HvsL_filename_gaus_rep3};
+
+number_of_replicates = length(List_of_Raw_filename) / number_of_channels;
+I = find(strcmp(user.silacratios,user.treatmentcondition));
+treatment_replicates = (1:number_of_replicates)+(I-1)*number_of_replicates;
+I = 1:number_of_replicates*number_of_channels;
+untreatment_replicates = I(~ismember(I,treatment_replicates));
+
+
+% %define Raw SILAC ratios data, This is the output from the alignment script
+% % Do this dynamically. Find filenames
+% dd = dir([tmpdir 'Adjusted*Raw_for_ROC_analysis*rep*csv']);
+% List_of_Raw_filename = cell(size(dd));
+% for di = 1:length(dd)
+%   List_of_Raw_filename{di} = dd(di).name;
+% end
+% dd = dir([tmpdir 'Adjusted_Combined_OutputGaus*rep*csv']);
+% List_of_Gaus_filename = cell(size(dd));
+% for di = 1:length(dd)
+%   List_of_Gaus_filename{di} = dd(di).name;
+% end
 
 % pre-allocate final results
 Recall = nan(number_of_replicates,number_of_channels);
@@ -132,7 +151,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Corum_Protein_names = (reshape(Corum_Import{1,1},2,No)');
   Unique_Corum = unique(Corum_Protein_names);
   
-  Master_Gaussian_list=importdata(InputFile{4},',');
+  %Master_Gaussian_list=importdata(InputFile{4},',');
   
   %Raw data for analysis of euclidean distance
   %import data files summary data
@@ -484,15 +503,17 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   clear scoreMatrix TP_Matrix possibleInts Protein inverse_self Chromatograms
   
   tt = toc;
-  fprintf('  ...  %.2f seconds\n',tt)
-  
-  
+  fprintf('  ...  %.2f seconds\n',tt)  
 end
 %%%%% Replicate counter ends
 
 
+
+
 % do a bit of housekeeping
 clear Dist Int_matrix
+
+
 
 
 

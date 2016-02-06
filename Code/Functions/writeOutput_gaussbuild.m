@@ -79,7 +79,7 @@ for ci = 1:Nchannels
         Width = Gaus(3,i);
         Size_of_complex=SEC_fit(1)*Center+SEC_fit(2);
         %Test guassian properties
-        if Height>=0.5 && Width>=1 && Center>1 && Center<55 && ~isnan(cleandata{ci}(ri,round(Center+5)))
+        if Height>=0.5 && Width>=1 && Center>1 && Center<Nfractions && ~isnan(cleandata{ci}(ri,round(Center+5)))
           %write out Gaussians for further analysis
           Values_Considered_for_analysis = Values_Considered_for_analysis+1; %Records the number of gaussians which will outputed
           
@@ -97,7 +97,7 @@ for ci = 1:Nchannels
           fprintf(fid2A,'%6.4g,', cleandata{ci}(ri,:));
           fprintf(fid2A,'\n');
           fclose(fid2A);
-        elseif Height<0.5 || Width<1 || Center<=1 || Center>=55 || isnan(cleandata{ci}(ri,round(Center+5)))
+        elseif Height<0.5 || Width<1 || Center<=1 || Center>=Nfractions || isnan(cleandata{ci}(ri,round(Center+5)))
           %write out Gaussians excluded from further analysis
           Values_Not_Considered_for_analysis=Values_Not_Considered_for_analysis+1; %Records the number of guassian which will outputed
           
@@ -346,7 +346,7 @@ for ei = 1:2
   Experimental_channel = Experimental_channels{ei};
   for divider_counter1 = 1:length(Unique_replicate)
     %Create name of gaussian file to output divided gaus data to
-    Process_Gaus_import_Name= strcat(Experimental_channel,'_Combined_OutputGaus_rep',mat2str(divider_counter1),'.csv');
+    Process_Gaus_import_Name= [datadir Experimental_channel '_Combined_OutputGaus_rep' mat2str(divider_counter1) '.csv'];
     
     fid_processing= fopen(Process_Gaus_import_Name,'wt'); % create the output file with the header infromation
     fprintf (fid_processing,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
@@ -354,7 +354,7 @@ for ei = 1:2
       'Protein name', 'Height', 'Center', 'Width', 'SSE',...
       'adjrsquare', 'Complex Size'); %Write Header
     
-    for kk = 1:Nproteins
+    for kk = 1:Ngauss(ei)
       ri = protgausI{ci}(kk,1);
       if replicate(ri) == divider_counter1
         gn = protgausI{ci}(kk,2);
@@ -384,7 +384,7 @@ for ei = 1:2
   Experimental_channel = Experimental_channels{ei};
   for divider_counter1=1:Unique_replicate
     %Create name of gaussian file to output divided gaus data to
-    Process_Summary_gausian_info_Name= strcat(Experimental_channel,'_Summary_Gausians_for_individual_proteins_rep',mat2str(divider_counter1),'.csv');
+    Process_Summary_gausian_info_Name= strcat(datadir,Experimental_channel,'_Summary_Gausians_for_individual_proteins_rep',mat2str(divider_counter1),'.csv');
     
     fid_processing= fopen(Process_Summary_gausian_info_Name,'wt'); % create the output file with the header infromation
     fprintf (fid_processing,'%s,%s,%s,%s,%s\n',... %header for OutputGaus output
@@ -392,7 +392,7 @@ for ei = 1:2
       'Number_of_Gausians_within_defined_boundaries',...
       'Number_of_Gausians_filtered'); %Write Header
     
-    for kk = 1:Nproteins
+    for kk = 1:Ngauss(ei)
       ri = protgausI{ci}(kk,1);
       if replicate(ri) == divider_counter1
         fprintf(fid4, '%s,%s,%s,%s,%s\n', num2str(ri),...
@@ -418,13 +418,13 @@ ci = 1;
 for divider_counter1=1:Unique_replicate
   
   %Create name of gaussian file to output divided gaus data for MvsL
-  Process_Replicate_raw_data1= strcat(Experimental_channels{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv');
+  Process_Replicate_raw_data1= strcat(datadir,Experimental_channels{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv');
   
   fid_processing3= fopen(Process_Replicate_raw_data1,'wt'); % create the output file with the header infromation
   fprintf(fid_processing3,'%s, ', txt_MvsL{1,1:Nfractions+2}); %header for OutputGaus output
   fprintf(fid_processing3,'\n');
   
-  for kk = 1:Nproteins
+  for kk = 1:Ngauss(ci)
     ri = protgausI{ci}(kk,1);
     if replicate(ri) == divider_counter1
       fprintf(fid_processing3,'%s, %6.4f,', txt_MvsL{ri+1}, num_val_MvsL(ri,1));
@@ -447,13 +447,13 @@ ci = 2;
 for divider_counter1=1:Unique_replicate
   
   %Create name of gaussian file to output divided gaus data for MvsL
-  Process_Replicate_raw_data1= strcat(Experimental_channels{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv');
+  Process_Replicate_raw_data1= strcat(datadir,Experimental_channels{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv');
   
   fid_processing3= fopen(Process_Replicate_raw_data1,'wt'); % create the output file with the header infromation
   fprintf(fid_processing3,'%s, ', txt_HvsL{1,1:Nfractions+2}); %header for OutputGaus output
   fprintf(fid_processing3,'\n');
   
-  for kk = 1:Nproteins
+  for kk = 1:Ngauss(ci)
     ri = protgausI{ci}(kk,1);
     if replicate(ri) == divider_counter1
       fprintf(fid_processing3,'%s, %6.4f,', txt_HvsL{ri+1}, num_val_MvsL(ri,1));
@@ -486,7 +486,7 @@ for divider_counter1=1:Unique_replicate
   fprintf(fid_processing3,'%s, ', txt_MvsL{1,1:Nfractions+2}); %header for OutputGaus output
   fprintf(fid_processing3,'\n');
   
-  for kk = 1:Nproteins
+  for kk = 1:Ngauss(ci)
     ri = protgausI{ci}(kk,1);
     if replicate(ri) == divider_counter1
       fprintf(fid_processing3,'%s, %6.4f,', txt_HvsM{ri+1,1}, num_val_HvsM(ri,1));
