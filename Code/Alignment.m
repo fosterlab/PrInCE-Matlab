@@ -31,9 +31,9 @@
 %    values. Should we do more?
 
 
-%%%%%%%%%%%%%%% To do:
-% 1. Check that the cleaning steps here match with Nick's. e.g. Replace missing values with nan or
-%   zero?
+%%%%%%%%%%%%%%% BUG BUG BUG BUG UBGSS BUGGGGGSSS!!!!
+% 1. My Alignment numbers are off. Nick's are closer to the raw data (mine are quite far away).
+% 2. I'm adding too many leading nans (two too many?).
 
 
 %%%%%%%%%%%%%%% Questions:

@@ -6,7 +6,7 @@
 %   iii. visualization, i.e. making figures.
 % 0. Initialize
 % 1. Read input
-% 2. Make HvsL_Gaussians, MvsL_Gaussians structures
+% 2. Make GaussSummary(2), GaussSummary(1) structures
 % WITHIN REPLICATES (?)
 %   3. Determine which Gaussians are unique to each channel
 %   4. Detect 2-fold changes
@@ -48,7 +48,7 @@
 
 % AUTOMATION
 % - Correct for 5 leading nans. Do this dynamically (not just "+5")
-% S2. MvsL_Gaussians -> Gaussians{1}, HvsL_Gaussians -> Gaussians{2}
+% S2. GaussSummary(1) -> Gaussians{1}, GaussSummary(2) -> Gaussians{2}
 % S3. Total rewrite. This whole section needs to be automated... I think it's just looking for
 %     overlapping proteins between the comparison pairs.
 % S4. Remove reference to HvsM, replace with {2}/{1}. Confirm that HvsM = HvsL/MvsL.
@@ -57,7 +57,7 @@
 % S7. Lots to do here. Many variables to change. Need replicate and channel loops.
 % S8. This one's easy! Loops over Master Gaussian List, i.e. not replicate or channel. Might not
 %     need to change anything.
-% S9. 
+% S9.
 
 
 disp('Comparison.m')
@@ -73,41 +73,43 @@ maindir = user.maindir;
 User_Window = user.userwindow;
 Experimental_channels = user.silacratios;
 User_alignment_window1 = user.userwindow; % User defined window to consider Guassian the same
+Nchannels = length(Experimental_channels);
 
 
 % Define folders, i.e. define where everything lives.
 codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
 datadir = [maindir 'Data/']; % where data files live
-datadir1 = [datadir 'Comparison/']; % where data files live
-datadir2 = [datadir 'Comparison/forROC/']; % where data files live
-datadir3 = [datadir 'Alignment/']; % where data files live
-figdir1 = [maindir 'Figures/Comparison/']; % where figures live
-figdir2 = [maindir 'Figures/Comparison/ProteinGaussianMaps/']; % where figures live
+figdir = [maindir 'Figures/']; % where figures live
 % Make folders if necessary
 if ~exist(codedir, 'dir'); mkdir(codedir); end
 if ~exist(funcdir, 'dir'); mkdir(funcdir); end
 if ~exist(datadir, 'dir'); mkdir(datadir); end
-if ~exist(datadir1, 'dir'); mkdir(datadir1); end
-if ~exist(datadir2, 'dir'); mkdir(datadir2); end
-if ~exist(figdir1, 'dir'); mkdir(figdir1); end
-if ~exist(figdir2, 'dir'); mkdir(figdir2); end
+if ~exist(figdir, 'dir'); mkdir(figdir); end
 
-% List all input files. These contain data that will be read by this script.
-InputFile{1}=[datadir 'Adjusted_MvsL_Raw_data_maxquant_modified.xlsx']; % from Alignment
-InputFile{2}=[datadir 'Adjusted_HvsL_Raw_data_maxquant_modified.xlsx']; % from Alignment
-InputFile{3}=[datadir 'Adjusted_HvsM_Raw_data_maxquant_modified.xlsx']; % from Alignment
-InputFile{4}=[datadir 'Alignment/Adjusted_MvsL_Combined_OutputGaus.csv']; % from Alignment
-InputFile{5}=[datadir 'Alignment/Adjusted_HvsL_Combined_OutputGaus.csv']; % from Alignment
+% Find input files
+ChromatogramIn = cell(Nchannels,1);
+GaussIn = cell(Nchannels,1);
+for ii = 1:Nchannels
+  % NB THIS IS BAD FIX IT!!!!
+  % USING NICK'S DATA FOR NOW
+  datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
+  ChromatogramIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Raw_data_maxquant.csv']; % from Alignment
+  %ChromatogramIn{ii} = [datadir 'Alignment/Adjusted_' user.silacratios{ii} '_Raw_data_maxquant.csv']; % from Alignment
+end
+for ii = 1:Nchannels
+  % NB THIS IS BAD FIX IT!!!!
+  % USING NICK'S DATA FOR NOW
+  datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
+  GaussIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
+  %GaussIn{ii} = [datadir 'Alignment/Adjusted_' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
+end
 
 % User defined variables
-replicate_num=3; %Number of replicates to compare
-position_fraction1=6; %Denote the position of the first fraction in fraction_to_plot of aligned samples
-fraction_to_plot=55; %For figure define fraction to plot and to considered, all Gaussian under this value will be ignored
+%position_fraction1=6; %Denote the position of the first fraction in fraction_to_plot of aligned samples
+%fraction_to_plot=55; %For figure define fraction to plot and to considered, all Gaussian under this value will be ignored
 %Compare the Areas of the Gaussian curves to use for downstream analysis
-Diltuion_factor_master_mix=0.70; %Define the precentage of standard mixed into samples
-%SILAC_ratio_combinations={'MvsL','HvsL','HvsM'};
-
+%Diltuion_factor_master_mix=0.70; %Define the precentage of standard mixed into samples
 
 % Plotting variables
 myC= [30/255 144/255 255/255
@@ -132,663 +134,316 @@ tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
+
 %% 1. Read input
 fprintf('    1. Read input')
 
-% Import data from input files
-[num_val_MvsL,txt_MvsL] = xlsread(InputFile{1}); %Import file aligned output, NB 1st column is replicate
-[num_val_HvsL,txt_HvsL] = xlsread(InputFile{2}); %Import file aligned output, ''
-[num_val_HvsM,txt_HvsM] = xlsread(InputFile{3}); %Import file aligned output, ''
-Proteins=length(num_val_MvsL);
-%Remove data point with low values
-num_val_MvsL(num_val_MvsL<0.20) = nan;
-num_val_HvsL(num_val_HvsL<0.20) = nan;
-
-%load results of MvsL protein interaction script
-MvsL = fopen(InputFile{4}); %This corresponds to the output from the Gaus script
-Gaus_import_MvsL = textscan(MvsL, '%s', 'Delimiter',',');
-fclose(MvsL);
-%Reshape data for use in analysis
-Dimension_MvsL=size(Gaus_import_MvsL{:});
-Gaus_MvsL=reshape(Gaus_import_MvsL{:},10,(Dimension_MvsL(1)/10))';
-
-%load results of MvsL protein interaction script
-HvsL = fopen(InputFile{5}); %This corresponds to the output from the Gaus script
-Gaus_import_HvsL = textscan(HvsL, '%s', 'Delimiter',',');
-fclose(HvsL);
-%Reshape data for use in analysis
-Dimension_HvsL=size(Gaus_import_HvsL{:});
-Gaus_HvsL=reshape(Gaus_import_HvsL{:},10,(Dimension_HvsL(1)/10))';
-
-%Number of fractions
-fraction_number=size(num_val_MvsL);
-fraction_number(2)=fraction_number(2)-1;
-
-%Calculate number of guassians
-Gaussian_number_MvsL=length(Gaus_MvsL)-1; %minus one to remove header, corresponds to the gaussian fitted
-Gaussian_number_HvsL=length(Gaus_HvsL)-1;
-
-
-% Add unique identifiers to the Gaussian lists
-Unique_indentifer_MvsL=cell(1,1);
-Unique_indentifer_MvsL(1,1)={'Unique_identifier'}; % replicate_GaussianNumber_channel_ProteinName
-Unique_indentifer_MvsL(1,2)={'Replicate_Protein_identifier'}; % replicate_ProteinName
-for unique_identifer_counter1= 1:Gaussian_number_MvsL
-  %convert to number from string
-  Replicate_number=str2num(Gaus_MvsL{unique_identifer_counter1+1,3});
-  %convert to number from string
-  Index_Gaussian_number=str2num(Gaus_MvsL{unique_identifer_counter1+1,1});
-  Unique_indentifer_MvsL{unique_identifer_counter1+1,1}=strcat(mat2str(Replicate_number),'_',mat2str(Index_Gaussian_number),'_MvsL_',Gaus_MvsL{unique_identifer_counter1+1,4});
-  Unique_indentifer_MvsL{unique_identifer_counter1+1,2}=strcat(mat2str(Replicate_number),'_',Gaus_MvsL{unique_identifer_counter1+1,4});
+% Import chromatogram data
+num_val = cell(Nchannels,1);
+txt_val = cell(Nchannels,1);
+for ii = 1:Nchannels
+  tmp = importdata(ChromatogramIn{ii}); % from Alignment
+  num_val{ii} = tmp.data;
+  txt_val{ii} = tmp.textdata;
+  
+  %Remove data point with low values
+  num_val{ii}(num_val{ii}<0.2) = nan;
+  
+  % Summary numbers: proteins, fractions, replicates
+  Nproteins = length(num_val{1});
+  Nfraction = size(num_val_MvsL,2);
+  Nfraction = Nfraction-1;
+  replicate_num = length(unique(num_val{1}(:,1)));
+  
+  % Clean chromatograms
+  % YOU'RE ADDING 5 NANS TO THE END. MAKE SURE THIS IS CORRECT!!!!!!!!!!!!!!!!!!!!!!
+  tmp2 = zeros(size(num_val{ii},1),size(num_val{ii},2)+5);
+  for ri = 1:Nproteins % loop over proteins
+    num_val{ii}(ri,:) = cleanChromatogram(num_val{ii}(ri,:),[1 3]);
+    tmp2(ri,:) = [num_val{ii}(ri,:) nan(1,5)];
+  end
+  num_val{ii} = tmp2;
+  
+  % The data is nan-padded. Find where the real data starts and stops.
+  nanmax = size(num_val{ii},1);
+  tmp = find(sum(isnan(num_val{ii}))==9648);
+  frac1 = tmp(find(tmp<Nfraction/2,1,'last')); % start of real data
+  frac2 = tmp(find(tmp>Nfraction/2,1,'first')); % end of real data
+  
+  % Add unique identifiers to the chromatograms
+  Unique_indentifer_maxqaunt = cell(Nproteins,1);
+  Unique_indentifer_maxqaunt{1} = {'Unique_identifier'}; % replicate_ProteinName
+  for jj = 1:Nproteins
+    Replicate_number = num_val_MvsL(jj,1);
+    %convert to number from string
+    Unique_indentifer_maxqaunt{jj+1,1}=strcat(mat2str(Replicate_number),'_',txt_val{ii}{jj+1,1});
+  end
+  txt_val{ii} = [Unique_indentifer_maxqaunt, txt_val{ii}];
 end
-Gaus_MvsL=[Unique_indentifer_MvsL, Gaus_MvsL]; %Add unique protein_replicate identifier
-
-Unique_indentifer_HvsL=cell(1,1);
-Unique_indentifer_HvsL(1,1)={'Unique_identifier'};
-Unique_indentifer_HvsL(1,2)={'Replicate_Protein_identifier'};
-for unique_identifer_counter1= 1:Gaussian_number_HvsL
-  %convert to number from string
-  Replicate_number=str2num(Gaus_HvsL{unique_identifer_counter1+1,3});
-  %convert to number from string
-  Index_Gaussian_number=str2num(Gaus_HvsL{unique_identifer_counter1+1,1});
-  Unique_indentifer_HvsL{unique_identifer_counter1+1,1}=strcat(mat2str(Replicate_number),'_',mat2str(Index_Gaussian_number),'_HvsL_',Gaus_HvsL{unique_identifer_counter1+1,4});
-  Unique_indentifer_HvsL{unique_identifer_counter1+1,2}=strcat(mat2str(Replicate_number),'_',Gaus_HvsL{unique_identifer_counter1+1,4});
-end
-Gaus_HvsL=[Unique_indentifer_HvsL, Gaus_HvsL]; %Add unique protein_replicate identifier
+clear tmp2
 
 
-% Add unique identifiers to the chromatograms
-%MvsL
-Unique_indentifer_MvsL_maxqaunt(1,1)={'Unique_identifier'}; % replicate_ProteinName
-for unique_identifer_counter2= 1:Proteins
-  %convert to number from string
-  Replicate_number=num_val_MvsL(unique_identifer_counter2,1);
-  %convert to number from string
-  Unique_indentifer_MvsL_maxqaunt{unique_identifer_counter2+1,1}=strcat(mat2str(Replicate_number),'_',txt_MvsL{unique_identifer_counter2+1,1});
+% Import Gaussian data
+GaussData = cell(Nchannels,1);
+Ngauss = zeros(Nchannels,1);
+for ii = 1:Nchannels
+  tmp1 = fopen(GaussIn{ii}); %This corresponds to the output from the Gaus script
+  tmp2 = textscan(tmp1, '%s', 'Delimiter',',');
+  %Reshape data for use in analysis
+  tmp3=size(tmp2{:});
+  GaussData{ii}=reshape(tmp2{:},10,(tmp3(1)/10))';
+  
+  % Summary number: Gaussians
+  Ngauss(ii) = length(GaussData{ii})-1; %minus one to remove header, corresponds to the gaussian fitted
+  
+  % Add unique identifiers to the Gaussian lists
+  Unique_indentifer=cell(1,1);
+  Unique_indentifer{1,1} = 'Unique_identifier'; % replicate_GaussianNumber_channel_ProteinName
+  Unique_indentifer{1,2} = 'Replicate_Protein_identifier'; % replicate_ProteinName
+  for jj = 2:size(GaussData{ii},1)
+    Replicate_number=str2double(GaussData{ii}{jj,3});
+    %convert to number from string
+    Index_Gaussian_number=str2double(GaussData{ii}{jj,1});
+    Unique_indentifer{jj,1}=[num2str(Replicate_number) '_' num2str(Index_Gaussian_number) '_' Experimental_channels{ii} '_' GaussData{ii}{jj,4}];
+    Unique_indentifer{jj,2}=[num2str(Replicate_number) '_' GaussData{ii}{jj,4}];
+  end
+  GaussData{ii} = [Unique_indentifer, GaussData{ii}]; %Add unique protein_replicate identifier
 end
-%HvsL
-Unique_indentifer_HvsL_maxqaunt(1,1)={'Unique_identifier'};
-for unique_identifer_counter2= 1:Proteins
-  %convert to number from string
-  Replicate_number=num_val_HvsL(unique_identifer_counter2,1);
-  %convert to number from string
-  Unique_indentifer_HvsL_maxqaunt{unique_identifer_counter2+1,1}=strcat(mat2str(Replicate_number),'_',txt_HvsL{unique_identifer_counter2+1,1});
-end
-%HvsM
-Unique_indentifer_HvsM_maxqaunt(1,1)={'Unique_identifier'};
-for unique_identifer_counter2= 1:Proteins
-  %convert to number from string
-  Replicate_number=num_val_HvsM(unique_identifer_counter2,1);
-  %convert to number from string
-  Unique_indentifer_HvsM_maxqaunt{unique_identifer_counter2+1,1}=strcat(mat2str(Replicate_number),'_',txt_HvsM{unique_identifer_counter2+1,1});
-end
-%Add unique protein_replicate identifier
-txt_MvsL=[Unique_indentifer_MvsL_maxqaunt, txt_MvsL];
-txt_HvsL=[Unique_indentifer_HvsL_maxqaunt, txt_HvsL];
-txt_HvsM=[Unique_indentifer_HvsM_maxqaunt, txt_HvsM];
-
 
 %expected amount of proteins, note 1 is the height
 Standard_area=fraction_number(2)*1*(1/Diltuion_factor_master_mix);
 
-
 %Copy data to be used for plotting
-num_val_MvsL_for_figures = num_val_MvsL;
-num_val_HvsL_for_figures = num_val_HvsL;
-
-% Clean chromatograms
-for ri = 1:Proteins % loop over proteins
-  num_val_MvsL(ri,:) = cleanChromatogram(num_val_MvsL(ri,:),[1 3]);
-  num_val_HvsL(ri,:) = cleanChromatogram(num_val_HvsL(ri,:),[1 3]);
-  num_val_HvsM(ri,:) = cleanChromatogram(num_val_HvsM(ri,:),[1 3]);
-end
+%num_val_MvsL_for_figures = num_val_MvsL;
+%num_val_HvsL_for_figures = num_val_HvsL;
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
 
-%% 2. Make HvsL_Gaussians, MvsL_Gaussians structures
-fprintf('    2. Make HvsL_Gaussians, MvsL_Gaussians structures')
+%% 2. Make GaussSummary structure
+tic
+fprintf('    2. Make GaussSummary(2), GaussSummary(1) structures')
+
+clear GaussSummary
 
 %Varible related to gaussians
-unique_MvsL_guassians=unique(Gaus_MvsL(2:Gaussian_number_MvsL+1,2));
-unique_HvsL_guassians=unique(Gaus_HvsL(2:Gaussian_number_HvsL+1,2));
-All_guassians_identified_redunent_list=[unique_MvsL_guassians;unique_HvsL_guassians];
+All_guassians_identified_redunent_list = [];
+for ii = 1:Nchannels
+  tmp = unique(GaussData{ii}(2:Ngauss(ii)+1,2));
+  All_guassians_identified_redunent_list = [All_guassians_identified_redunent_list;tmp];
+end
 All_guassians_identified_nonredunent_list=unique(All_guassians_identified_redunent_list);
-Number_All_guassians_identified_nonredunent_list=length(All_guassians_identified_nonredunent_list);
+NuniqueGauss=length(All_guassians_identified_nonredunent_list);
 
-%create counter to empty number into
-Number_guassian_pre_protein_MvsL=zeros(Number_All_guassians_identified_nonredunent_list,1);
-Number_guassian_pre_protein_HvsL=zeros(Number_All_guassians_identified_nonredunent_list,1);
-%Set to five as maximum number of fitted gaussian curves is five
-Location_of_guassians_MvsL=zeros(Number_All_guassians_identified_nonredunent_list,5);
-Location_of_guassians_HvsL=zeros(Number_All_guassians_identified_nonredunent_list,5);
+% pre-allocate?
+GaussSummary(2).Center(1) = -1;
+for ii = 1:Nchannels
+  GaussSummary(ii).Unique_identifier = cell(NuniqueGauss,5);
+  GaussSummary(ii).Guassian_index_number = zeros(NuniqueGauss,5);
+  GaussSummary(ii).Protein_number = zeros(NuniqueGauss,5);
+  GaussSummary(ii).Replicate = zeros(NuniqueGauss,5);
+  GaussSummary(ii).Protein = cell(NuniqueGauss,5);
+  GaussSummary(ii).Height = zeros(NuniqueGauss,5);
+  GaussSummary(ii).Center = zeros(NuniqueGauss,5);
+  GaussSummary(ii).Width = zeros(NuniqueGauss,5);
+  GaussSummary(ii).SSE = zeros(NuniqueGauss,5);
+  GaussSummary(ii).adjrsquare = zeros(NuniqueGauss,5);
+  GaussSummary(ii).Complex_size = zeros(NuniqueGauss,5);
+end
 
+Number_guassian_pre_protein=zeros(Nchannels,NuniqueGauss);
+Location_of_guassians=zeros(Nchannels,NuniqueGauss,5);
 % Create array of values grouped by Protein and replicate
-for guassian_counter1 = 1:Number_All_guassians_identified_nonredunent_list
-  %define protein to look for
-  Protein_name=All_guassians_identified_nonredunent_list(guassian_counter1);
-  
-  %Determine if Protein was observed in MvsL or HvsL channel
-  L1 = ismember(Gaus_MvsL(:,2),Protein_name);
-  L2 = ismember(Gaus_HvsL(:,2),Protein_name);
-  
-  %Sum the number of Gaussians
-  Number_guassian_pre_protein_MvsL(guassian_counter1,1)= sum(L1);
-  Number_guassian_pre_protein_HvsL(guassian_counter1,1)= sum(L2);
-  
-  %find the position in MvsL
-  [internal_location_guassians_MvsL]=ind2sub(size(Gaus_MvsL), strmatch(Protein_name, Gaus_MvsL(:,2), 'exact'));
-  number_counter1=length(internal_location_guassians_MvsL);
-  counter_balance1=0;
-  for internal_counter1 = 1:number_counter1
-    if str2num(Gaus_MvsL{internal_location_guassians_MvsL(internal_counter1),8})>fraction_to_plot
-      counter_balance1=counter_balance1+1;
-    else
-      Location_of_guassians_MvsL(guassian_counter1,internal_counter1-counter_balance1)=internal_location_guassians_MvsL(internal_counter1)-1;
-      MvsL_Gaussians.Unique_identifier(guassian_counter1,internal_counter1-counter_balance1)=Gaus_MvsL(internal_location_guassians_MvsL(internal_counter1),1);
-      MvsL_Gaussians.Guassian_index_number(guassian_counter1,internal_counter1-counter_balance1)=str2num(Gaus_MvsL{internal_location_guassians_MvsL(internal_counter1),3});
-      MvsL_Gaussians.Protein_number(guassian_counter1,internal_counter1-counter_balance1)=str2num(Gaus_MvsL{internal_location_guassians_MvsL(internal_counter1),4});
-      MvsL_Gaussians.Replicate(guassian_counter1,internal_counter1-counter_balance1)=str2num(Gaus_MvsL{internal_location_guassians_MvsL(internal_counter1),5});
-      MvsL_Gaussians.Protein{guassian_counter1,internal_counter1-counter_balance1}=Gaus_MvsL{internal_location_guassians_MvsL(internal_counter1),6};
-      MvsL_Gaussians.Height(guassian_counter1,internal_counter1-counter_balance1)=str2num(Gaus_MvsL{internal_location_guassians_MvsL(internal_counter1),7});
-      MvsL_Gaussians.Center(guassian_counter1,internal_counter1-counter_balance1)=str2num(Gaus_MvsL{internal_location_guassians_MvsL(internal_counter1),8});
-      MvsL_Gaussians.Width(guassian_counter1,internal_counter1-counter_balance1)=str2num(Gaus_MvsL{internal_location_guassians_MvsL(internal_counter1),9});
-      MvsL_Gaussians.SSE(guassian_counter1,internal_counter1-counter_balance1)=str2num(Gaus_MvsL{internal_location_guassians_MvsL(internal_counter1),10});
-      MvsL_Gaussians.adjrsquare(guassian_counter1,internal_counter1-counter_balance1)=str2num(Gaus_MvsL{internal_location_guassians_MvsL(internal_counter1),11});
-      MvsL_Gaussians.Complex_size(guassian_counter1,internal_counter1-counter_balance1)=str2num(Gaus_MvsL{internal_location_guassians_MvsL(internal_counter1),12});
-      
-      %Calculate Area of Gaussian
-      guassian_area_fun =  @(x)( MvsL_Gaussians.Height(guassian_counter1,internal_counter1-counter_balance1)...
-        *exp(-((x- MvsL_Gaussians.Center(guassian_counter1,internal_counter1-counter_balance1))...
-        /MvsL_Gaussians.Width(guassian_counter1,internal_counter1-counter_balance1)).^2));
-      guassian_area= integral(guassian_area_fun,1,55);
-      
-      %Save Gaussian area for MvsL
-      MvsL_Gaussians.Gaussian_area(guassian_counter1,internal_counter1-counter_balance1)= guassian_area;
+% This loop goes through all unique replicate-protein combinations.
+% e.g. 1_A0AVT1, 1_A3KN83, 1_A8MV29, ...
+for ii = 1:Nchannels
+  for gg = 1:NuniqueGauss
+    %define protein to look for
+    Protein_name=All_guassians_identified_nonredunent_list(gg);
+    %find the position in MvsL
+    internal_location_guassians = ind2sub(size(GaussData{ii}), strmatch(Protein_name, GaussData{ii}(:,2), 'exact'));
+    number_counter1=length(internal_location_guassians);
+    gcount=0;
+    for kk = 1:number_counter1
+      if str2double(GaussData{ii}(internal_location_guassians(kk),8))>fraction_to_plot
+      else
+        gcount = gcount+1;
+        GaussSummary(ii).Unique_identifier{gg,gcount} = GaussData{ii}(internal_location_guassians(kk),1);
+        GaussSummary(ii).Guassian_index_number(gg,gcount) = str2double(GaussData{ii}{internal_location_guassians(kk),3});
+        GaussSummary(ii).Protein_number(gg,gcount) = str2double(GaussData{ii}{internal_location_guassians(kk),4});
+        GaussSummary(ii).Replicate(gg,gcount) = str2double(GaussData{ii}{internal_location_guassians(kk),5});
+        GaussSummary(ii).Protein{gg,gcount} = GaussData{ii}{internal_location_guassians(kk),6};
+        GaussSummary(ii).Height(gg,gcount) = str2double(GaussData{ii}{internal_location_guassians(kk),7});
+        GaussSummary(ii).Center(gg,gcount) = str2double(GaussData{ii}{internal_location_guassians(kk),8});
+        GaussSummary(ii).Width(gg,gcount) = str2double(GaussData{ii}{internal_location_guassians(kk),9});
+        GaussSummary(ii).SSE(gg,gcount) = str2double(GaussData{ii}{internal_location_guassians(kk),10});
+        GaussSummary(ii).adjrsquare(gg,gcount) = str2double(GaussData{ii}{internal_location_guassians(kk),11});
+        GaussSummary(ii).Complex_size(gg,gcount) = str2double(GaussData{ii}{internal_location_guassians(kk),12});
+        
+        %Calculate Area of Gaussian
+        guassian_area_fun =  @(x)( GaussSummary(ii).Height(gg,gcount)...
+          *exp(-((x- GaussSummary(ii).Center(gg,gcount))...
+          /GaussSummary(ii).Width(gg,gcount)).^2));
+        guassian_area= integral(guassian_area_fun,1,Nfraction);
+        
+        %Save Gaussian area for MvsL
+        GaussSummary(ii).Gaussian_area(gg,gcount)= guassian_area;
+      end
+      GaussSummary(ii).Protein_name(gg) = GaussData{ii}(internal_location_guassians(1),6);
+      GaussSummary(ii).Replicate_Protein_identifier(gg) = GaussData{ii}(internal_location_guassians(1),2);
     end
   end
-  
-  
-  %find the position in HvsL
-  [internal_location_guassians_HvsL]=ind2sub(size(Gaus_HvsL), strmatch(Protein_name, Gaus_HvsL(:,2), 'exact'));
-  number_counter2=length(internal_location_guassians_HvsL);
-  counter_balance2=0;
-  for internal_counter2 = 1:number_counter2
-    if str2num(Gaus_HvsL{internal_location_guassians_HvsL(internal_counter2),8})>fraction_to_plot
-      counter_balance2=counter_balance2+1;
-    else
-      Location_of_guassians_HvsL(guassian_counter1,internal_counter2-counter_balance2)=internal_location_guassians_HvsL(internal_counter2)-1;
-      HvsL_Gaussians.Unique_identifier(guassian_counter1,internal_counter2-counter_balance2)=Gaus_HvsL(internal_location_guassians_HvsL(internal_counter2),1);
-      HvsL_Gaussians.Guassian_index_number(guassian_counter1,internal_counter2-counter_balance2)=str2num(Gaus_HvsL{internal_location_guassians_HvsL(internal_counter2),3});
-      HvsL_Gaussians.Protein_number(guassian_counter1,internal_counter2-counter_balance2)=str2num(Gaus_HvsL{internal_location_guassians_HvsL(internal_counter2),4});
-      HvsL_Gaussians.Replicate(guassian_counter1,internal_counter2-counter_balance2)=str2num(Gaus_HvsL{internal_location_guassians_HvsL(internal_counter2),5});
-      HvsL_Gaussians.Protein{guassian_counter1,internal_counter2-counter_balance2}=Gaus_HvsL{internal_location_guassians_HvsL(internal_counter2),6};
-      HvsL_Gaussians.Height(guassian_counter1,internal_counter2-counter_balance2)=str2num(Gaus_HvsL{internal_location_guassians_HvsL(internal_counter2),7});
-      HvsL_Gaussians.Center(guassian_counter1,internal_counter2-counter_balance2)=str2num(Gaus_HvsL{internal_location_guassians_HvsL(internal_counter2),8});
-      HvsL_Gaussians.Width(guassian_counter1,internal_counter2-counter_balance2)=str2num(Gaus_HvsL{internal_location_guassians_HvsL(internal_counter2),9});
-      HvsL_Gaussians.SSE(guassian_counter1,internal_counter2-counter_balance2)=str2num(Gaus_HvsL{internal_location_guassians_HvsL(internal_counter2),10});
-      HvsL_Gaussians.adjrsquare(guassian_counter1,internal_counter2-counter_balance2)=str2num(Gaus_HvsL{internal_location_guassians_HvsL(internal_counter2),11});
-      HvsL_Gaussians.Complex_size(guassian_counter1,internal_counter2-counter_balance2)=str2num(Gaus_HvsL{internal_location_guassians_HvsL(internal_counter2),12});
-      
-      
-      %Calculate Area of Gaussian
-      guassian_area_fun =  @(x)( HvsL_Gaussians.Height(guassian_counter1,internal_counter2-counter_balance2)...
-        *exp(-((x- HvsL_Gaussians.Center(guassian_counter1,internal_counter2-counter_balance2))...
-        /HvsL_Gaussians.Width(guassian_counter1,internal_counter2-counter_balance2)).^2));
-      guassian_area= integral(guassian_area_fun,1,55);
-      
-      %Save Gaussian area for HvsL
-      HvsL_Gaussians.Gaussian_area(guassian_counter1,internal_counter2-counter_balance2)= guassian_area;
-    end
-  end
-  
-  %Save name of Protein in each row
-  if ~isempty(internal_location_guassians_MvsL)
-    MvsL_Gaussians.Protein_name(guassian_counter1,1)=Gaus_MvsL(internal_location_guassians_MvsL(1),6);
-    MvsL_Gaussians.Replicate_Protein_identifier(guassian_counter1,1)=Gaus_MvsL(internal_location_guassians_MvsL(1),2);
-  else
-    MvsL_Gaussians.Protein_name(guassian_counter1,1)=Gaus_HvsL(internal_location_guassians_HvsL(1),6);
-    MvsL_Gaussians.Replicate_Protein_identifier(guassian_counter1,1)={'NaN'};
-  end
-  
-  if ~isempty(internal_location_guassians_HvsL)
-    HvsL_Gaussians.Protein_name(guassian_counter1,1)=Gaus_HvsL(internal_location_guassians_HvsL(1),6);
-    HvsL_Gaussians.Replicate_Protein_identifier(guassian_counter1,1)=Gaus_HvsL(internal_location_guassians_HvsL(1),2);
-  else
-    HvsL_Gaussians.Protein_name(guassian_counter1,1)=Gaus_MvsL(internal_location_guassians_MvsL(1),6);
-    HvsL_Gaussians.Replicate_Protein_identifier(guassian_counter1,1)={'NaN'};
-  end
-  
 end
-
-
-%Determine which row to remove based on if values absent from
-rows_to_remove=zeros(Number_All_guassians_identified_nonredunent_list,1);
-for guassian_counter1= 1:Number_All_guassians_identified_nonredunent_list
-  if sum(nnz(HvsL_Gaussians.Center(guassian_counter1,:))+nnz(MvsL_Gaussians.Center(guassian_counter1,:)))==0
-    rows_to_remove(guassian_counter1,1)=1;
-  end
-end
-
-%remove MvsL
-MvsL_Gaussians.Unique_identifier(rows_to_remove(:)==1,:)=[];
-MvsL_Gaussians.Guassian_index_number(rows_to_remove==1,:)=[];
-MvsL_Gaussians.Protein_number(rows_to_remove==1,:)=[];
-MvsL_Gaussians.Replicate(rows_to_remove==1,:)=[];
-MvsL_Gaussians.Protein(rows_to_remove==1,:)=[];
-MvsL_Gaussians.Height(rows_to_remove==1,:)=[];
-MvsL_Gaussians.Center(rows_to_remove==1,:)=[];
-MvsL_Gaussians.Width(rows_to_remove==1,:)=[];
-MvsL_Gaussians.SSE(rows_to_remove==1,:)=[];
-MvsL_Gaussians.adjrsquare(rows_to_remove==1,:)=[];
-MvsL_Gaussians.Complex_size(rows_to_remove==1,:)=[];
-MvsL_Gaussians.Gaussian_area(rows_to_remove==1,:)=[];
-MvsL_Gaussians.Protein_name(rows_to_remove==1,:)=[];
-MvsL_Gaussians.Replicate_Protein_identifier(rows_to_remove==1,:)=[];
-
-%remove HvsL
-Location_of_guassians_HvsL(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Unique_identifier(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Guassian_index_number(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Protein_number(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Replicate(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Protein(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Height(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Center(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Width(rows_to_remove==1,:)=[];
-HvsL_Gaussians.SSE(rows_to_remove==1,:)=[];
-HvsL_Gaussians.adjrsquare(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Complex_size(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Gaussian_area(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Protein_name(rows_to_remove==1,:)=[];
-HvsL_Gaussians.Replicate_Protein_identifier(rows_to_remove==1,:)=[];
 
 %Define the size of the MvsL and HvsL arrays
-Dimension_of_array=size(MvsL_Gaussians.Center);
+Dimension_of_array=size(GaussSummary(1).Center);
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
+
 
 
 
 %% 3. Determine which Gaussians are unique to each channel
-fprintf('    3. Determine which Gaussians are unique to each channel (WITHIN REPLICATE)')
+fprintf('    3. Determine which Gaussians are unique to each channel')
 
+% WAIT!
+% gg indexes GaussSummary or GaussData???
+clear Combined_Gaussians
 
 %Determine which gaussians are unique and which are shared between MvsL and
 %HvsL of the same replicate
-for guassian_counter2 = 1:Dimension_of_array(1)
+gausscount = 0;
+for gg = 1:NuniqueGauss
+  %if strcmp(GaussSummary(1).Protein{gg,1},'C9J4Z3');pause;end
   
-  %determine Center for specific protein, note this is created so as the loop
-  %cycle through each guassian the identified gaussians can be removed
-  Replicate_MvsL_protein=MvsL_Gaussians.Replicate(guassian_counter2, :);
-  Replicate_HvsL_protein=HvsL_Gaussians.Replicate(guassian_counter2, :);
-  Centres_MvsL_protein=MvsL_Gaussians.Center(guassian_counter2, :);
-  Centres_HvsL_protein=HvsL_Gaussians.Center(guassian_counter2, :);
-  Height_MvsL_protein=MvsL_Gaussians.Height(guassian_counter2, :);
-  Height_HvsL_protein=HvsL_Gaussians.Height(guassian_counter2, :);
-  Width_MvsL_protein=MvsL_Gaussians.Width(guassian_counter2, :);
-  Width_HvsL_protein=HvsL_Gaussians.Width(guassian_counter2, :);
-  SSE_MvsL_protein=MvsL_Gaussians.SSE(guassian_counter2, :);
-  SSE_HvsL_protein=HvsL_Gaussians.SSE(guassian_counter2, :);
-  determined_AdjrSequare_of_guassians_MvsL=MvsL_Gaussians.adjrsquare(guassian_counter2,:);
-  determined_AdjrSequare_of_guassians_HvsL=HvsL_Gaussians.adjrsquare(guassian_counter2,:);
-  Complex_size_MvsL_protein=MvsL_Gaussians.Complex_size(guassian_counter2, :);
-  Complex_size_HvsL_protein=HvsL_Gaussians.Complex_size(guassian_counter2, :);
-  Protein_name_MvsL=MvsL_Gaussians.Protein_name(guassian_counter2, :);
-  Protein_name_HvsL=HvsL_Gaussians.Protein_name(guassian_counter2, :);
-  Unique_ID_MvsL=MvsL_Gaussians.Replicate_Protein_identifier(guassian_counter2, :);
-  Unique_ID_HvsL=HvsL_Gaussians.Replicate_Protein_identifier(guassian_counter2, :);
-  Area_MvsL=MvsL_Gaussians.Gaussian_area(guassian_counter2, :);
-  Area_HvsL=HvsL_Gaussians.Gaussian_area(guassian_counter2, :);
-  position_counter=1;
-  
-  %Determine which channel has the best gaussian fit
-  AdjrSequare_of_guassians_channels=[determined_AdjrSequare_of_guassians_MvsL(1), determined_AdjrSequare_of_guassians_HvsL(1)];
-  Max_AdjrSequare_of_guassians(guassian_counter2,1)=max(AdjrSequare_of_guassians_channels);
-  position_of_best_AdjrSequare=find(ismember(AdjrSequare_of_guassians_channels,Max_AdjrSequare_of_guassians(guassian_counter2,1)));
-  
-  %Determine if the gaussians are the same until all guassians have been
-  %compared
-  
-  ready = false;
-  while ~ready
-    %count the number of non zero elements
-    Number_of_non_zero_elements_MvsL=nnz(Centres_MvsL_protein);
-    Number_of_non_zero_elements_HvsL=nnz(Centres_HvsL_protein);
-    %create the matrix to be filled
-    Matrix_of_interactions=zeros(Number_of_non_zero_elements_MvsL,Number_of_non_zero_elements_HvsL);
-    
-    
-    %create matrix to compare gaussians
-    for internal_counter3= 1:Number_of_non_zero_elements_MvsL
-      for internal_counter4= 1:Number_of_non_zero_elements_HvsL
-        Centres_MvsL_for_matrix=Centres_MvsL_protein(internal_counter3);
-        Centres_HvsL_for_matrix=Centres_HvsL_protein(internal_counter4);
-        Matrix_of_interactions(internal_counter3,internal_counter4)= abs(Centres_MvsL_for_matrix-Centres_HvsL_for_matrix);
-      end
-    end
-    
-    %test matrix to determine which gaussains to keep and which ones to remove
-    %test to makre sure the matrix has numbers
-    if isempty(Matrix_of_interactions(:)) == 1
-      row_to_copy_to_summed_array = nnz(Centres_MvsL_protein);
-      col_to_copy_to_summed_array = nnz(Centres_HvsL_protein);
-      if row_to_copy_to_summed_array>0
-        for copy_counter1=1:row_to_copy_to_summed_array
-          Summed_Replicate(guassian_counter2,position_counter)=Replicate_MvsL_protein(copy_counter1);
-          Summed_Center_of_guassians(guassian_counter2,position_counter)= Centres_MvsL_protein(copy_counter1);
-          Summed_Height_of_guassians(guassian_counter2,position_counter)=Height_MvsL_protein(copy_counter1);
-          Summed_Width_of_guassians(guassian_counter2,position_counter)=Width_MvsL_protein(copy_counter1);
-          Summed_SSE_of_guassians(guassian_counter2,position_counter)=SSE_MvsL_protein(copy_counter1);
-          Summed_adjrsquare_of_guassians(guassian_counter2,position_counter)=determined_AdjrSequare_of_guassians_MvsL(copy_counter1);
-          Summed_Complex_size(guassian_counter2,position_counter)=Complex_size_MvsL_protein(copy_counter1);
-          Summed_protein_name(guassian_counter2,1)=Protein_name_MvsL(1);
-          Summed_Unique_ID(guassian_counter2,1)=Unique_ID_MvsL(1);
-          Combined_gaussian_areas(guassian_counter2,position_counter)=Area_MvsL(copy_counter1);
-          Area_of_MvsL_gaussian(guassian_counter2,position_counter)=Area_MvsL(copy_counter1);
-          Summed_Center_of_guassians_found_in_MvsL(guassian_counter2,position_counter)=1;
-          position_counter=position_counter+1;
-        end
-        ind_to_remove = [1:row_to_copy_to_summed_array] ; % indices to be removed
-        Replicate_MvsL_protein(ind_to_remove)=[];
-        Centres_MvsL_protein(ind_to_remove)=[];
-        Height_MvsL_protein(ind_to_remove)=[];
-        Width_MvsL_protein(ind_to_remove)=[];
-        SSE_MvsL_protein(ind_to_remove)=[];
-        Complex_size_MvsL_protein(ind_to_remove)=[];
-        Area_MvsL(ind_to_remove)=[];
-        determined_AdjrSequare_of_guassians_MvsL(ind_to_remove)=[];
-      end
-      if col_to_copy_to_summed_array>0
-        for copy_counter2=1:col_to_copy_to_summed_array
-          Summed_Replicate(guassian_counter2,position_counter)=Replicate_HvsL_protein(copy_counter2);
-          Summed_Center_of_guassians(guassian_counter2,position_counter)= Centres_HvsL_protein(copy_counter2);
-          Summed_Height_of_guassians(guassian_counter2,position_counter)=Height_HvsL_protein(copy_counter2);
-          Summed_Width_of_guassians(guassian_counter2,position_counter)=Width_HvsL_protein(copy_counter2);
-          Summed_SSE_of_guassians(guassian_counter2,position_counter)=SSE_HvsL_protein(copy_counter2);
-          Summed_adjrsquare_of_guassians(guassian_counter2,position_counter)=determined_AdjrSequare_of_guassians_HvsL(copy_counter2);
-          Summed_Complex_size(guassian_counter2,position_counter)=Complex_size_HvsL_protein(copy_counter2);
-          Summed_protein_name(guassian_counter2,1)=Protein_name_HvsL(1);
-          Summed_Unique_ID(guassian_counter2,1)=Unique_ID_HvsL(1);
-          Combined_gaussian_areas(guassian_counter2,position_counter)=Area_HvsL(copy_counter2);
-          Area_of_HvsL_gaussian(guassian_counter2,position_counter)=Area_HvsL(copy_counter2);
-          Summed_Center_of_guassians_found_in_HvsL(guassian_counter2,position_counter)=1;
-          position_counter=position_counter+1;
-        end
-        ind_to_remove = [1:col_to_copy_to_summed_array] ; % indices to be removed
-        Replicate_HvsL_protein(ind_to_remove)=[];
-        Centres_HvsL_protein(ind_to_remove)=[];
-        Height_HvsL_protein(ind_to_remove)=[];
-        Width_HvsL_protein(ind_to_remove)=[];
-        SSE_HvsL_protein(ind_to_remove)=[];
-        Complex_size_HvsL_protein(ind_to_remove)=[];
-        Area_HvsL(ind_to_remove)=[];
-        determined_AdjrSequare_of_guassians_HvsL(ind_to_remove)=[];
-      end
-      %test to find the best gaussians within user defined number of fractions of each other
-    elseif min(Matrix_of_interactions(:)) <=User_Window
-      % position of the guassians that are the same between MvsL and HvsL channel
-      [row,col] = ind2sub(size(Matrix_of_interactions),find(ismember((Matrix_of_interactions),min(Matrix_of_interactions(:)))));
-      %use the Gaussian corresponding to the best AdjrSequare
-      
-      if position_of_best_AdjrSequare(1) == 1 % the MvsL contains the best adjrsequare
-        Summed_Replicate(guassian_counter2,position_counter)=Replicate_MvsL_protein(row(1));
-        Summed_Center_of_guassians(guassian_counter2,position_counter)= Centres_MvsL_protein(row(1));
-        Summed_Height_of_guassians(guassian_counter2,position_counter)=Height_MvsL_protein(row(1));
-        Summed_Width_of_guassians(guassian_counter2,position_counter)=Width_MvsL_protein(row(1));
-        Summed_SSE_of_guassians(guassian_counter2,position_counter)=SSE_MvsL_protein(row(1));
-        Summed_adjrsquare_of_guassians(guassian_counter2,position_counter)=determined_AdjrSequare_of_guassians_MvsL(row(1));
-        Summed_Complex_size(guassian_counter2,position_counter)=Complex_size_MvsL_protein(row(1));
-        Combined_gaussian_areas(guassian_counter2,position_counter)=Area_MvsL(row(1));
-        Area_of_MvsL_gaussian(guassian_counter2,position_counter)=Area_MvsL(row(1));
-        Area_of_HvsL_gaussian(guassian_counter2,position_counter)=Area_HvsL(col(1));
-        Summed_protein_name(guassian_counter2,1)=Protein_name_MvsL(1);
-        Summed_Unique_ID(guassian_counter2,1)=Unique_ID_MvsL(1);
-        Summed_Center_of_guassians_found_in_MvsL(guassian_counter2,position_counter)=1;
-        Summed_Center_of_guassians_found_in_HvsL(guassian_counter2,position_counter)=1;
-        position_counter=position_counter+1; % add 1 to position
-        
-      elseif position_of_best_AdjrSequare(1) == 2 % the HvsL contains the best adjrsequare
-        Summed_Replicate(guassian_counter2,position_counter)=Replicate_HvsL_protein(col(1));
-        Summed_Center_of_guassians(guassian_counter2,position_counter)= Centres_HvsL_protein(col(1));
-        Summed_Height_of_guassians(guassian_counter2,position_counter)=Height_HvsL_protein(col(1));
-        Summed_Width_of_guassians(guassian_counter2,position_counter)=Width_HvsL_protein(col(1));
-        Summed_SSE_of_guassians(guassian_counter2,position_counter)=SSE_HvsL_protein(col(1));
-        Summed_adjrsquare_of_guassians(guassian_counter2,position_counter)=determined_AdjrSequare_of_guassians_HvsL(col(1));
-        Summed_Complex_size(guassian_counter2,position_counter)=Complex_size_HvsL_protein(col(1));
-        Combined_gaussian_areas(guassian_counter2,position_counter)=Area_HvsL(col(1));
-        Area_of_MvsL_gaussian(guassian_counter2,position_counter)=Area_MvsL(row(1));
-        Area_of_HvsL_gaussian(guassian_counter2,position_counter)=Area_HvsL(col(1));
-        Summed_protein_name(guassian_counter2,1)=Protein_name_HvsL(1);
-        Summed_Unique_ID(guassian_counter2,1)=Unique_ID_HvsL(1);
-        Summed_Center_of_guassians_found_in_MvsL(guassian_counter2,position_counter)=1;
-        Summed_Center_of_guassians_found_in_HvsL(guassian_counter2,position_counter)=1;
-        position_counter=position_counter+1; % add 1 to position
-      end
-      
-      %remove the most similar gaussains that are within 2 units
-      %remove values in MvsL channels
-      Replicate_MvsL_protein(:,[row(:)])=[];
-      Centres_MvsL_protein(:,[row(:)])=[];
-      Height_MvsL_protein(:,[row(:)])=[];
-      Width_MvsL_protein(:,[row(:)])=[];
-      SSE_MvsL_protein(:,[row(:)])=[];
-      Complex_size_MvsL_protein(:,[row(:)])=[];
-      Area_MvsL(:,[row(:)])=[];
-      determined_AdjrSequare_of_guassians_MvsL(:,[row(:)])=[];
-      
-      %remove values in HvsL channels
-      Replicate_HvsL_protein(:,[col(:)])=[];
-      Centres_HvsL_protein(:,[col(:)])=[];
-      Height_HvsL_protein(:,[col(:)])=[];
-      Width_HvsL_protein(:,[col(:)])=[];
-      SSE_HvsL_protein(:,[col(:)])=[];
-      Complex_size_HvsL_protein(:,[col(:)])=[];
-      Area_HvsL(:,[col(:)])=[];
-      determined_AdjrSequare_of_guassians_HvsL(:,[col(:)])=[];
-      
-      %Consider gaussians not within user defined window of fractions of each other as unique
-    elseif min(Matrix_of_interactions(:)) >User_Window
-      % position of the guassians that are the same between MvsL and HvsL channel
-      [row,col] = ind2sub(size(Matrix_of_interactions),find(ismember((Matrix_of_interactions),min(Matrix_of_interactions(:)))));
-      %MvsL
-      Summed_Replicate(guassian_counter2,position_counter)=Replicate_MvsL_protein(row(1));
-      Summed_Center_of_guassians(guassian_counter2,position_counter)= Centres_MvsL_protein(row(1));
-      Summed_Height_of_guassians(guassian_counter2,position_counter)=Height_MvsL_protein(row(1));
-      Summed_Width_of_guassians(guassian_counter2,position_counter)=Width_MvsL_protein(row(1));
-      Summed_SSE_of_guassians(guassian_counter2,position_counter)=SSE_MvsL_protein(row(1));
-      Summed_adjrsquare_of_guassians(guassian_counter2,position_counter)=determined_AdjrSequare_of_guassians_MvsL(row(1));
-      Summed_Complex_size(guassian_counter2,position_counter)=Complex_size_MvsL_protein(row(1));
-      Area_of_MvsL_gaussian(guassian_counter2,position_counter)=Area_MvsL(row(1));
-      Combined_gaussian_areas(guassian_counter2,position_counter)=Area_MvsL(row(1));
-      Summed_protein_name(guassian_counter2,1)=Protein_name_MvsL(1);
-      Summed_Unique_ID(guassian_counter2,1)=Unique_ID_MvsL(1);
-      Summed_Center_of_guassians_found_in_MvsL(guassian_counter2,position_counter)=1;
-      %HvsL
-      Summed_Replicate(guassian_counter2,position_counter+1)=Replicate_HvsL_protein(col(1));
-      Summed_Center_of_guassians(guassian_counter2,position_counter+1)= Centres_HvsL_protein(col(1));
-      Summed_Height_of_guassians(guassian_counter2,position_counter+1)=Height_HvsL_protein(col(1));
-      Summed_Width_of_guassians(guassian_counter2,position_counter+1)=Width_HvsL_protein(col(1));
-      Summed_SSE_of_guassians(guassian_counter2,position_counter+1)=SSE_HvsL_protein(col(1));
-      Summed_adjrsquare_of_guassians(guassian_counter2,position_counter+1)=determined_AdjrSequare_of_guassians_HvsL(col(1));
-      Summed_Complex_size(guassian_counter2,position_counter+1)=Complex_size_HvsL_protein(col(1));
-      Area_of_HvsL_gaussian(guassian_counter2,position_counter+1)=Area_HvsL(col(1));
-      Combined_gaussian_areas(guassian_counter2,position_counter+1)=Area_HvsL(col(1));
-      Summed_protein_name(guassian_counter2,1)=Protein_name_HvsL(1);
-      Summed_Unique_ID(guassian_counter2,1)=Unique_ID_HvsL(1);
-      Summed_Center_of_guassians_found_in_HvsL(guassian_counter2,position_counter+1)=1;
-      position_counter=position_counter+2; % add 2 to position
-      
-      %remove the most similar gaussains that are within 2 units
-      %remove values in MvsL channels
-      Replicate_MvsL_protein(:,[row(:)])=[];
-      Centres_MvsL_protein(:,[row(:)])=[];
-      Height_MvsL_protein(:,[row(:)])=[];
-      Width_MvsL_protein(:,[row(:)])=[];
-      SSE_MvsL_protein(:,[row(:)])=[];
-      Area_MvsL(:,[row(:)])=[];
-      Complex_size_MvsL_protein(:,[row(:)])=[];
-      determined_AdjrSequare_of_guassians_MvsL(:,[row(:)])=[];
-      
-      %remove values in HvsL channels
-      Replicate_HvsL_protein(:,[col(:)])=[];
-      Centres_HvsL_protein(:,[col(:)])=[];
-      Height_HvsL_protein(:,[col(:)])=[];
-      Width_HvsL_protein(:,[col(:)])=[];
-      SSE_HvsL_protein(:,[col(:)])=[];
-      Area_HvsL(:,[col(:)])=[];
-      Complex_size_HvsL_protein(:,[col(:)])=[];
-      determined_AdjrSequare_of_guassians_HvsL(:,[col(:)])=[];
-      
-    end
-    
-    %check the dimension of the matrix to all numbers have been checked
-    row_check = nnz(Centres_MvsL_protein);
-    col_check = nnz(Centres_HvsL_protein);
-    ready = (row_check == 0 && col_check == 0);
+  % 1. Pick the channel with the best R^2
+  R2 = zeros(Nchannels,1);
+  for ii = 1:Nchannels
+    R2(ii) = GaussSummary(ii).adjrsquare(gg,1);
   end
-end
-
-%Total number of Gaussians
-Total_number_of_unique_gaussians=nnz(Summed_Center_of_guassians);
-
-%Unique Gaussian in each replicate
-Unique_gaussians_in_MvsL=nnz(Summed_Center_of_guassians_found_in_MvsL);
-Unique_gaussians_in_HvsL=nnz(Summed_Center_of_guassians_found_in_HvsL);
-
-%Determine th dimension of Summed_Center_of_guassians_found_in_HvsL
-[number_of_proteins, number_of_column]=size(Summed_Center_of_guassians);
-
-%determine if Summed_Center_of_guassians and MvsL or HvsL are equal
-[number_of_proteins_M, number_of_column_M]=size(Summed_Center_of_guassians_found_in_MvsL);
-[number_of_proteins_H, number_of_column_H]=size(Summed_Center_of_guassians_found_in_HvsL);
-
-%test MvsL
-if ~(number_of_column == number_of_column_M)
-  column_to_add=number_of_column-number_of_column_M;
-  require_columns=zeros(number_of_proteins_M,column_to_add);
-  %Add values for center measurements
-  Summed_Center_of_guassians_found_in_MvsL=[Summed_Center_of_guassians_found_in_MvsL, require_columns];
-  %Add vlaues for Area_of_HvsL_gaussian measurements
-  Area_of_MvsL_gaussian= [Area_of_MvsL_gaussian, require_columns];
-end
-
-%test HvsL
-if ~(number_of_column == number_of_column_H)
-  column_to_add=number_of_column-number_of_column_H;
-  require_columns=zeros(number_of_proteins_H,column_to_add);
-  %Add values for center measurements
-  Summed_Center_of_guassians_found_in_HvsL=[Summed_Center_of_guassians_found_in_HvsL, require_columns];
-  %Add values for Area_of_HvsL_gaussian measurements
-  Area_of_HvsL_gaussian= [Area_of_HvsL_gaussian, require_columns];
-end
-
-%Shared Gaussians in each replicate
-shared_gaussian_counter=0;
-shared_gaussian_position=1;
-for count_shared_guassians1=1:number_of_proteins
-  for count_shared_guassians2=1:number_of_column
-    if Summed_Center_of_guassians_found_in_HvsL(count_shared_guassians1,count_shared_guassians2) ==1 && Summed_Center_of_guassians_found_in_MvsL(count_shared_guassians1,count_shared_guassians2) ==1
-      shared_gaussian_counter=1+shared_gaussian_counter;
-      Comparing_gaussian_in_channels{shared_gaussian_position,1}='Both';
-      Comparing_gaussian_in_channels_for_figure(shared_gaussian_position,1)=0.5;
-      shared_gaussian_position=1+shared_gaussian_position;
-    elseif Summed_Center_of_guassians_found_in_HvsL(count_shared_guassians1,count_shared_guassians2) ==1
-      Comparing_gaussian_in_channels{shared_gaussian_position,1}='HvsL';
-      Comparing_gaussian_in_channels_for_figure(shared_gaussian_position,1)=1;
-      shared_gaussian_position=1+shared_gaussian_position;
-    elseif Summed_Center_of_guassians_found_in_MvsL(count_shared_guassians1,count_shared_guassians2) ==1
-      Comparing_gaussian_in_channels{shared_gaussian_position,1}='MvsL';
-      Comparing_gaussian_in_channels_for_figure(shared_gaussian_position,1)=0.1;
-      shared_gaussian_position=1+shared_gaussian_position;
+  [~, Ibest] = max(R2); % the channel with the best R^2
+  Inotbest = find(~ismember(1:Nchannels,Ibest)); % the other channels
+  Cbest = GaussSummary(Ibest).Center(gg,:);
+  Cbest(isnan(Cbest) | Cbest==0) = [];
+  
+  % 2. For each not-best Gaussian, check if it's within User_Window of a best Gaussian
+  Gausskeep_notbest = cell(length(Inotbest),1);
+  Cbest_multireplicates = zeros(length(Cbest),length(Experimental_channels));
+  Cbest_multireplicates(:,Ibest) = 1;
+  for ii = 1:length(Inotbest)
+    % Get Gaussian Centers in this not-best channel
+    tmp = GaussSummary(Inotbest(ii)).Center(gg,:);
+    tmp = tmp(tmp>0 & ~isnan(tmp));
+    
+    Gausskeep_notbest{ii} = zeros(size(tmp));
+    for jj = 1:length(tmp)
+      D = find(abs(Cbest - tmp(jj)) < User_Window);
+      
+      if isempty(D) % Gaussian is unique, so keep it
+        Gausskeep_notbest{ii}(jj) = 1;
+      else % Gaussian is not unique, so 'add it' to the best Gaussian
+        Cbest_multireplicates(D,Inotbest(ii)) = 1;
+      end
+    end
+  end
+  
+  % 3. Return all Gaussians in the best channel.
+  for ii = 1:length(Cbest)
+    gausscount = gausscount+1;
+    Combined_Gaussians.Unique_identifier(gausscount) = GaussSummary(Ibest).Replicate_Protein_identifier(gg);
+    Combined_Gaussians.Protein_name{gausscount} = GaussSummary(Ibest).Protein{gg,ii};
+    Combined_Gaussians.Replicate(gausscount) = GaussSummary(Ibest).Replicate(gg,ii);
+    Combined_Gaussians.Center(gausscount) = GaussSummary(Ibest).Center(gg,ii);
+    Combined_Gaussians.Height(gausscount) = GaussSummary(Ibest).Height(gg,ii);
+    Combined_Gaussians.Width(gausscount) = GaussSummary(Ibest).Width(gg,ii);
+    Combined_Gaussians.adjrsquare(gausscount) = GaussSummary(Ibest).adjrsquare(gg,ii);
+    Combined_Gaussians.Channels{gausscount} = strjoin(Experimental_channels(Cbest_multireplicates(ii,:)==1), '+');
+    Combined_Gaussians.SSE(gausscount) = GaussSummary(Ibest).SSE(gg,ii);
+    Combined_Gaussians.Complex_size(gausscount) = GaussSummary(Ibest).Complex_size(gg,ii);
+    %Combined_Gaussians.Area_of_combined_gaussian(gausscount) = GaussSummary(Ibest)
+    %Combined_Gaussians.Area_of_HvsL_gaussian(gausscount) = GaussSummary(Ibest)
+    %Combined_Gaussians.Area_of_MvsL_gaussian(gausscount) = GaussSummary(Ibest)
+    %Combined_Gaussians.Summed_combined_area(gausscount) = GaussSummary(Ibest)
+    %Combined_Gaussians.Summed_HvsL_area(gausscount) = GaussSummary(Ibest)
+    %Combined_Gaussians.Summed_MvsL_area(gausscount) = GaussSummary(Ibest)
+  end
+  
+  % 4. Return all Gaussians in other channels that have NOT been matched.
+  for jj = 1:length(Inotbest)
+    g2add = find(Gausskeep_notbest{jj});
+    for kk = 1:length(g2add)
+      gausscount = gausscount+1;
+      Combined_Gaussians.Unique_identifier(gausscount) = GaussSummary(Inotbest(jj)).Replicate_Protein_identifier(gg);
+      Combined_Gaussians.Protein_name{gausscount} = GaussSummary(Inotbest(jj)).Protein{gg,g2add(kk)};
+      Combined_Gaussians.Replicate(gausscount) = GaussSummary(Inotbest(jj)).Replicate(gg,g2add(kk));
+      Combined_Gaussians.Center(gausscount) = GaussSummary(Inotbest(jj)).Center(gg,g2add(kk));
+      Combined_Gaussians.Height(gausscount) = GaussSummary(Inotbest(jj)).Height(gg,g2add(kk));
+      Combined_Gaussians.Width(gausscount) = GaussSummary(Inotbest(jj)).Width(gg,g2add(kk));
+      Combined_Gaussians.adjrsquare(gausscount) = GaussSummary(Inotbest(jj)).adjrsquare(gg,g2add(kk));
+      Combined_Gaussians.Channels{gausscount} = strjoin(Experimental_channels(Inotbest(jj)), '+');
+      Combined_Gaussians.SSE(gausscount) = GaussSummary(Inotbest(jj)).SSE(gg,g2add(kk));
+      Combined_Gaussians.Complex_size(gausscount) = GaussSummary(Inotbest(jj)).Complex_size(gg,g2add(kk));
+      %Combined_Gaussians.Area_of_combined_gaussian(gausscount) = GaussSummary(Ibest)
+      %Combined_Gaussians.Area_of_HvsL_gaussian(gausscount) = GaussSummary(Ibest)
+      %Combined_Gaussians.Area_of_MvsL_gaussian(gausscount) = GaussSummary(Ibest)
+      %Combined_Gaussians.Summed_combined_area(gausscount) = GaussSummary(Ibest)
+      %Combined_Gaussians.Summed_HvsL_area(gausscount) = GaussSummary(Ibest)
+      %Combined_Gaussians.Summed_MvsL_area(gausscount) = GaussSummary(Ibest)
     end
   end
 end
 
-%Write out a Combined_OutputGaus table with unique gaussians and if they
-%were identified in both channels or only MvsL or HvsL
-%Formatting channel information
-Formatting_counter1=1;
-for writeout_counter1= 1:number_of_proteins
-  for writeout_counter2= 1:nnz(Summed_Height_of_guassians(writeout_counter1,:))
-    formatted_Comparing_gaussian_in_channels(writeout_counter1,writeout_counter2)=Comparing_gaussian_in_channels(Formatting_counter1);
-    Formatting_counter1=1+Formatting_counter1;
-  end
+% Total number of Gaussians
+number_of_proteins = gausscount;
+Unique_gaussians_in_eachchannel = zeros(Nchannels,1);
+for ii = 1:Nchannels
+  %Unique_gaussians_in_eachchannel(ii) = sum(cell2mat(strfind(Combined_Gaussians.Channels(:),Experimental_channels{ii})) > 0);
+  %Unique_gaussians_in_eachchannel(ii) = sum(cell2mat(strfind(Combined_Gaussians.Channels(:),Experimental_channels{ii})) > 0);
 end
+sjoin = strjoin(Experimental_channels(:), '+');
+shared_gaussian_counter = sum(strcmp(Combined_Gaussians.Channels(:),sjoin));
 
-
-%Write gaussian found between replicates to structure array
-Combined_Gaussians.Unique_identifier=Summed_Unique_ID;
-Combined_Gaussians.Protein_name=Summed_protein_name;
-Combined_Gaussians.Replicate=Summed_Replicate(:,1);
-Combined_Gaussians.Centrer=Summed_Center_of_guassians;
-Combined_Gaussians.Height=Summed_Height_of_guassians;
-Combined_Gaussians.Width= Summed_Width_of_guassians;
-Combined_Gaussians.adjrsquare=Summed_adjrsquare_of_guassians;
-Combined_Gaussians.Channels=formatted_Comparing_gaussian_in_channels;
-Combined_Gaussians.SSE=Summed_SSE_of_guassians;
-Combined_Gaussians.Complex_size=Summed_Complex_size;
-Combined_Gaussians.Area_of_combined_gaussian=Combined_gaussian_areas;
-Combined_Gaussians.Area_of_HvsL_gaussian=Area_of_HvsL_gaussian;
-Combined_Gaussians.Area_of_MvsL_gaussian=Area_of_MvsL_gaussian;
-Combined_Gaussians.Summed_combined_area=sum(Combined_gaussian_areas')';
-Combined_Gaussians.Summed_HvsL_area=sum(Area_of_HvsL_gaussian')';
-Combined_Gaussians.Summed_MvsL_area=sum(Area_of_MvsL_gaussian')';
-
-
-%Determine the Coverage of complexes within sample based on area
-Combined_Gaussians.Precentage_MvsL=Combined_Gaussians.Area_of_MvsL_gaussian/Standard_area;
-Combined_Gaussians.Precentage_HvsL=Combined_Gaussians.Area_of_HvsL_gaussian/Standard_area;
-Combined_Gaussians.Precentage_combined=Combined_Gaussians.Area_of_combined_gaussian/Standard_area;
-Combined_Gaussians.Summed_Precentage_MvsL=Combined_Gaussians.Summed_MvsL_area/Standard_area;
-Combined_Gaussians.Summed_Precentage_HvsL=Combined_Gaussians.Summed_HvsL_area/Standard_area;
-Combined_Gaussians.Summed_Precentage_combined=Combined_Gaussians.Summed_combined_area/Standard_area;
-
-%Calculate Coverage of the interactome
-Coverage_of_complexes_MvsL=sum(mean(Combined_Gaussians.Precentage_MvsL));
-Coverage_of_complexes_HvsL=sum(mean(Combined_Gaussians.Precentage_HvsL));
 
 % #output
 %Write table of is gaussian were fitted in the HvsL and/or MvsL
-fid_combined_gaus_output= fopen([datadir1 'Unique_gaussians_observed_between_replicates.csv'],'wt'); % create the output file with the header infromation
+fid_combined_gaus_output= fopen([datadir 'Comparison/Unique_gaussians_observed_between_replicatesb.csv'],'wt'); % create the output file with the header infromation
 fprintf (fid_combined_gaus_output,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
   'Protein name','Complex Size', 'Height', 'Center', 'Width', 'SSE', 'adjrsquare','Observed in channel', 'Area observed for Unique Gaussians',...
   'Area observed for MvsL Gaussians','Area observed for HvsL Gaussians','Area coverage of unique Gaussians','Area coverage of MvsL Gaussians',...
   'Area coverage of HvsL Gaussians'); %Write Header
 for writeout_counter1= 1:number_of_proteins
-  for writeout_counter2= 1:nnz(Combined_Gaussians.Centrer(writeout_counter1,:))
-    fprintf(fid_combined_gaus_output,'%s,%6.3f,%6.3f,%6.3f,%6.3f,%6.3f,%6.3f,%s,%6.3f,%6.3f,%6.3f,%6.3f,%6.3f,%6.3f,\n',...
-      Combined_Gaussians.Unique_identifier{writeout_counter1},...
-      Combined_Gaussians.Complex_size(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Height(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Centrer(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Width(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.SSE(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.adjrsquare(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Channels{writeout_counter1,writeout_counter2},...
-      Combined_Gaussians.Area_of_combined_gaussian(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Area_of_MvsL_gaussian(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Area_of_HvsL_gaussian(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Precentage_combined(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Precentage_MvsL(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Precentage_HvsL(writeout_counter1,writeout_counter2));
-  end
+  fprintf(fid_combined_gaus_output,'%s,%6.3f,%6.3f,%6.3f,%6.3f,%6.3f,%6.3f,%s,\n',...%6.3f,%6.3f,%6.3f,%6.3f,%6.3f,%6.3f,\n',...
+    Combined_Gaussians.Unique_identifier{writeout_counter1},...
+    Combined_Gaussians.Complex_size(writeout_counter1),...
+    Combined_Gaussians.Height(writeout_counter1),...
+    Combined_Gaussians.Center(writeout_counter1),...
+    Combined_Gaussians.Width(writeout_counter1),...
+    Combined_Gaussians.SSE(writeout_counter1),...
+    Combined_Gaussians.adjrsquare(writeout_counter1),...
+    Combined_Gaussians.Channels{writeout_counter1});
+  %Combined_Gaussians.Area_of_combined_gaussian(writeout_counter1,writeout_counter2),...
+  %Combined_Gaussians.Area_of_MvsL_gaussian(writeout_counter1,writeout_counter2),...
+  %Combined_Gaussians.Area_of_HvsL_gaussian(writeout_counter1,writeout_counter2),...
+  %Combined_Gaussians.Precentage_combined(writeout_counter1,writeout_counter2),...
+  %Combined_Gaussians.Precentage_MvsL(writeout_counter1,writeout_counter2),...
+  %Combined_Gaussians.Precentage_HvsL(writeout_counter1,writeout_counter2));
 end
 fclose(fid_combined_gaus_output);
 
-%write out summary of guassian between replicates
-fid_Summary_gaussian= fopen([datadir1 'Summary_gaussian_detected_between_replicates.csv'],'wt'); % create the summary file of the interaction output
-fprintf (fid_Summary_gaussian,'%s,%s,%s,%s,%s,%s,\n',... %header for OutputGaus output
-  'Total gaussians', 'Gaussians within MvsL channel', 'Gaussians within HvsL channel', 'Shared Gaussians', 'Coverage of complexes observed in MvsL',...
-  'Coverage of complexes observed in HvsL'); %Write Header
-fprintf (fid_Summary_gaussian,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f\n',...
-  Total_number_of_unique_gaussians, Unique_gaussians_in_MvsL,...
-  Unique_gaussians_in_HvsL, shared_gaussian_counter, Coverage_of_complexes_MvsL, Coverage_of_complexes_HvsL);
-fprintf (fid_Summary_gaussian,',\n');
-fclose(fid_Summary_gaussian);
+fid_Summary_gaussian= fopen([datadir 'Comparison/Summary_gaussian_detected_between_replicatesb.csv'],'wt'); % create the summary file of the interaction output
+fprintf (fid_Summary_gaussian,'%s,','Total gaussians');
+for ci = 1:Nchannels
+  fprintf(fid_Summary_gaussian,'%s,',['Gaussians within ' Experimental_channels{ci} ' channel']);
+end
+fprintf(fid_Summary_gaussian,'%s,\n','Shared Gaussians');
+fprintf(fid_Summary_gaussian,'%6.4f,',number_of_proteins);
+for ci = 1:Nchannels
+  fprintf(fid_Summary_gaussian,'%6.4f,',Unique_gaussians_in_eachchannel(ci));
+end
+fprintf(fid_Summary_gaussian,'%6.4f,\n',shared_gaussian_counter);
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
@@ -799,245 +454,104 @@ fprintf('  ...  %.2f seconds\n',tt)
 % This is done with Gaussian Center
 fprintf('    4. Detect 2-fold changes (WITHIN REPLICATE)')
 
+%%%%%%% you can insert a comparisonpairs loop here
 
-%Unique gene name
-All_protein_names=[MvsL_Gaussians.Protein_name; HvsL_Gaussians.Protein_name];
-Unique_protein_names=unique(All_protein_names);
-%remove NaN from list
-test_nan=ismember(Unique_protein_names, {'NaN'});
-Unique_protein_names(test_nan==1)=[];
-%number of unique names in list
-number_of_unique_protein_with_gaussians=length(Unique_protein_names);
+% for this comparison pair
+% find which of the user.silacratios is the no-treatment, i.e. denominator in the fold change, and
+% which is the treatment, i.e. numerator.
+SR2use = find(strcmp(user.silacratios,user.comparisonpairs));
+I1 = strcmp(user.treatmentcondition,(user.silacratios(SR2use))); % treatment, numerator
+I2 = SR2use(~I1); % no-treatment, denominator
+I1 = find(I1);
 
-%Create arrays to write apex values to
-MvsL_Ratio_Apex=zeros(1,5);
-HvsL_Ratio_Apex=zeros(1,5);
-HvsM_Ratio_Apex=zeros(1,5);
-Apex_values=zeros(Total_number_of_unique_gaussians,4);
-Increase_at_apex_in_stimulation=zeros(number_of_proteins,1);
-Decrease_at_apex_in_stimulation=zeros(number_of_proteins,1);
-log_2_fold_comparsion_of_gaussian=zeros(number_of_proteins,1);
-Do_gaussian_in_channels_change_for_figure=zeros(number_of_proteins,1);
-Do_gaussian_in_channels_change=cell(number_of_proteins,1);
-Do_gaussian_in_channels_position=1;
-%Counters to detect changes
-Increase_counter=0;
-Decrease_counter=0;
-No_change_counter=0;
-Unquantifiable_counter=0;
-
-test=0;
-for Gaussian_counter1= 1:Dimension_of_array(1)
-  for internal_counter5 = 1:nnz(Combined_Gaussians.Centrer(Gaussian_counter1,:))
-    test=1+test;
+Combined_Gaussians.log2_of_gaussians = nan(number_of_proteins,1);
+for gg = 1:number_of_proteins
+  % location of Protein in raw textdata
+  Idata = find(strcmp(Combined_Gaussians.Unique_identifier{gg},[txt_val{1}{:,1}]));
+  Center_to_test = round(Combined_Gaussians.Center(gg));
+  
+  % retrieve raw data
+  rawratio = zeros(Nchannels,5);
+  baddata = 0;
+  for ii = 1:Nchannels
+    I = Center_to_test-2+frac1-1:Center_to_test+2+frac1-1;
+    rawratio(ii,:) = num_val{ii}(Idata-1,I); %Add six as Realigned raw data ranges from -5 to 60
+    baddata = nnz(rawratio(ii,:))==0;
   end
+  
+  % Check if the fold change is measurable
+  baddata = baddata | sum(isnan(rawratio(:,2:4)))/Nchannels>=2;
+  if baddata;continue;end
+  
+  % If data is good, get fold changes between the comparison pair
+  Combined_Gaussians.log2_of_gaussians(gg) = log2(nanmean(rawratio(I1,:))/nanmean(rawratio(I2,:)));
 end
+Combined_Gaussians.log2_normalised_gaussians = Combined_Gaussians.log2_of_gaussians - nanmean(Combined_Gaussians.log2_of_gaussians);
 
-%Determine which Gaussians change by comparing fitted data with raw data
-for Gaussian_counter1= 1:Dimension_of_array(1)
-  for internal_counter5 = 1:nnz(Combined_Gaussians.Centrer(Gaussian_counter1,:))
-    [location_Protein_in_raw_textdata]=ind2sub(size(txt_MvsL(:,1)), strmatch(Combined_Gaussians.Unique_identifier{Gaussian_counter1},txt_MvsL(:,1),'exact'));
-    Center_to_test=Combined_Gaussians.Centrer(Gaussian_counter1,internal_counter5); % determine the center of the Gaussian
-    rounded_center=round(Center_to_test); % round center of the Gaussian to nearest integer
-    
-    %Determine if Center is greater the fraction fraction_to_plot
-    if rounded_center > fraction_to_plot
-      
-      %Mark as Unquantifiable
-      dyanmic_title=strcat('Unquantifiable_Center_greater_than_',mat2str(fraction_to_plot));
-      Do_gaussian_in_channels_change{Gaussian_counter1,internal_counter5}= dyanmic_title;
-      Do_gaussian_in_channels_change_for_figure(Do_gaussian_in_channels_position)=0;
-      log_2_fold_comparsion_of_gaussian(Do_gaussian_in_channels_position)= 0;
-      Unquantifiable_counter=Unquantifiable_counter+1;
-      
-    elseif rounded_center <= fraction_to_plot
-      %retrieve ratios of MvsL
-      MvsL_Ratio_Apex(1,1) = num_val_MvsL(location_Protein_in_raw_textdata-1,rounded_center-2 +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      MvsL_Ratio_Apex(1,2) = num_val_MvsL(location_Protein_in_raw_textdata-1,rounded_center-1 +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      MvsL_Ratio_Apex(1,3) = num_val_MvsL(location_Protein_in_raw_textdata-1,rounded_center +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      MvsL_Ratio_Apex(1,4) = num_val_MvsL(location_Protein_in_raw_textdata-1,rounded_center+1 +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      MvsL_Ratio_Apex(1,5) = num_val_MvsL(location_Protein_in_raw_textdata-1,rounded_center+2 +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      
-      %retrieve ratios of HvsL
-      HvsL_Ratio_Apex(1,1) = num_val_HvsL(location_Protein_in_raw_textdata-1,rounded_center-2+6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      HvsL_Ratio_Apex(1,2) = num_val_HvsL(location_Protein_in_raw_textdata-1,rounded_center-1 +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      HvsL_Ratio_Apex(1,3) = num_val_HvsL(location_Protein_in_raw_textdata-1,rounded_center +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      HvsL_Ratio_Apex(1,4) = num_val_HvsL(location_Protein_in_raw_textdata-1,rounded_center+1 +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      HvsL_Ratio_Apex(1,5) = num_val_HvsL(location_Protein_in_raw_textdata-1,rounded_center+2 +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      
-      %retrieve ratios of HvsM
-      HvsM_Ratio_Apex(1,1) = num_val_HvsM(location_Protein_in_raw_textdata-1,rounded_center-2+6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      HvsM_Ratio_Apex(1,2) = num_val_HvsM(location_Protein_in_raw_textdata-1,rounded_center-1+6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      HvsM_Ratio_Apex(1,3) = num_val_HvsM(location_Protein_in_raw_textdata-1,rounded_center +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      HvsM_Ratio_Apex(1,4) = num_val_HvsM(location_Protein_in_raw_textdata-1,rounded_center+1 +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      HvsM_Ratio_Apex(1,5) = num_val_HvsM(location_Protein_in_raw_textdata-1,rounded_center+2 +6 +1); %Add six as Realigned raw data ranges from -5 to 60
-      
-      if (nnz(HvsL_Ratio_Apex) == 0 | nnz(MvsL_Ratio_Apex) == 0 | nnz(HvsM_Ratio_Apex) == 0 |  sum(isnan(HvsL_Ratio_Apex(1,2:4)) >=2 ) | sum(isnan(MvsL_Ratio_Apex(1,2:4)) >= 2))
-        %If value for the apex is missing or not values around the apex can be mark as Unquantifiable
-        Do_gaussian_in_channels_change{Gaussian_counter1,internal_counter5}= 'Unquantifiable';
-        Do_gaussian_in_channels_change_for_figure(Do_gaussian_in_channels_position)=0;
-        log_2_fold_comparsion_of_gaussian(Do_gaussian_in_channels_position)= 0;
-        Unquantifiable_counter=Unquantifiable_counter+1;
-        
-      elseif ~(nnz(HvsL_Ratio_Apex) == 0 | nnz(MvsL_Ratio_Apex) == 0 | nnz(HvsM_Ratio_Apex) == 0 |  sum(isnan(HvsL_Ratio_Apex(1,2:4)) >= 2) | sum(isnan(MvsL_Ratio_Apex(1,2:4)) >= 2))
-        
-        %save values
-        MvsL_Ratio_Apex_prefiltered=MvsL_Ratio_Apex;
-        HvsL_Ratio_Apex_prefiltered=HvsL_Ratio_Apex;
-        
-        %Remove values 0.5
-        MvsL_Ratio_Apex(MvsL_Ratio_Apex(1,:)<0.5)=[];
-        HvsL_Ratio_Apex(HvsL_Ratio_Apex(1,:)<0.5)=[];
-        
-        %Remove nan values
-        HvsM_Ratio_Apex(isnan(HvsM_Ratio_Apex))=[];
-        HvsL_Ratio_Apex(isnan(HvsL_Ratio_Apex))=[];
-        MvsL_Ratio_Apex(isnan(MvsL_Ratio_Apex))=[];
-        
-        %Write values to table to output
-        Apex_values(Do_gaussian_in_channels_position,1)=mean(MvsL_Ratio_Apex_prefiltered./HvsL_Ratio_Apex_prefiltered);
-        Apex_values(Do_gaussian_in_channels_position,2)=mean(MvsL_Ratio_Apex); %save the mean of MvsL ratios
-        Apex_values(Do_gaussian_in_channels_position,3)=mean(HvsL_Ratio_Apex); %save the mean of HvsL ratios
-        Apex_values(Do_gaussian_in_channels_position,4)=mean(HvsM_Ratio_Apex); %save the mean of HvsM ratios
-        
-        %Test if apex changes
-        
-        if (Apex_values(Do_gaussian_in_channels_position,4) <= 2 && Apex_values(Do_gaussian_in_channels_position,4) >= 0.5)
-          Increase_at_apex_in_stimulation(Gaussian_counter1,internal_counter5)= 0;
-          Decrease_at_apex_in_stimulation(Gaussian_counter1,internal_counter5)= 0;
-          Do_gaussian_in_channels_change{Gaussian_counter1,internal_counter5}= 'No change';
-          Do_gaussian_in_channels_change_for_figure(Do_gaussian_in_channels_position)=5;
-          log_2_fold_comparsion_of_gaussian(Do_gaussian_in_channels_position)= log2(Apex_values(Do_gaussian_in_channels_position,4));
-          No_change_counter=No_change_counter+1;
-          
-        elseif (Apex_values(Do_gaussian_in_channels_position,4) > 2)
-          Increase_at_apex_in_stimulation(Gaussian_counter1,internal_counter5)= 1;
-          Decrease_at_apex_in_stimulation(Gaussian_counter1,internal_counter5)= 0;
-          Do_gaussian_in_channels_change{Gaussian_counter1,internal_counter5}='Increase';
-          Do_gaussian_in_channels_change_for_figure(Do_gaussian_in_channels_position)=10;
-          log_2_fold_comparsion_of_gaussian(Do_gaussian_in_channels_position)= log2(Apex_values(Do_gaussian_in_channels_position,4));
-          Increase_counter=Increase_counter+1;
-          
-        elseif (Apex_values(Do_gaussian_in_channels_position,4) < 0.5)
-          Decrease_at_apex_in_stimulation(Gaussian_counter1,internal_counter5)= 1;
-          Increase_at_apex_in_stimulation(Gaussian_counter1,internal_counter5)= 0;
-          Do_gaussian_in_channels_change{Gaussian_counter1,internal_counter5}='Decrease';
-          Do_gaussian_in_channels_change_for_figure(Do_gaussian_in_channels_position)=1;
-          log_2_fold_comparsion_of_gaussian(Do_gaussian_in_channels_position)= log2(Apex_values(Do_gaussian_in_channels_position,4));
-          Decrease_counter=Decrease_counter+1;
-          
-        end
-      end
-    end
-    % add one to position and move to next center to check
-    Do_gaussian_in_channels_position=1+Do_gaussian_in_channels_position;
-  end
-end
-
-%Normalise log2 comparsion
-mean_log_2_fold_comparsion_of_gaussian=mean(log_2_fold_comparsion_of_gaussian);
-normaliased_log_2_fold_comparsion_of_gaussian=log_2_fold_comparsion_of_gaussian-mean_log_2_fold_comparsion_of_gaussian;
-
-%Copy Log2 values into same format as Height, Center and width
-Formatting_counter=1;
-for writeout_counter1= 1:Dimension_of_array(1)
-  for writeout_counter2= 1:nnz(Combined_Gaussians.Centrer(writeout_counter1,:))
-    formated_normaliased_log_2_fold_comparsion_of_gaussian(writeout_counter1,writeout_counter2)=normaliased_log_2_fold_comparsion_of_gaussian(Formatting_counter);
-    formated_log_2_fold_comparsion_of_gaussian(writeout_counter1,writeout_counter2)=log_2_fold_comparsion_of_gaussian(Formatting_counter);
-    Formatting_counter=1+Formatting_counter;
-  end
-end
-
-%Write comparsion output to combined structure array
-Combined_Gaussians.log2_of_gaussians=formated_log_2_fold_comparsion_of_gaussian;
-Combined_Gaussians.log2_normalised_gaussians=formated_normaliased_log_2_fold_comparsion_of_gaussian;
-Combined_Gaussians.Increase_at_apex=Increase_at_apex_in_stimulation;
-Combined_Gaussians.Decrease_at_apex=Decrease_at_apex_in_stimulation;
-Combined_Gaussians.Observed_change=Do_gaussian_in_channels_change;
-
-
-%%Count how many guassian change in each fraction
-Hist_array=zeros(fraction_number(2),3);
-
-for fraction_counter1= 1:number_of_proteins
-  for fraction_counter2= 1:nnz(Combined_Gaussians.Centrer(fraction_counter1,:))
-    %Define Center of Gaussian
-    Center_of_gaussain= floor(Combined_Gaussians.Centrer(fraction_counter1,fraction_counter2));
-    %Ensure center is greater then zero
-    if  Center_of_gaussain>0
-      
-      if Combined_Gaussians.log2_normalised_gaussians(fraction_counter1,fraction_counter2) >=1 && Center_of_gaussain <=fraction_to_plot
-        
-        Hist_array(Center_of_gaussain,1)=Hist_array(Center_of_gaussain,1)+1;
-        Hist_array(Center_of_gaussain,2)=Hist_array(Center_of_gaussain,2)+1;
-      elseif Combined_Gaussians.log2_normalised_gaussians(fraction_counter1,fraction_counter2) <=-1 && Center_of_gaussain <=fraction_to_plot
-        
-        Hist_array(Center_of_gaussain,1)=Hist_array(Center_of_gaussain,1)+1;
-        Hist_array(Center_of_gaussain,3)=Hist_array(Center_of_gaussain,3)+1;
-      elseif Combined_Gaussians.log2_normalised_gaussians(fraction_counter1,fraction_counter2) >=-1....
-          && Combined_Gaussians.log2_normalised_gaussians(fraction_counter1,fraction_counter2) <=1....
-          && Center_of_gaussain <=fraction_to_plot
-        
-        Hist_array(Center_of_gaussain,1)=Hist_array(Center_of_gaussain,1)+1;
-      end
-    end
-  end
-end
+Ibad = isnan(Combined_Gaussians.log2_of_gaussians);
+Iinc = Combined_Gaussians.log2_of_gaussians>1;
+Idec = Combined_Gaussians.log2_of_gaussians<-1;
+Combined_Gaussians.Observed_change = cell(number_of_proteins,1);
+Combined_Gaussians.Observed_change(Iinc & ~Ibad) = {'Increase'};
+Combined_Gaussians.Observed_change(Idec & ~Ibad) = {'Decrease'};
+Combined_Gaussians.Observed_change(~Idec & ~Iinc & ~Ibad) = {'No change'};
+Combined_Gaussians.Observed_change(Ibad) = {'Unquantifiable'};
 
 % #output
 %Write out comparsion of gaussian in biological replicate
-fid_combined_gaus_with_changes_output= fopen([datadir1 'Unique_gaussians_with_changes.csv'],'wt'); % create the output file with the header infromation
-fprintf (fid_combined_gaus_with_changes_output,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
+s = [datadir 'Comparison/Unique_gaussians_with_changes_between' user.comparisonpairs{1} 'and' user.comparisonpairs{2} 'b.csv'];
+fid_combined_gaus_with_changes_output= fopen(s,'wt'); % create the output file with the header infromation
+fprintf (fid_combined_gaus_with_changes_output,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
   'Protein name', 'Height', 'Center', 'Width', 'SSE', 'adjrsquare','Observed in channel','Changes Observed',...
-  'Area observed for Unique Gaussians','Area coverage of unique Gaussians', 'Fold Change (based on raw data)','Normalise Fold Change (based on raw data)'); %Write Header
+  'Fold Change (based on raw data)','Normalise Fold Change (based on raw data)'); %Write Header
 for writeout_counter1= 1:number_of_proteins
-  for writeout_counter2= 1:nnz(Combined_Gaussians.Centrer(writeout_counter1,:))
-    fprintf(fid_combined_gaus_with_changes_output,'%s,%6.3f,%6.3f,%6.3f,%6.3f,%6.3f,%s,%s,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
+    fprintf(fid_combined_gaus_with_changes_output,'%s,%6.3f,%6.3f,%6.3f,%6.3f,%6.3f,%s,%s,%6.4f,%6.4f,\n',...
       Combined_Gaussians.Unique_identifier{writeout_counter1},...
-      Combined_Gaussians.Height(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Centrer(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Width(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.SSE(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.adjrsquare(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.Channels{writeout_counter1,writeout_counter2},...
-      Combined_Gaussians.Observed_change{writeout_counter1,writeout_counter2},...
-      Combined_Gaussians.Area_of_combined_gaussian(writeout_counter1, writeout_counter2),...
-      Combined_Gaussians.Precentage_combined(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.log2_of_gaussians(writeout_counter1,writeout_counter2),...
-      Combined_Gaussians.log2_normalised_gaussians(writeout_counter1,writeout_counter2));
-  end
+      Combined_Gaussians.Height(writeout_counter1),...
+      Combined_Gaussians.Center(writeout_counter1),...
+      Combined_Gaussians.Width(writeout_counter1),...
+      Combined_Gaussians.SSE(writeout_counter1),...
+      Combined_Gaussians.adjrsquare(writeout_counter1),...
+      Combined_Gaussians.Channels{writeout_counter1},...
+      Combined_Gaussians.Observed_change{writeout_counter1},...
+      Combined_Gaussians.log2_of_gaussians(writeout_counter1),...
+      Combined_Gaussians.log2_normalised_gaussians(writeout_counter1));
+      %Combined_Gaussians.Area_of_combined_gaussian(writeout_counter1),...
+      %Combined_Gaussians.Precentage_combined(writeout_counter1),...
 end
 fclose(fid_combined_gaus_with_changes_output);
 
-%write out summary
-fid_Summary_gaussian= fopen([datadir1 'Summary_gaussian_detected.csv'],'wt'); % create the summary file of the interaction output
-fprintf (fid_Summary_gaussian,'%s,%s,%s,%s,%s,%s,%s,%s,\n',... %header for OutputGaus output
-  'Total gaussians', 'Gaussians within MvsL channel', 'Gaussians within HvsL channel', 'Shared Gaussians',...
-  'Number of Gaussians that increase', 'Number of Gaussians that decrease',....
-  'Number of Gaussians that do not change','Number of Unquantified' ); %Write Header
-fprintf (fid_Summary_gaussian,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f\n',...
-  Total_number_of_unique_gaussians, Unique_gaussians_in_MvsL,...
-  Unique_gaussians_in_HvsL, shared_gaussian_counter, Increase_counter, Decrease_counter, No_change_counter, Unquantifiable_counter);
-fprintf (fid_Summary_gaussian,',\n');
-fclose(fid_Summary_gaussian);
+
+fid_Summary_gaussian= fopen([datadir 'Comparison/Summary_gaussian_detectedb.csv'],'wt'); % create the summary file of the interaction output
+fprintf (fid_Summary_gaussian,'%s,','Total gaussians');
+for ci = 1:Nchannels
+  fprintf(fid_Summary_gaussian,'%s,',['Gaussians within ' Experimental_channels{ci} ' channel']);
+end
+fprintf(fid_Summary_gaussian,'%s,%s,%s,%s,%s,\n',...
+  'Shared Gaussians','Number of Gaussians that increase', 'Number of Gaussians that decrease',....
+  'Number of Gaussians that do not change','Number of Unquantified');
+fprintf(fid_Summary_gaussian,'%6.4f,',number_of_proteins);
+for ci = 1:Nchannels
+  fprintf(fid_Summary_gaussian,'%6.4f,',Unique_gaussians_in_eachchannel(ci));
+end
+fprintf(fid_Summary_gaussian,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
+  shared_gaussian_counter, sum(Iinc), sum(Idec), sum(~Idec & ~Iinc), sum(Ibad));
+
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
+
+%%%%%%% you can end the comparisonpairs loop here
 
 
 
 %% 5. Determine the trends of guassian curves
 % Aim: look at the determined gaussians within single replicate and compare
 % if the all the gaussians change, some change or none of them change
-fprintf('    5. Determine the trends of guassian curves (WITHIN REPLICATE)')
+fprintf('    5. Trends of guassian curves (WITHIN REPLICATE)')
 
 
 %Define Variables
-Combined_Gaussians.Trend=cell(Dimension_of_array(1),2);
-dont_change=zeros(Dimension_of_array(1),1);
-shows_increase=zeros(Dimension_of_array(1),1);
-shows_decrease=zeros(Dimension_of_array(1),1);
-Combined_Gaussians.Total_number_of_guassian_for_protein=zeros(Dimension_of_array(1),1);
 No_change_consistent_across_gaus=0;
 Increase_consistent_across_gaus=0;
 Decrease_consistent_across_gaus=0;
@@ -1045,98 +559,89 @@ Increase_inconsistent_across_gaus=0;
 Decrease_inconsistent_across_gaus=0;
 Increase_and_decrease_across_gaus=0;
 
-%Loop over proteins to assess guassian information
-for writeout_counter1= 1:Dimension_of_array(1)
-  Protein_to_test_trend= Do_gaussian_in_channels_change(writeout_counter1,:);
-  %Count number of proteins
-  Combined_Gaussians.Total_number_of_guassian_for_protein(writeout_counter1,1)=sum(~cellfun('isempty',Protein_to_test_trend));
+%Loop over replicate-protein pairs to assess guassian information
+trendString = cell(NuniqueGauss,2);
+Ngaussperrep_prot = zeros(NuniqueGauss,1);
+for gg = 1:NuniqueGauss
+  rep_prot = GaussSummary(1).Replicate_Protein_identifier{gg};
   
-  %test if change is uniform 'No change', count
-  no_change={'No change'};
-  dont_change(writeout_counter1,1)=sum(strcmp(no_change,Protein_to_test_trend));
-  %test if change is uniform 'Increase', count
-  Increase_change={'Increase'};
-  shows_increase(writeout_counter1,1)=sum(strcmp(Increase_change,Protein_to_test_trend));
-  %test if change is uniform 'Decrease', count
-  Decrease_change={'Decrease'};
-  shows_decrease(writeout_counter1,1)=sum(strcmp(Decrease_change,Protein_to_test_trend));
+  % Find this replicate-protein pair in Combined_Gaussians
+  I = find(strcmp(rep_prot,Combined_Gaussians.Unique_identifier));
+  Ngaussperrep_prot(gg) = length(I);
   
-  if (dont_change(writeout_counter1,1) >0 && shows_increase(writeout_counter1,1) == 0 && shows_decrease(writeout_counter1,1) == 0)
-    Combined_Gaussians.Trend(writeout_counter1,1)={'No change'};
-    Combined_Gaussians.Trend(writeout_counter1,2)={'Consitent across gaussians'};
+  % Find the increase/decrease for this replicate-protein's Gaussians
+  Ninc = sum(strcmp('Increase',Combined_Gaussians.Observed_change(I)));
+  Ndec = sum(strcmp('Decrease',Combined_Gaussians.Observed_change(I)));
+  Nnc = sum(strcmp('No change',Combined_Gaussians.Observed_change(I)));
+  
+  if Nnc>0 && Ninc== 0 && Ndec==0
+    trendString(gg,:) = {'No change','Consistent across gaussians'};
     No_change_consistent_across_gaus=1+ No_change_consistent_across_gaus;
-  elseif (dont_change(writeout_counter1,1) ==0 && shows_increase(writeout_counter1,1) > 0 && shows_decrease(writeout_counter1,1) == 0)
-    Combined_Gaussians.Trend(writeout_counter1,1)={'Increase'};
-    Combined_Gaussians.Trend(writeout_counter1,2)={'Consitent across gaussians'};
+  elseif Nnc==0 && Ninc>0 && Ndec==0
+    trendString(gg,:) = {'Increase','Consistent across gaussians'};
     Increase_consistent_across_gaus=1+ Increase_consistent_across_gaus;
-  elseif (dont_change(writeout_counter1,1) ==0 && shows_increase(writeout_counter1,1) == 0 && shows_decrease(writeout_counter1,1) > 0)
-    Combined_Gaussians.Trend(writeout_counter1,1)={'Decrease'};
-    Combined_Gaussians.Trend(writeout_counter1,2)={'Consitent across gaussians'};
+  elseif Nnc==0 && Ninc==0 && Ndec>0
+    trendString(gg,:) = {'Decrease','Consistent across gaussians'};
     Decrease_consistent_across_gaus=1+ Decrease_consistent_across_gaus;
-  elseif (shows_increase(writeout_counter1,1) >0 && dont_change(writeout_counter1,1) > 0)
-    Combined_Gaussians.Trend(writeout_counter1,1)={'Increase'};
-    Combined_Gaussians.Trend(writeout_counter1,2)={'Inconsitent across gaussians'};
+  elseif Ninc>0 && Nnc>0
+    trendString(gg,:) = {'Increase','Inconsistent across gaussians'};
     Increase_inconsistent_across_gaus=1+ Increase_inconsistent_across_gaus;
-  elseif (dont_change(writeout_counter1,1) >0 && shows_decrease(writeout_counter1,1) > 0)
-    Combined_Gaussians.Trend(writeout_counter1,1)={'Decrease'};
-    Combined_Gaussians.Trend(writeout_counter1,2)={'Inconsitent across gaussians'};
+  elseif Ndec>0 && Nnc>0
+    trendString(gg,:) = {'Decrease','Inconsistent across gaussians'};
     Decrease_inconsistent_across_gaus=1+ Decrease_inconsistent_across_gaus;
-  elseif (shows_increase(writeout_counter1,1) >0 && shows_decrease(writeout_counter1,1) > 0)
-    Combined_Gaussians.Trend(writeout_counter1,1)={'+/-'};
-    Combined_Gaussians.Trend(writeout_counter1,2)={'Inconsitent across gaussians'};
+  elseif Ndec>0 && Ninc>0
+    trendString(gg,:) = {'+/-','Inconsistent across gaussians'};
     Increase_and_decrease_across_gaus=1+Increase_and_decrease_across_gaus;
   end
-  
 end
 
-%Arrange trend data to group by proteins across replicates
-Protein_information.Trend_compare_between_replicates=cell(number_of_unique_protein_with_gaussians,6);
-
-for count_shared_guassians4= 1:number_of_unique_protein_with_gaussians
-  %find location of proteins within master protein table
-  [internal_location_of_protein_of_interest]=ind2sub(Dimension_of_array(1), strmatch(Unique_protein_names(count_shared_guassians4), Combined_Gaussians.Protein_name, 'exact'));
-  
-  Number_of_times_seen=length(internal_location_of_protein_of_interest);
-  for Number_of_times_seen_counter1= 1:Number_of_times_seen
-    if Combined_Gaussians.Replicate(internal_location_of_protein_of_interest(Number_of_times_seen_counter1)) == 1
-      Protein_information.Trend_compare_between_replicates{count_shared_guassians4,1}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),1);
-      Protein_information.Trend_compare_between_replicates{count_shared_guassians4,4}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),2);
-    elseif Combined_Gaussians.Replicate(internal_location_of_protein_of_interest(Number_of_times_seen_counter1)) == 2
-      Protein_information.Trend_compare_between_replicates{count_shared_guassians4,2}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),1);
-      Protein_information.Trend_compare_between_replicates{count_shared_guassians4,5}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),2);
-    elseif Combined_Gaussians.Replicate(internal_location_of_protein_of_interest(Number_of_times_seen_counter1)) == 3
-      Protein_information.Trend_compare_between_replicates{count_shared_guassians4,3}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),1);
-      Protein_information.Trend_compare_between_replicates{count_shared_guassians4,6}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),2);
-    end
-  end
-end
+% %Arrange trend data to group by proteins across replicates
+% Protein_information.Trend_compare_between_replicates=cell(number_of_unique_protein_with_gaussians,6);
+% for count_shared_guassians4= 1:number_of_unique_protein_with_gaussians
+%   %find location of proteins within master protein table
+%   [internal_location_of_protein_of_interest]=ind2sub(NuniqueGauss, strmatch(Unique_protein_names(count_shared_guassians4), Combined_Gaussians.Protein_name, 'exact'));
+%   
+%   Number_of_times_seen=length(internal_location_of_protein_of_interest);
+%   for Number_of_times_seen_counter1= 1:Number_of_times_seen
+%     if Combined_Gaussians.Replicate(internal_location_of_protein_of_interest(Number_of_times_seen_counter1)) == 1
+%       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,1}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),1);
+%       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,4}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),2);
+%     elseif Combined_Gaussians.Replicate(internal_location_of_protein_of_interest(Number_of_times_seen_counter1)) == 2
+%       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,2}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),1);
+%       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,5}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),2);
+%     elseif Combined_Gaussians.Replicate(internal_location_of_protein_of_interest(Number_of_times_seen_counter1)) == 3
+%       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,3}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),1);
+%       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,6}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),2);
+%     end
+%   end
+% end
 
 
 % #output
 %Write out trend observed in gaussian grouped by proteins and replicate
-fid_summed_area= fopen([datadir1 'Gaussian_trend_analysis_protein_replicate.csv'],'wt'); % create the output file with the header infromation
-fprintf (fid_summed_area,'%s,%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
-  'Protein name', 'Summed Area MvsL', 'Summed Area HvsL', '% of expect area MvsL', '% of expect area HvsL', 'Number of gaussians observed','Observed change',' Where changes consistent across all guassians'); %Write Header
-for writeout_counter1= 1:Dimension_of_array(1)
-  fprintf(fid_summed_area,'%s,%6.3f,%6.3f,%6.3f,%6.3f,%6.3f,%s,%s,\n',...
-    Combined_Gaussians.Unique_identifier{writeout_counter1},...
-    Combined_Gaussians.Summed_MvsL_area(writeout_counter1,1),...
-    Combined_Gaussians.Summed_HvsL_area(writeout_counter1,1),...
-    Combined_Gaussians.Summed_Precentage_MvsL(writeout_counter1,1),...
-    Combined_Gaussians.Summed_Precentage_HvsL(writeout_counter1,1),...
-    nnz(Combined_Gaussians.Centrer(writeout_counter1,:)),...
-    Combined_Gaussians.Trend{writeout_counter1,1},...
-    Combined_Gaussians.Trend{writeout_counter1,2});
+fid_summed_area= fopen([datadir 'Comparison/Gaussian_trend_analysis_protein_replicateb.csv'],'wt'); % create the output file with the header infromation
+fprintf (fid_summed_area,'%s,%s,%s,%s\n',... %header for OutputGaus output
+  'Protein name', 'Number of gaussians observed','Observed change',' Were changes consistent across all guassians'); %Write Header
+for writeout_counter1= 1:NuniqueGauss
+  fprintf(fid_summed_area,'%s,%6.3f,%s,%s,\n',...
+    GaussSummary(1).Replicate_Protein_identifier{writeout_counter1},...
+    Ngaussperrep_prot(writeout_counter1),...
+    trendString{writeout_counter1,1},...
+    trendString{writeout_counter1,2});
+    %Combined_Gaussians.Summed_MvsL_area(writeout_counter1,1),...
+    %Combined_Gaussians.Summed_HvsL_area(writeout_counter1,1),...
+    %Combined_Gaussians.Summed_Precentage_MvsL(writeout_counter1,1),...
+    %Combined_Gaussians.Summed_Precentage_HvsL(writeout_counter1,1),...
 end
 fclose(fid_summed_area);
 
-fid_summed_area1= fopen([datadir1 'Summary_gaussian_trend_analysis_protein_replicate.csv'],'wt'); % create the output file with the header infromation
+fid_summed_area1= fopen([datadir 'Comparison/Summary_gaussian_trend_analysis_protein_replicateb.csv'],'wt'); % create the output file with the header infromation
 fprintf (fid_summed_area1,'%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
   'Number of Protein observed across replicates', 'No change- consistent across gaussians', 'Increase- consistent across gaussians',...
   'Decrease- consistent across gaussians','Increase- inconsistent across gaussians', 'Decrease- inconsistent across gaussians',...
   'Increase and Decrease observed in Gaussians'); %Write Header
 fprintf (fid_summed_area1,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f\n',...
-  Dimension_of_array(1),...
+  NuniqueGauss,...
   No_change_consistent_across_gaus, Increase_consistent_across_gaus,...
   Decrease_consistent_across_gaus, Increase_inconsistent_across_gaus,...
   Decrease_inconsistent_across_gaus, Increase_and_decrease_across_gaus);
@@ -1173,8 +678,8 @@ Master_Gaussian_list.Gaussian_area=zeros(number_of_unique_protein_with_gaussians
 for Shared_accross_replicate_counter = 1:number_of_unique_protein_with_gaussians
   
   %find location of proteins in MvsL and HvsL arrays
-  [internal_location_of_protein_of_interest_MvsL]=ind2sub(Dimension_of_array(1), strmatch(Unique_protein_names(Shared_accross_replicate_counter), MvsL_Gaussians.Protein_name, 'exact'));
-  [internal_location_of_protein_of_interest_Master]=ind2sub(Dimension_of_array(1), strmatch(Unique_protein_names(Shared_accross_replicate_counter), Master_Gaussian_list.Protein_name, 'exact'));
+  [internal_location_of_protein_of_interest_MvsL]=ind2sub(NuniqueGauss, strmatch(Unique_protein_names(Shared_accross_replicate_counter), GaussSummary(1).Protein_name, 'exact'));
+  [internal_location_of_protein_of_interest_Master]=ind2sub(NuniqueGauss, strmatch(Unique_protein_names(Shared_accross_replicate_counter), Master_Gaussian_list.Protein_name, 'exact'));
   
   %Compare gaussians from each replicate channel
   Number_of_times_seen_MvsL=length(internal_location_of_protein_of_interest_MvsL);
@@ -1185,40 +690,40 @@ for Shared_accross_replicate_counter = 1:number_of_unique_protein_with_gaussians
     %determine Center for specific protein, note this is created so as the loop
     %cycle through each guassian the identified gaussians can be removed
     %Copy replicate data
-    Replicate_MvsL_protein=MvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    Replicate_MvsL_protein=GaussSummary(1).Replicate(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     Replicate_Master_list_protein=Master_Gaussian_list.Replicate(internal_location_of_protein_of_interest_Master, :);
     %Copy Unique_identifier
-    Unique_identified_MvsL=MvsL_Gaussians.Unique_identifier(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    Unique_identified_MvsL=GaussSummary(1).Unique_identifier(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     Unique_identified_Master_list_protein=Master_Gaussian_list.Unique_identifier(internal_location_of_protein_of_interest_Master, :);
     %Copy Protein number
-    Protein_number_MvsL_protein=MvsL_Gaussians.Protein_number(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    Protein_number_MvsL_protein=GaussSummary(1).Protein_number(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     Protein_number_Master_list_protein=Master_Gaussian_list.Protein_number(internal_location_of_protein_of_interest_Master, :);
     %Copy Guassian_index_number
-    Guassian_index_number_MvsL_protein=MvsL_Gaussians.Guassian_index_number(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    Guassian_index_number_MvsL_protein=GaussSummary(1).Guassian_index_number(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     Guassian_index_number_Master_list_protein=Master_Gaussian_list.Guassian_index_number(internal_location_of_protein_of_interest_Master, :);
     %Copy Replicate_Protein_identifier
-    Replicate_Protein_identifier_MvsL_protein=MvsL_Gaussians.Replicate_Protein_identifier(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    Replicate_Protein_identifier_MvsL_protein=GaussSummary(1).Replicate_Protein_identifier(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     Replicate_Protein_identifier_Master_list_protein=Master_Gaussian_list.Replicate_Protein_identifier(internal_location_of_protein_of_interest_Master, :);
     %Copy Center data
-    Centres_MvsL_protein=MvsL_Gaussians.Center(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    Centres_MvsL_protein=GaussSummary(1).Center(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     Centres_Master_list_protein=Master_Gaussian_list.Center(internal_location_of_protein_of_interest_Master, :);
     %Copy Height data
-    Height_MvsL_protein=MvsL_Gaussians.Height(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    Height_MvsL_protein=GaussSummary(1).Height(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     Height_Master_list_protein=Master_Gaussian_list.Height(internal_location_of_protein_of_interest_Master, :);
     %Copy Width data
-    Width_MvsL_protein=MvsL_Gaussians.Width(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    Width_MvsL_protein=GaussSummary(1).Width(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     Width_Master_list_protein=Master_Gaussian_list.Width(internal_location_of_protein_of_interest_Master, :);
     %Copy SSE data
-    SSE_MvsL_protein=MvsL_Gaussians.SSE(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    SSE_MvsL_protein=GaussSummary(1).SSE(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     SSE_Master_list_protein=Master_Gaussian_list.SSE(internal_location_of_protein_of_interest_Master, :);
     %Copy adjrsquare data
-    determined_AdjrSequare_of_guassians_MvsL=MvsL_Gaussians.adjrsquare(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    determined_AdjrSequare_of_guassians_MvsL=GaussSummary(1).adjrsquare(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     determined_AdjrSequare_of_guassians_Master_list=Master_Gaussian_list.adjrsquare(internal_location_of_protein_of_interest_Master, :);
     %Copy Complex size
-    Complex_size_MvsL=MvsL_Gaussians.Complex_size(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    Complex_size_MvsL=GaussSummary(1).Complex_size(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     Complex_size_Master_list=Master_Gaussian_list.Complex_size(internal_location_of_protein_of_interest_Master, :);
     %Copy Gaussian area
-    Gaussian_area_MvsL=MvsL_Gaussians.Gaussian_area(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
+    Gaussian_area_MvsL=GaussSummary(1).Gaussian_area(internal_location_of_protein_of_interest_MvsL(MvsL_counter), :);
     Gaussian_area_Master_list=Master_Gaussian_list.Gaussian_area(internal_location_of_protein_of_interest_Master, :);
     
     %Determine what position in Master_Gaussian_list.Center to write to
@@ -1385,8 +890,8 @@ end
 for Shared_accross_replicate_counter = 1:number_of_unique_protein_with_gaussians
   
   %find location of proteins in HvsL arrays
-  [internal_location_of_protein_of_interest_HvsL]=ind2sub(Dimension_of_array(1), strmatch(Unique_protein_names(Shared_accross_replicate_counter), HvsL_Gaussians.Protein_name, 'exact'));
-  [internal_location_of_protein_of_interest_Master]=ind2sub(Dimension_of_array(1), strmatch(Unique_protein_names(Shared_accross_replicate_counter), Master_Gaussian_list.Protein_name, 'exact'));
+  [internal_location_of_protein_of_interest_HvsL]=ind2sub(NuniqueGauss, strmatch(Unique_protein_names(Shared_accross_replicate_counter), GaussSummary(2).Protein_name, 'exact'));
+  [internal_location_of_protein_of_interest_Master]=ind2sub(NuniqueGauss, strmatch(Unique_protein_names(Shared_accross_replicate_counter), Master_Gaussian_list.Protein_name, 'exact'));
   
   %Compare gaussians from each replicate channel
   Number_of_times_seen_HvsL=length(internal_location_of_protein_of_interest_HvsL);
@@ -1397,40 +902,40 @@ for Shared_accross_replicate_counter = 1:number_of_unique_protein_with_gaussians
     %determine Center for specific protein, note this is created so as the loop
     %cycle through each guassian the identified gaussians can be removed
     %Copy replicate data
-    Replicate_HvsL_protein=HvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    Replicate_HvsL_protein=GaussSummary(2).Replicate(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     Replicate_Master_list_protein=Master_Gaussian_list.Replicate(internal_location_of_protein_of_interest_Master, :);
     %Copy Unique_identifier
-    Unique_identified_HvsL=HvsL_Gaussians.Unique_identifier(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    Unique_identified_HvsL=GaussSummary(2).Unique_identifier(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     Unique_identified_Master_list_protein=Master_Gaussian_list.Unique_identifier(internal_location_of_protein_of_interest_Master, :);
     %Copy Protein number
-    Protein_number_HvsL_protein=HvsL_Gaussians.Protein_number(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    Protein_number_HvsL_protein=GaussSummary(2).Protein_number(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     Protein_number_Master_list_protein=Master_Gaussian_list.Protein_number(internal_location_of_protein_of_interest_Master, :);
     %Copy Guassian_index_number
-    Guassian_index_number_HvsL_protein=HvsL_Gaussians.Guassian_index_number(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    Guassian_index_number_HvsL_protein=GaussSummary(2).Guassian_index_number(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     Guassian_index_number_Master_list_protein=Master_Gaussian_list.Guassian_index_number(internal_location_of_protein_of_interest_Master, :);
     %Copy Replicate_Protein_identifier
-    Replicate_Protein_identifier_HvsL_protein=HvsL_Gaussians.Replicate_Protein_identifier(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    Replicate_Protein_identifier_HvsL_protein=GaussSummary(2).Replicate_Protein_identifier(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     Replicate_Protein_identifier_Master_list_protein=Master_Gaussian_list.Replicate_Protein_identifier(internal_location_of_protein_of_interest_Master, :);
     %Copy Center data
-    Centres_HvsL_protein=HvsL_Gaussians.Center(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    Centres_HvsL_protein=GaussSummary(2).Center(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     Centres_Master_list_protein=Master_Gaussian_list.Center(internal_location_of_protein_of_interest_Master, :);
     %Copy Height data
-    Height_HvsL_protein=HvsL_Gaussians.Height(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    Height_HvsL_protein=GaussSummary(2).Height(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     Height_Master_list_protein=Master_Gaussian_list.Height(internal_location_of_protein_of_interest_Master, :);
     %Copy Width data
-    Width_HvsL_protein=HvsL_Gaussians.Width(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    Width_HvsL_protein=GaussSummary(2).Width(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     Width_Master_list_protein=Master_Gaussian_list.Width(internal_location_of_protein_of_interest_Master, :);
     %Copy SSE data
-    SSE_HvsL_protein=HvsL_Gaussians.SSE(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    SSE_HvsL_protein=GaussSummary(2).SSE(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     SSE_Master_list_protein=Master_Gaussian_list.SSE(internal_location_of_protein_of_interest_Master, :);
     %Copy adjrsquare data
-    determined_AdjrSequare_of_guassians_HvsL=HvsL_Gaussians.adjrsquare(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    determined_AdjrSequare_of_guassians_HvsL=GaussSummary(2).adjrsquare(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     determined_AdjrSequare_of_guassians_Master_list=Master_Gaussian_list.adjrsquare(internal_location_of_protein_of_interest_Master, :);
     %Copy Complex size
-    Complex_size_HvsL=HvsL_Gaussians.Complex_size(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    Complex_size_HvsL=GaussSummary(2).Complex_size(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     Complex_size_Master_list=Master_Gaussian_list.Complex_size(internal_location_of_protein_of_interest_Master, :);
     %Copy Gaussian area
-    Gaussian_area_HvsL=HvsL_Gaussians.Gaussian_area(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
+    Gaussian_area_HvsL=GaussSummary(2).Gaussian_area(internal_location_of_protein_of_interest_HvsL(HvsL_counter), :);
     Gaussian_area_Master_list=Master_Gaussian_list.Gaussian_area(internal_location_of_protein_of_interest_Master, :);
     
     
@@ -1814,7 +1319,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 fprintf('    7. Use fold-change > 2 to determine if complexes change (BETWEEN REPLICATEs)')
 
 
-% Comparsion 3 Part B: 
+% Comparsion 3 Part B:
 % Aim: identify changes by using the master list and comparing if a gaussian is
 % observed within two fractions, if so use the center of that Gaussian
 
@@ -1908,10 +1413,10 @@ for Gaussian_counter1= 1:Dimension_of_master_gaussian_list(1)
       for find_rep_counter=1:length(location_Protein_in_combined_Gaus) %As Combined Gaussian is used to create Final will also have atleast one value
         if replicate_counter==Combined_Gaussians.Replicate(location_Protein_in_combined_Gaus(find_rep_counter))
           %check if Center is within 2 fractions of master list center
-          temp_value=abs(Combined_Gaussians.Centrer(location_Protein_in_combined_Gaus(find_rep_counter),:)- Center_to_test);
+          temp_value=abs(Combined_Gaussians.Center(location_Protein_in_combined_Gaus(find_rep_counter),:)- Center_to_test);
           if  temp_value<=(User_Window+0.49)
             [idx idx] =min(temp_value);
-            rounded_center= floor(Combined_Gaussians.Centrer(location_Protein_in_combined_Gaus(find_rep_counter),idx));
+            rounded_center= floor(Combined_Gaussians.Center(location_Protein_in_combined_Gaus(find_rep_counter),idx));
           end
         end
       end
@@ -3785,15 +3290,15 @@ for figure_counter=1:replicate_num
   
   for writeout_counter2= 1:Dimension_of_master_gaussian_list(1)
     %Find position of protein in MvsL array
-    [position_inMvsL]=ind2sub(length(MvsL_Gaussians.Protein_name),...
-      strmatch(Finalised_Master_Gaussian_list.Protein_name(writeout_counter2), MvsL_Gaussians.Protein_name, 'exact'));
+    [position_inMvsL]=ind2sub(length(GaussSummary(1).Protein_name),...
+      strmatch(Finalised_Master_Gaussian_list.Protein_name(writeout_counter2), GaussSummary(1).Protein_name, 'exact'));
     %determine the length of position_inMvsL
     number_observation=length(position_inMvsL);
     
     %Find how many observations were recorded within each isotopologue channel
     for counter=1:number_observation
-      if MvsL_Gaussians.Replicate(position_inMvsL(counter))==figure_counter
-        temp_value=MvsL_Gaussians.Unique_identifier(position_inMvsL(counter),:);
+      if GaussSummary(1).Replicate(position_inMvsL(counter))==figure_counter
+        temp_value=GaussSummary(1).Unique_identifier(position_inMvsL(counter),:);
         Number_Gaussian_MvsL(writeout_counter2)=sum(~cellfun('isempty',temp_value));
       end
     end
@@ -3804,15 +3309,15 @@ for figure_counter=1:replicate_num
   
   for writeout_counter2= 1:Dimension_of_master_gaussian_list(1)
     %Find position of protein in MvsL array
-    [position_inHvsL]=ind2sub(length(HvsL_Gaussians.Protein_name),...
-      strmatch(Finalised_Master_Gaussian_list.Protein_name(writeout_counter2), HvsL_Gaussians.Protein_name, 'exact'));
+    [position_inHvsL]=ind2sub(length(GaussSummary(2).Protein_name),...
+      strmatch(Finalised_Master_Gaussian_list.Protein_name(writeout_counter2), GaussSummary(2).Protein_name, 'exact'));
     %determine the length of position_inMvsL
     number_observation=length(position_inHvsL);
     
     %Find how many observations were recorded within each isotopologue channel
     for counter=1:number_observation
-      if HvsL_Gaussians.Replicate(position_inHvsL(counter))==figure_counter
-        temp_value=HvsL_Gaussians.Unique_identifier(position_inHvsL(counter),:);
+      if GaussSummary(2).Replicate(position_inHvsL(counter))==figure_counter
+        temp_value=GaussSummary(2).Unique_identifier(position_inHvsL(counter),:);
         Number_Gaussian_HvsL(writeout_counter2)=sum(~cellfun('isempty',temp_value));
       end
     end
@@ -4712,20 +4217,20 @@ end
 Proteins_observed_in_replicates=zeros(number_of_unique_protein_with_gaussians, 8);
 
 for count_shared_guassians3=1:number_of_unique_protein_with_gaussians
-  [internal_location_of_protein_of_interest_MvsL]=ind2sub(Number_All_guassians_identified_nonredunent_list(1), strmatch(Unique_protein_names(count_shared_guassians3), MvsL_Gaussians.Protein_name, 'exact'));
-  [internal_location_of_protein_of_interest_HvsL]=ind2sub(Number_All_guassians_identified_nonredunent_list(1), strmatch(Unique_protein_names(count_shared_guassians3), HvsL_Gaussians.Protein_name, 'exact'));
+  [internal_location_of_protein_of_interest_MvsL]=ind2sub(NuniqueGauss(1), strmatch(Unique_protein_names(count_shared_guassians3), GaussSummary(1).Protein_name, 'exact'));
+  [internal_location_of_protein_of_interest_HvsL]=ind2sub(NuniqueGauss(1), strmatch(Unique_protein_names(count_shared_guassians3), GaussSummary(2).Protein_name, 'exact'));
   %Record which repliates the protein of interest was seen in MvsL replicates
   Number_of_times_seen_MvsL=length(internal_location_of_protein_of_interest_MvsL);
   for Number_of_times_seen_counter1= 1:Number_of_times_seen_MvsL
-    if MvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 1;
+    if GaussSummary(1).Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 1;
       Proteins_observed_in_replicates(count_shared_guassians3,1)=1;
-    elseif MvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 2;
+    elseif GaussSummary(1).Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 2;
       Proteins_observed_in_replicates(count_shared_guassians3,2)=1;
-    elseif MvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 3;
+    elseif GaussSummary(1).Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 3;
       Proteins_observed_in_replicates(count_shared_guassians3,3)=1;
-    elseif MvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 4;
+    elseif GaussSummary(1).Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 4;
       Proteins_observed_in_replicates(count_shared_guassians3,4)=1;
-    elseif MvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 0;
+    elseif GaussSummary(1).Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 0;
       Proteins_observed_in_replicates(count_shared_guassians3,4)=0;
       Proteins_observed_in_replicates(count_shared_guassians3,3)=0;
       Proteins_observed_in_replicates(count_shared_guassians3,2)=0;
@@ -4736,15 +4241,15 @@ for count_shared_guassians3=1:number_of_unique_protein_with_gaussians
   %Record which repliates the protein of interest was seen in HvsL replicates
   Number_of_times_seen_HvsL=length(internal_location_of_protein_of_interest_HvsL);
   for Number_of_times_seen_counter2= 1:Number_of_times_seen_HvsL
-    if HvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 1;
+    if GaussSummary(2).Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 1;
       Proteins_observed_in_replicates(count_shared_guassians3,5)=1;
-    elseif HvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 2;
+    elseif GaussSummary(2).Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 2;
       Proteins_observed_in_replicates(count_shared_guassians3,6)=1;
-    elseif HvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 3;
+    elseif GaussSummary(2).Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 3;
       Proteins_observed_in_replicates(count_shared_guassians3,7)=1;
-    elseif HvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 4;
+    elseif GaussSummary(2).Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 4;
       Proteins_observed_in_replicates(count_shared_guassians3,8)=1;
-    elseif HvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 0;
+    elseif GaussSummary(2).Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 0;
       Proteins_observed_in_replicates(count_shared_guassians3,5)=0;
       Proteins_observed_in_replicates(count_shared_guassians3,6)=0;
       Proteins_observed_in_replicates(count_shared_guassians3,7)=0;
