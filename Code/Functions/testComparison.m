@@ -34,7 +34,7 @@ for ri = 2:Nprot+1
 end
 
 % 2. Read in proteins where I detected a change
-fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/Comparison/Unique_gaussians_with_changes.csv';
+fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/Comparison/Unique_gaussians_with_changes_betweenMvsLandHvslb.csv';
 data = importdata(fn);
 Nprot = size(data.data,1) - 1;
 Protein_nameg = cell(Nprot,1);
@@ -55,8 +55,8 @@ for ri = 2:Nprot+1
   end
   Protein_nameg{ri-1} = data.textdata{ri,1};
   Centerg(ri) = str2num(data.textdata{ri,3});
-  Heightg(ri) = str2num(data.textdata{ri,4});
-  Foldg(ri) = data.data(ri,3);
+  Heightg(ri) = str2num(data.textdata{ri,2});
+  Foldg(ri) = data.data(ri,1);
 end
 
 % 3. Make that Venn diagram.
@@ -93,7 +93,7 @@ text(0,0,num2str(length(Inc2)))
 text(-15,10,num2str(length(Incn) - length(Inc2)))
 text(16,10,num2str(length(Incg) - length(Inc2)))
 set(gca,'xtick',[],'ytick',[])
-title('Increase')
+title({'Change detected with fold>2' 'Increase'})
 subplot(3,1,2)
 myVenn2([length(NCn) length(NCg)], length(NC2))
 text(0,0,num2str(length(NC2)))
@@ -121,14 +121,14 @@ text(-2.7,4.5,['N = ' num2str(sum(~isnan(foldcheck(:,1)))) ' Gaussians'])
 legend(['Same, N=' num2str(sum(I))],['Diff, N=' num2str(sum(I2))],'location','southeast')
 xlabel('Fold change, old code','fontsize',14)
 ylabel('Fold change, new code','fontsize',14)
-title('Scatter')
+title('Fold Change, Unique_Gaussians_with_changes.csv')
 grid on
 subplot(2,1,2),hold on
 values = log10(hist3([foldcheck(:,3) foldcheck(:,4)],{linspace(-3,5,201),linspace(-3,5,201)}));
 imagesc(linspace(-3,5,201),linspace(-3,5,201),values)
-%plot([-3 5], [-3 5],'--r')
 axis xy
 axis([-3 5 -3 5])
+plot([-3 5],[-3 5],'--r')
 xlabel('Fold change, old code','fontsize',14)
 ylabel('Fold change, new code','fontsize',14)
 title('Log Density')
@@ -154,12 +154,14 @@ ttp = nan(5000,1);
 wwp = nan(5000,1);
 ttChange = zeros(5000,1);
 wwChange = zeros(5000,1);
+foldChange = zeros(5000,1);
 jj = 0;
 while ~feof(fid)
   jj = jj + 1;
   line = strsplit(fgetl(fid),',');
   Center(jj) = str2num(line{1});
   Protein_name{jj} = line{2};
+  foldChange(jj) = str2num(line{3});
   try ttp(jj) = str2num(line{11});end
   try wwp(jj) = str2num(line{13});end
   wwChange(jj) = 0;
@@ -179,7 +181,7 @@ fclose(fid);
 
 
 % 2. Load My data
-fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/Comparison/Perseus_enrichment_Gaussian_level_file.csv';
+fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/Comparison/Perseus_enrichment_Gaussian_level_fileb.csv';
 fid = fopen(fn);
 line = fgetl(fid); %header
 Centerg = zeros(5000,1);
@@ -188,14 +190,16 @@ ttpg = nan(5000,1);
 wwpg = nan(5000,1);
 ttChangeg = zeros(5000,1);
 wwChangeg = zeros(5000,1);
+foldChangeg = zeros(5000,1);
 jj = 0;
 while ~feof(fid)
   jj = jj + 1;
   line = strsplit(fgetl(fid),',');
   Centerg(jj) = str2num(line{1});
   Protein_nameg{jj} = line{2};
-  try ttpg(jj) = str2num(line{11});end
-  try wwpg(jj) = str2num(line{13});end
+  foldChangeg(jj) = str2num(line{3});
+  try ttpg(jj) = str2num(line{6});end
+  try wwpg(jj) = str2num(line{8});end
   wwChangeg(jj) = 0;
   ttChangeg(jj) = 0;
   if length(line)>11
@@ -216,6 +220,7 @@ fclose(fid);
 % for each of Nick's Gaussians
 %   find the closest of my Gaussians w/ DeltaCenter<3
 pcheck = zeros(length(Protein_name),8);
+foldcheck2 = zeros(length(Protein_name),2);
 for ri = 1:length(Protein_name)
   I = find(ismember(Protein_nameg,Protein_name{ri}));
   dC = abs(Centerg(I) - Center(ri));
@@ -223,6 +228,7 @@ for ri = 1:length(Protein_name)
   if I2<2
     I4 = I(I3);
     pcheck(ri,:) = [ttChange(ri) ttChangeg(I4) wwChange(ri) wwChangeg(I4) ttp(ri) ttpg(I4) wwp(ri) wwpg(I4) ];
+    foldcheck2(ri,:) = [foldChangeg(I4) foldChange(ri)];
   else
     pcheck(ri,:) = nan(8,1);
   end
@@ -305,6 +311,13 @@ ylabel('T-test log p-value, new code','fontsize',14)
 title('Log Density')
 set(gcf,'units','normalized','position',[.1 .1 .5 .8])
 
+
+figure
+scatter(foldcheck2(:,2),foldcheck2(:,1),6,'b','filled')
+xlabel('Fold change, old code','fontsize',14)
+ylabel('Fold change, new code','fontsize',14)
+title('Fold Change, Perseus_enrichment_Gaussian_level_file.csv')
+grid on
 
 
 %% Make a figure or two explaining why example proteins are different in the new code
