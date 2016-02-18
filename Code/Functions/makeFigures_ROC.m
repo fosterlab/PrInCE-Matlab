@@ -16,7 +16,7 @@ for k=1:3
 end
 legend('Proteins in corum (FP)', 'Interaction in corum (TP)',  'Proteins/Interactions not in corum');
 ylim([0,(Interaction_in_corum_not_detected(1,1)+Precision_array(1,2)+Interaction_not_in_corum(1,1))*1.1]);
-title('Interactions observed across isotoplogue channels','FontSize', 12);
+title({'Interactions observed across isotoplogue channels' ['Precision = ' num2str(round(desiredPrecision(pri)*100)) '%']},'FontSize', 12);
 ylabel('Number of interactions','FontSize', 8);
 xlabel('isotoplogue channels','FontSize', 8);
 
@@ -27,7 +27,7 @@ for k=1:3
   set(f2_figure(k),'facecolor', myC(k,:), 'EdgeColor', 'k' );
 end
 legend('Proteins in corum (FP)', 'Interaction in corum (TP)',  'Proteins/Interactions not in corum');
-ylim([0,(Interaction_in_corum_not_detected(3,1)+Precision_array(3,2)+Interaction_not_in_corum(3,1))*1.2]);
+ylim([0,max(sum(Precision_array))*1.2]);
 title('Interactions observed across isotoplogue channels (Zoom)','FontSize', 12);
 ylabel('Number of interactions','FontSize', 8);
 xlabel('isotoplogue channels','FontSize', 8);

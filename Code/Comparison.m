@@ -102,7 +102,6 @@ for ii = 1:Nchannels
     datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
     ChromatogramIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Raw_data_maxquant.csv']; % from Alignment
   else
-    disp('good!')
     if user.skipalignment
       ChromatogramIn{ii} = user.MQfiles{ii};
     else
@@ -117,7 +116,6 @@ for ii = 1:Nchannels
     datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
     GaussIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
   else
-    disp('good!')
     if user.skipalignment
       GaussIn{ii} = [datadir 'GaussBuild/' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
     else
@@ -972,7 +970,7 @@ writeOutput_comparison
 
 %% Make figures
 
-makeFigures_comparison
+%makeFigures_comparison
 
 
 

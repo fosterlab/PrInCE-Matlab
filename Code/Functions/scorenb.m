@@ -1,5 +1,5 @@
 function [score, feats] = scorenb(Dist,possibleInts,TP_Matrix)
-% Use an SVM classifier to predict protein interactions.
+% Use a Naive Bayes classifier to predict protein interactions.
 
 % Get data
 I = possibleInts(:);
@@ -21,6 +21,8 @@ for ii = 1:Nd
   X(:,ii) = (X(:,ii) - wmu(ii)) / 2 / (wstd(ii) + eps);
 end
 
+Nlabel1 = sum(y==1);
+trainingLength = min([1000 round(Nlabel1 * 0.8)]);
 
 Nmodel = 15;
 score = nan(size(X,1),Nmodel);
@@ -28,12 +30,11 @@ feats = nan(Nmodel,size(X,2));
 for iter = 1:Nmodel
   
   % Make training and testing data
-  nn = 1000; % length of training data
   % balance training data
   I1 = find(y==1 & I);
-  I1 = I1(randsample(length(I1),nn/2));
+  I1 = I1(randsample(length(I1),round(trainingLength/2)));
   I0 = find(y==-1);
-  I0 = I0(randsample(length(I0),nn/2));
+  I0 = I0(randsample(length(I0),round(trainingLength/2)));
   Itrain = ismember(1:length(y),[I1;I0]);
   Ipred = ~Itrain;
   Xtr = X(Itrain,:);
@@ -49,5 +50,10 @@ for iter = 1:Nmodel
   [~,scoretmp] = predict(nab,Xnew(:,f2consider));
   
   score(Ipred,iter) = scoretmp(:,2);
+  
+  a = score(Ipred,iter);
+  if sum(isnan(a(:)))>0
+    9;
+  end
 end
 

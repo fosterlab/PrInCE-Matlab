@@ -70,7 +70,6 @@ datadir1 = [datadir 'ROC/']; % where data files live
 datadir2 = [datadir 'ROC/tmp/']; % where data files live
 datadir3 = [datadir 'ROC/CombinedResults/']; % where data files live
 figdir1 = [maindir 'Figures/ROC/']; % where figures live
-tmpdir = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/';
 %tmpdir = '/Users/Mercy/Academics/Foster/Jenny_PCPSILAC/PCPSILAC_Analysis/Data/Alignment/';
 % Make folders if necessary
 if ~exist(codedir, 'dir'); mkdir(codedir); end
@@ -81,43 +80,64 @@ if ~exist(datadir2, 'dir'); mkdir(datadir2); end
 if ~exist(datadir3, 'dir'); mkdir(datadir3); end
 if ~exist(figdir1, 'dir'); mkdir(figdir1); end
 
-%define Raw SILAC ratios data, This is the output from the alignment script
-MvsL_filename_Raw_rep1=[tmpdir 'MvsL_alignment/Realignment/Adjusted_MvsL_Raw_for_ROC_analysis_rep1.csv'];
-MvsL_filename_Raw_rep2=[tmpdir 'MvsL_alignment/Realignment/Adjusted_MvsL_Raw_for_ROC_analysis_rep2.csv'];
-MvsL_filename_Raw_rep3=[tmpdir 'MvsL_alignment/Realignment/Adjusted_MvsL_Raw_for_ROC_analysis_rep3.csv'];
-HvsL_filename_Raw_rep1=[tmpdir 'HvsL_alignment/Realignment/Adjusted_HvsL_Raw_for_ROC_analysis_rep1.csv'];
-HvsL_filename_Raw_rep2=[tmpdir 'HvsL_alignment/Realignment/Adjusted_HvsL_Raw_for_ROC_analysis_rep2.csv'];
-HvsL_filename_Raw_rep3=[tmpdir 'HvsL_alignment/Realignment/Adjusted_HvsL_Raw_for_ROC_analysis_rep3.csv'];
-MvsL_filename_gaus_rep1=[tmpdir 'MvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep1.csv'];
-MvsL_filename_gaus_rep2=[tmpdir 'MvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep2.csv'];
-MvsL_filename_gaus_rep3=[tmpdir 'MvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep3.csv'];
-HvsL_filename_gaus_rep1=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep1.csv'];
-HvsL_filename_gaus_rep2=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep2.csv'];
-HvsL_filename_gaus_rep3=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep3.csv'];
-List_of_Raw_filename={MvsL_filename_Raw_rep1,MvsL_filename_Raw_rep2,MvsL_filename_Raw_rep3,...
-  HvsL_filename_Raw_rep1,HvsL_filename_Raw_rep2,HvsL_filename_Raw_rep3};
-List_of_Gaus_filename={MvsL_filename_gaus_rep1,MvsL_filename_gaus_rep2,MvsL_filename_gaus_rep3,...
-  HvsL_filename_gaus_rep1,HvsL_filename_gaus_rep2,HvsL_filename_gaus_rep3};
+if user.nickflag==1
+  %define Raw SILAC ratios data, This is the output from the alignment script
+  tmpdir = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/';
+  MvsL_filename_Raw_rep1=[tmpdir 'MvsL_alignment/Realignment/Adjusted_MvsL_Raw_for_ROC_analysis_rep1.csv'];
+  MvsL_filename_Raw_rep2=[tmpdir 'MvsL_alignment/Realignment/Adjusted_MvsL_Raw_for_ROC_analysis_rep2.csv'];
+  MvsL_filename_Raw_rep3=[tmpdir 'MvsL_alignment/Realignment/Adjusted_MvsL_Raw_for_ROC_analysis_rep3.csv'];
+  HvsL_filename_Raw_rep1=[tmpdir 'HvsL_alignment/Realignment/Adjusted_HvsL_Raw_for_ROC_analysis_rep1.csv'];
+  HvsL_filename_Raw_rep2=[tmpdir 'HvsL_alignment/Realignment/Adjusted_HvsL_Raw_for_ROC_analysis_rep2.csv'];
+  HvsL_filename_Raw_rep3=[tmpdir 'HvsL_alignment/Realignment/Adjusted_HvsL_Raw_for_ROC_analysis_rep3.csv'];
+  MvsL_filename_gaus_rep1=[tmpdir 'MvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep1.csv'];
+  MvsL_filename_gaus_rep2=[tmpdir 'MvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep2.csv'];
+  MvsL_filename_gaus_rep3=[tmpdir 'MvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep3.csv'];
+  HvsL_filename_gaus_rep1=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep1.csv'];
+  HvsL_filename_gaus_rep2=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep2.csv'];
+  HvsL_filename_gaus_rep3=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep3.csv'];
+  ChromatogramIn={MvsL_filename_Raw_rep1,MvsL_filename_Raw_rep2,MvsL_filename_Raw_rep3,...
+    HvsL_filename_Raw_rep1,HvsL_filename_Raw_rep2,HvsL_filename_Raw_rep3};
+  GaussIn={MvsL_filename_gaus_rep1,MvsL_filename_gaus_rep2,MvsL_filename_gaus_rep3,...
+    HvsL_filename_gaus_rep1,HvsL_filename_gaus_rep2,HvsL_filename_gaus_rep3};
+  
+else
+  % Define Raw SILAC ratios data. Dynamically find filenames
+  if user.skipalignment==1
+    % If Alignment was skipped, use raw data + Gauss_Build output
+    
+    ChromatogramIn = cell(size(dd));
+    dd = dir([datadir 'GaussBuild/*_Raw_data_maxquant_rep*.csv']);
+    for di = 1:length(dd)
+      ChromatogramIn{di} = [datadir 'GaussBuild/' dd(di).name];
+    end
+    
+    GaussIn = cell(size(dd));
+    dd = dir([datadir 'GaussBuild/*Combined_OutputGaus*rep*csv']);
+    for di = 1:length(dd)
+      GaussIn{di} = [datadir 'GaussBuild/' dd(di).name];
+    end
+  else
+    % If Alignment was not skipped, use Alignment output
+    
+    ChromatogramIn = cell(size(dd));
+    dd = dir([datadir 'Alignment/Adjusted*Raw_for_ROC_analysis*rep*csv']);
+    for di = 1:length(dd)
+      ChromatogramIn{di} = [datadir 'Alignment/' dd(di).name];
+    end
+    
+    GaussIn = cell(size(dd));
+    dd = dir([datadir 'Alignment/Adjusted_Combined_OutputGaus*rep*csv']);
+    for di = 1:length(dd)
+      GaussIn{di} = [datadir 'Alignment/' dd(di).name];
+    end
+  end
+end
 
-number_of_replicates = length(List_of_Raw_filename) / number_of_channels;
+number_of_replicates = length(ChromatogramIn) / number_of_channels;
 I = find(strcmp(user.silacratios,user.treatmentcondition));
 treatment_replicates = (1:number_of_replicates)+(I-1)*number_of_replicates;
 I = 1:number_of_replicates*number_of_channels;
 untreatment_replicates = I(~ismember(I,treatment_replicates));
-
-
-% %define Raw SILAC ratios data, This is the output from the alignment script
-% % Do this dynamically. Find filenames
-% dd = dir([tmpdir 'Adjusted*Raw_for_ROC_analysis*rep*csv']);
-% List_of_Raw_filename = cell(size(dd));
-% for di = 1:length(dd)
-%   List_of_Raw_filename{di} = dd(di).name;
-% end
-% dd = dir([tmpdir 'Adjusted_Combined_OutputGaus*rep*csv']);
-% List_of_Gaus_filename = cell(size(dd));
-% for di = 1:length(dd)
-%   List_of_Gaus_filename{di} = dd(di).name;
-% end
 
 % pre-allocate final results
 Recall = nan(number_of_replicates,number_of_channels);
@@ -129,7 +149,7 @@ No_Int = nan((size(Recall)));
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
-
+%%
 %%%%% Replicate counter starts
 for replicate_counter = 1:number_of_replicates*number_of_channels
   
@@ -150,35 +170,52 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   No=length(Corum_Import{1})/2;
   Corum_Protein_names = (reshape(Corum_Import{1,1},2,No)');
   Unique_Corum = unique(Corum_Protein_names);
+     
+%     %Raw data for analysis of euclidean distance
+%     %import data files summary data
+%     Maxquant = fopen (ChromatogramIn{replicate_counter});
+%     Maxquant_raw = textscan(Maxquant, '%s', 'Delimiter',',');
+%     fclose(Maxquant);
+%   
+%     %Reshape data for use in analysis
+%     Raw_Dimension=size(Maxquant_raw{:});
+%     Raw_data_reshaped=reshape(Maxquant_raw{:},68,(Raw_Dimension(1)/68))';
+%   
+%     %divide up reshaped data in correct form
+%     Chromatograms_raw = Raw_data_reshaped(2:end,3:end);
+%     Chromatograms_raw = cellfun(@str2num,Chromatograms_raw);
   
-  %Master_Gaussian_list=importdata(InputFile{4},',');
+  % Raw SILAC ratios
+  tmp = importdata(ChromatogramIn{replicate_counter});
+  if isfield(tmp.data,'Sheet1')
+    Chromatograms_raw = tmp.data.Sheet1(:,2:end);
+  else
+    Chromatograms_raw = tmp.data(:,2:end);
+  end
   
-  %Raw data for analysis of euclidean distance
-  %import data files summary data
-  Maxquant = fopen (List_of_Raw_filename{replicate_counter});
-  Maxquant_raw = textscan(Maxquant, '%s', 'Delimiter',',');
-  fclose(Maxquant);
-  
-  %Reshape data for use in analysis
-  Raw_Dimension=size(Maxquant_raw{:});
-  Raw_data_reshaped=reshape(Maxquant_raw{:},68,(Raw_Dimension(1)/68))';
-  Raw_data_reshaped_size=size(Raw_data_reshaped);
-  
-  %divide up reshaped data in correct form
-  Chromatograms_raw = Raw_data_reshaped(2:end,3:end);
-  Chromatograms_raw = cellfun(@str2num,Chromatograms_raw);
-  
-  %Gaus data data for analysis of center analysis
-  Gaus_import_name = fopen (List_of_Gaus_filename{replicate_counter});
-  Gaus_import = textscan(Gaus_import_name, '%s', 'Delimiter',',');
-  fclose(Gaus_import_name);
-  
-  %Reshape data for use in analysis
-  Gaus_import_Dimension=size(Gaus_import{:});
-  Gaus_import_reshaped=reshape(Gaus_import{:},7,(Gaus_import_Dimension(1)/7))';
+%   %Gaus data data for analysis of center analysis
+%   Gaus_import_name = fopen (GaussIn{replicate_counter});
+%   Gaus_import = textscan(Gaus_import_name, '%s', 'Delimiter',',');
+%   fclose(Gaus_import_name);
+%   
+%   %Reshape data for use in analysis
+%   Gaus_import_Dimension=size(Gaus_import{:});
+%   Gaus_import_reshaped=reshape(Gaus_import{:},7,(Gaus_import_Dimension(1)/7))';
+
+  % Gaussian parameters
+  tmp = importdata(GaussIn{replicate_counter});
+  if isfield(tmp.data,'Sheet1')
+    tmp1 = tmp.data.Sheet1;
+    tmp2 = tmp.textdata.Sheet1;
+  else
+    tmp1 = tmp.data;
+    tmp2 = tmp.textdata;
+  end
+  Gaus_import = [tmp2 num2cell( cat(1,zeros(1,size(tmp1,2)),tmp1) )];
+
   
   % do a bit of housekeeping
-  clear Maxquant_raw Raw_data_reshaped Corum_Import
+  clear Maxquant_raw Raw_data_reshaped Corum_Import tmp
   
   
   tt = toc;
@@ -195,9 +232,12 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   
   % Pre-process data to remove Gaussian above fraction five
   % Create array to use for comparsions
-  H_raw = cellfun(@str2num,Gaus_import_reshaped(2:end,2));
-  C_raw = cellfun(@str2num,Gaus_import_reshaped(2:end,3));
-  W_raw = cellfun(@str2num,Gaus_import_reshaped(2:end,4));
+  %H_raw = cellfun(@str2num,Gaus_import(2:end,2));
+  %C_raw = cellfun(@str2num,Gaus_import(2:end,3));
+  %W_raw = cellfun(@str2num,Gaus_import(2:end,4));
+  H_raw = cell2mat(Gaus_import(2:end,2));
+  C_raw = cell2mat(Gaus_import(2:end,3));
+  W_raw = cell2mat(Gaus_import(2:end,4));
   
   % Replace NaN values with 0.05
   Chromatograms = Chromatograms_raw;
@@ -220,7 +260,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   
   % How many Gaussians?
   I = find(~Ibad);
-  unique_names = Gaus_import_reshaped(I+1,1);
+  unique_names = Gaus_import(I+1,1);
   X = repmat(unique_names,1,length(unique_names));
   Ngauss = sum(strcmp(X,X'),1)';
   clear X unique_names
@@ -289,18 +329,21 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   % This summarizes the proteins in our sample
   tic
   fprintf('        3. Make Protein structure.')
-  
+    
   % Combine Majority Protein ID with Proteins Identified in replicate
-  Protein.Isoform=Gaus_import_reshaped(2:end,1);
-  Protein.Height=cellfun(@str2num,Gaus_import_reshaped(2:end,2));
-  Protein.Width=cellfun(@str2num,Gaus_import_reshaped(2:end,3));
-  Protein.Center=cellfun(@str2num,Gaus_import_reshaped(2:end,4));
+  Protein.Isoform=Gaus_import(find(~Ibad)+1,1);
+  %Protein.Height=cellfun(@str2num,Gaus_import(2:end,2));
+  %Protein.Width=cellfun(@str2num,Gaus_import(2:end,3));
+  %Protein.Center=cellfun(@str2num,Gaus_import(2:end,4));
+  Protein.Height = H;
+  Protein.Width = W;
+  Protein.Center = C;
   
   % remove protein name with center less then 5
-  Protein.Isoform(Ibad)=[];
-  Protein.Height(Ibad)=[];
-  Protein.Width(Ibad)=[];
-  Protein.Center(Ibad)=[];
+  %Protein.Isoform(Ibad)=[];
+  %Protein.Height(Ibad)=[];
+  %Protein.Width(Ibad)=[];
+  %Protein.Center(Ibad)=[];
   
   Dimensions_Gaus_import = length(Protein.Isoform);
   Dimension_of_Protein_IDs = size(Protein_IDs);
@@ -494,7 +537,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   %scoreMatrix = nanmean(scoreMatrix,2);
   %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
   scoreMatrix = scorenb(Dist,possibleInts,TP_Matrix);
-  scoreMatrix = median(scoreMatrix,2);
+  scoreMatrix = nanmedian(scoreMatrix,2);
   %scoreMatrix = nanmean(scoreMatrix,2);
   %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
   

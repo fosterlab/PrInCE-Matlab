@@ -794,7 +794,7 @@ List_of_pdf_counter=1;
 %%
 
 %Determine which Gaussians change by comparing fitted data with raw data
-for Gaussian_counter1= 1:length(Unique_protein_names)
+for Gaussian_counter1= 39:length(Unique_protein_names)
   
   %Protein being plotted
   Protein_to_plot=Finalised_Master_Gaussian_list.Protein_name{Gaussian_counter1};

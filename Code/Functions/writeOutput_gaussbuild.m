@@ -109,7 +109,7 @@ for ci = 1:Nchannels
           fclose(fid2A);
           
           %For Chromatograms
-          fileName2B = [datadir2 'GaussBuild/' num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_Output_Chromatograms_filtered_out.csv'];
+          fileName2B = [datadir2 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_Output_Chromatograms_filtered_out.csv'];
           fid2B = fopen(fileName2B,'at');
           fprintf(fid2B,'%6.4f,%6.4f,%s,',ri, replicate(ri), txt_MvsL{ri+1});
           fprintf(fid2B,'%6.4g,', cleandata{ci}(ri,:));
@@ -126,7 +126,7 @@ end
 
 %% MvsL_Summary_Gausians_identifed.csv
 disp('        Writing MvsL_Summary_Gausians_identifed.csv...')
-fn = strcat([datadir 'GaussBuild/MvsL_Summary_Gausians_identifed.csv']);
+fn = strcat([datadir 'MvsL_Summary_Gausians_identifed.csv']);
 
 ci=1;
 Mean_No_Quant_String = sum(~isnan(rawdata{ci}(:))) / size(rawdata{ci},1);
@@ -149,7 +149,7 @@ fclose(fid3);
 
 %% HvsL_Summary_Gausians_identifed.csv
 disp('        Writing HvsL_Summary_Gausians_identifed.csv...')
-fn = strcat([datadir 'GaussBuild/HvsL_Summary_Gausians_identifed.csv']);
+fn = strcat([datadir 'HvsL_Summary_Gausians_identifed.csv']);
 
 ci=2;
 Mean_No_Quant_String = sum(~isnan(rawdata{ci}(:))) / size(rawdata{ci},1);
@@ -172,7 +172,7 @@ fclose(fid3);
 
 %% Proteins_not_fitted_to_gaussian_MvsL.csv
 disp('        Writing Proteins_not_fitted_to_gaussian_MvsL.csv...')
-fn = strcat([datadir 'GaussBuild/Proteins_not_fitted_to_gaussian_MvsL.csv']);
+fn = strcat([datadir 'Proteins_not_fitted_to_gaussian_MvsL.csv']);
 
 ci=1;
 fid5 = fopen(fn,'w');
@@ -189,7 +189,7 @@ fclose(fid5);
 
 %% Proteins_not_fitted_to_gaussian_HvsL.csv
 disp('        Writing Proteins_not_fitted_to_gaussian_HvsL.csv...')
-fn = strcat([datadir 'GaussBuild/Proteins_not_fitted_to_gaussian_HvsL.csv']);
+fn = strcat([datadir 'Proteins_not_fitted_to_gaussian_HvsL.csv']);
 
 ci=2;
 fid5 = fopen(fn,'w');
@@ -206,7 +206,7 @@ fclose(fid5);
 
 %% MvsL_Summary_Gausians_for_individual_proteins.csv
 disp('        Writing MvsL_Summary_Gausians_for_individual_proteins.csv...')
-fn = strcat([datadir 'GaussBuild/MvsL_Summary_Gausians_for_individual_proteins.csv']);
+fn = strcat([datadir 'MvsL_Summary_Gausians_for_individual_proteins.csv']);
 
 ci=1;
 fid4 = fopen(fn,'w');
@@ -225,7 +225,7 @@ fclose(fid4);
 
 %% HvsL_Summary_Gausians_for_individual_proteins.csv
 disp('        Writing HvsL_Summary_Gausians_for_individual_proteins.csv...')
-fn = strcat([datadir 'GaussBuild/HvsL_Summary_Gausians_for_individual_proteins.csv']);
+fn = strcat([datadir 'HvsL_Summary_Gausians_for_individual_proteins.csv']);
 
 ci=1;
 fid4 = fopen(fn,'w');
@@ -244,7 +244,7 @@ fclose(fid4);
 
 %% MvsL_Combined_OutputGaus.csv
 disp('        Writing MvsL_Combined_OutputGaus.csv...')
-fn = strcat([datadir 'GaussBuild/MvsL_Combined_OutputGaus.csv']);
+fn = strcat([datadir 'MvsL_Combined_OutputGaus.csv']);
 
 ci=1;
 Combined_OutputGaus_length = size(protgausI{ci},1);
@@ -272,7 +272,7 @@ fclose(fid_combined_Gaus);
 
 %% HvsL_Combined_OutputGaus.csv
 disp('        Writing HvsL_Combined_OutputGaus.csv...')
-fn = strcat([datadir 'GaussBuild/HvsL_Combined_OutputGaus.csv']);
+fn = strcat([datadir 'HvsL_Combined_OutputGaus.csv']);
 
 ci=2;
 Combined_OutputGaus_length = size(protgausI{ci},1);
@@ -299,7 +299,7 @@ fclose(fid_combined_Gaus);
 
 %% MvsL_Combined_Chromatograms.csv
 disp('        Writing MvsL_Combined_Chromatograms.csv...')
-fn = strcat([datadir 'GaussBuild/MvsL_Combined_Chromatograms.csv']);
+fn = strcat([datadir 'MvsL_Combined_Chromatograms.csv']);
 
 ci=1;
 Combined_OutputGaus_length = size(protgausI{ci},1);
@@ -318,7 +318,7 @@ fclose(fid_combined_Chromatogram);
 
 %% HvsL_Combined_Chromatograms.csv
 disp('        Writing HvsL_Combined_Chromatograms.csv...')
-fn = strcat([datadir 'GaussBuild/HvsL_Combined_Chromatograms.csv']);
+fn = strcat([datadir 'HvsL_Combined_Chromatograms.csv']);
 
 ci=2;
 Combined_OutputGaus_length = size(protgausI{ci},1);
@@ -337,20 +337,19 @@ fclose(fid_combined_Chromatogram);
 
 %% MvsL_Combined_OutputGaus_rep*.csv
 % Divide up MvsL_Combined_OutputGaus.csv
-disp('        Writing MvsL_Combined_OutputGaus_rep*.csv and HvsL_Combined_OutputGaus_rep*.csv...')
+disp('        Writing *_Combined_OutputGaus_rep*.csv...')
 
-Experimental_channels = {'MvsL' 'HvsL' 'HvsM'};
+Experimental_channels = user.silacratios;
 Unique_replicate = unique(replicate);
 
 for ci = 1:2
   Experimental_channel = Experimental_channels{ci};
   for divider_counter1 = 1:length(Unique_replicate)
     %Create name of gaussian file to output divided gaus data to
-    Process_Gaus_import_Name= [datadir 'GaussBuild/' Experimental_channel '_Combined_OutputGaus_rep' mat2str(divider_counter1) '.csv'];
+    Process_Gaus_import_Name= [datadir Experimental_channel '_Combined_OutputGaus_rep' mat2str(divider_counter1) '.csv'];
     
     fid_processing= fopen(Process_Gaus_import_Name,'wt'); % create the output file with the header infromation
-    fprintf (fid_processing,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
-      'Guassian index number', 'Protein_number','Replicate',...
+    fprintf (fid_processing,'%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
       'Protein name', 'Height', 'Center', 'Width', 'SSE',...
       'adjrsquare', 'Complex Size'); %Write Header
     
@@ -362,7 +361,7 @@ for ci = 1:2
         Center = Coef{ci,ri}((gn-1)*3 + 2) - 5;
         Width = Coef{ci,ri}((gn-1)*3 + 3);
         Size_of_complex=SEC_fit(1)*Center+SEC_fit(2);
-        fprintf(fid_processing,'%6.4f,%6.4f,%6.4f,',kk,ri,replicate(ri)); % index information
+        %fprintf(fid_processing,'%6.4f,%6.4f,%6.4f,',kk,ri,replicate(ri)); % index information
         fprintf(fid_processing,'%s,',txt_MvsL{ri+1}); % protein name
         fprintf(fid_processing,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
           Height, Center, Width, SSE(ci,ri), adjrsquare(ci,ri), round(Size_of_complex/10)*10); % Gaussian fitting information
@@ -375,16 +374,16 @@ end
 
 %% MvsL_Summary_Gausians_for_individual_proteins_rep*.csv
 % Divide up MvsL_Summary_Gausians_for_individual_proteins.csv
-disp('        Writing MvsL_Summary_Gausians_for_individual_proteins_rep*.csv and MvsL_Summary_Gausians_for_individual_proteins_rep*.csv...')
+disp('        Writing *_Summary_Gausians_for_individual_proteins_rep*.csv...')
 
-Experimental_channels = {'MvsL' 'HvsL' 'HvsM'};
+Experimental_channels = user.silacratios;
 Unique_replicate = unique(replicate);
 
 for ci = 1:2
   Experimental_channel = Experimental_channels{ci};
   for divider_counter1=1:Unique_replicate
     %Create name of gaussian file to output divided gaus data to
-    Process_Summary_gausian_info_Name= [datadir 'GaussBuild/' Experimental_channel,'_Summary_Gausians_for_individual_proteins_rep',mat2str(divider_counter1),'.csv'];
+    Process_Summary_gausian_info_Name= [datadir Experimental_channel,'_Summary_Gausians_for_individual_proteins_rep',mat2str(divider_counter1),'.csv'];
     
     fid_processing= fopen(Process_Summary_gausian_info_Name,'wt'); % create the output file with the header infromation
     fprintf (fid_processing,'%s,%s,%s,%s,%s\n',... %header for OutputGaus output
@@ -418,7 +417,7 @@ ci = 1;
 for divider_counter1=1:Unique_replicate
   
   %Create name of gaussian file to output divided gaus data for MvsL
-  Process_Replicate_raw_data1= [datadir 'GaussBuild/' Experimental_channels{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv'];
+  Process_Replicate_raw_data1= [datadir Experimental_channels{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv'];
   
   fid_processing3= fopen(Process_Replicate_raw_data1,'wt'); % create the output file with the header infromation
   fprintf(fid_processing3,'%s, ', txt_MvsL{1,1:Nfractions+2}); %header for OutputGaus output
@@ -447,7 +446,7 @@ ci = 2;
 for divider_counter1=1:Unique_replicate
   
   %Create name of gaussian file to output divided gaus data for MvsL
-  Process_Replicate_raw_data1= [datadir 'GaussBuild/' Experimental_channels{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv'];
+  Process_Replicate_raw_data1= [datadir Experimental_channels{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv'];
   
   fid_processing3= fopen(Process_Replicate_raw_data1,'wt'); % create the output file with the header infromation
   fprintf(fid_processing3,'%s, ', txt_HvsL{1,1:Nfractions+2}); %header for OutputGaus output
