@@ -42,8 +42,6 @@ InputFile{3} = user.calfile;
 Nchannels = length(experimental_channels);
 
 % Define folders, i.e. define where everything lives.
-%maindir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/'; % where everything lives
-%maindir = '/Users/Mercy/Academics/Foster/Jenny_PCPSILAC/PCPSILAC_Analysis/'; % where everything lives
 codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
 datadir0 = [maindir 'Data/']; % where data files live
@@ -60,6 +58,8 @@ if ~exist(datadir1, 'dir'); mkdir(datadir1); end
 if ~exist(datadir2, 'dir'); mkdir(datadir2); end
 if ~exist(datadir3, 'dir'); mkdir(datadir3); end
 if ~exist(datadir4, 'dir'); mkdir(datadir4); end
+if ~exist(figdir, 'dir'); mkdir(figdir); end
+if ~exist([figdir '/GaussBuild'], 'dir'); mkdir([figdir '/GaussBuild']); end
 
 
 
@@ -90,6 +90,7 @@ rawdata{2} = num_val_HvsL;
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
+
 
 
 %% 2. Clean the chromatograms
@@ -129,6 +130,7 @@ end
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
+
 
 
 %% 3. Fit 1-5 Gaussians on each cleaned chromatogram
@@ -201,12 +203,24 @@ tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
-%% 4. Write output
 
-% writeOutput_gaussbuild(datadir,datadir1,datadir2,datadir3,datadir4,...
-%   Coef,SSE,adjrsquare,Try_Fit,...
-%   txt_MvsL,txt_HvsL,replicate,SEC_size_alignment,experimental_channels,...
-%   cleandata,rawdata,tmp1,tmp2,...
-%   protgausI);
+%% 4. Write output
+tic
+fprintf('\n    4. Write output')
+
 writeOutput_gaussbuild
+
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
+
+
+
+%% 5. Make figures
+tic
+fprintf('\n    5. Make figures')
+
+makeFigures_gaussbuild
+
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
