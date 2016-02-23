@@ -105,8 +105,8 @@ else
   if user.skipalignment==1
     % If Alignment was skipped, use raw data + Gauss_Build output
     
-    ChromatogramIn = cell(size(dd));
     dd = dir([datadir 'GaussBuild/*_Raw_data_maxquant_rep*.csv']);
+    ChromatogramIn = cell(size(dd));
     for di = 1:length(dd)
       ChromatogramIn{di} = [datadir 'GaussBuild/' dd(di).name];
     end
@@ -1165,7 +1165,7 @@ for pri = 1:length(desiredPrecision)
   for precision_counter = 1:(number_of_replicates*number_of_channels)
     %Find position of interaction observed within the required number of
     %replicates
-    position_to_sum=find(interaction_final.times_observed_across_reps==precision_counter);
+    position_to_sum=find(interaction_final.times_observed_across_reps>=precision_counter);
     
     %Count the number values for non redundant list
     Precision_array(precision_counter,1) = sum(cell2mat(interaction_final.proteinInCorum(position_to_sum)));
