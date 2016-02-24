@@ -781,7 +781,7 @@ for ii = 1:length(Unique_protein_names)
       for find_rep_counter=1:length(location_Protein_in_combined_Gaus) %As Combined Gaussian is used to create Final will also have atleast one value
         if rep==Combined_Gaussians.Replicate(location_Protein_in_combined_Gaus(find_rep_counter))
           %check if Center is within 2 fractions of master list center
-          temp_value=abs(Combined_Gaussians.Center(location_Protein_in_combined_Gaus(find_rep_counter))- Center_to_test);
+          temp_value=abs(Combined_Gaussians.Center(location_Protein_in_combined_Gaus(find_rep_counter))- rounded_center);
           if  temp_value<=(User_Window+0.49)
             rounded_center= floor(Combined_Gaussians.Center(location_Protein_in_combined_Gaus(find_rep_counter)));
           end
@@ -799,7 +799,7 @@ for ii = 1:length(Unique_protein_names)
       baddata = false(Nchannels,1);
       for jj = 1:Nchannels
         I = rounded_center-2+frac1-1:rounded_center+2+frac1-1;
-        rawratio(jj,:) = num_val{jj}(Iraw,I); %Add six as Realigned raw data ranges from -5 to 60
+        rawratio(jj,:) = num_val{jj}(Iraw,I);
         baddata(jj) = sum(isnan(rawratio(jj,:)))==5 | sum(isnan(rawratio(jj,2:4)))>=2;
       end
       
@@ -963,14 +963,20 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 
-%% Write output
+%% 9. Write output
+tic
+fprintf('    9. Write output')
 
 writeOutput_comparison
 
 
-%% Make figures
 
-%makeFigures_comparison
+
+%% 10. Make figures
+tic
+fprintf('    10. Make figures')
+
+makeFigures_comparison
 
 
 
