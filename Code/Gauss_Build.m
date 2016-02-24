@@ -26,6 +26,7 @@
 
 disp('Gauss_Build.m')
 
+
 %% 0. Initialize
 tic
 fprintf('\n    0. Initialize')
@@ -36,7 +37,6 @@ maindir = user.maindir;
 experimental_channels = user.silacratios;
 InputFile{1} = user.MQfiles{1};
 InputFile{2} = user.MQfiles{2};
-InputFile{3} = user.calfile;
 
 
 Nchannels = length(experimental_channels);
@@ -67,26 +67,32 @@ tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
+
 %% 1. Read input data
 tic
 fprintf('\n    1. Read input data')
 
 % Import data from all input files
-[num_val_MvsL,txt_MvsL] = xlsread(InputFile{1}); %Import file MvsL
-[num_val_HvsL,txt_HvsL] = xlsread(InputFile{2}); %Import file HvsL
-SEC_size_alignment = xlsread(InputFile{3});
+%[num_val_MvsL,txt_MvsL] = xlsread(InputFile{1}); %Import file MvsL
+%[num_val_HvsL,txt_HvsL] = xlsread(InputFile{2}); %Import file HvsL
+rawdata = cell(size(experimental_channels));
+txt_val = cell(size(experimental_channels));
+for ii = 1:Nchannels
+  [rawdata{ii},txt_val{ii}] = xlsread(InputFile{ii});
+  
+  % Remove first column as the replicate
+  replicate = rawdata{ii}(:,1);
+  rawdata{ii} = rawdata{ii}(:,2:end);
+  
+  % turn txt_val into a list of protein names
+  %txt_val{ii} = txt_val{ii}(:,1);
+end
+SEC_size_alignment = xlsread(user.calfile);
 
-% Remove first column, this is the replicate number
-replicate = num_val_MvsL(:,1);
-num_val_MvsL = num_val_MvsL(:,2:end);
-num_val_HvsL = num_val_HvsL(:,2:end);
 
 % How many proteins and fractions are there?
-[Nproteins, Nfractions]=size(num_val_MvsL);
+[Nproteins, Nfractions] = size(rawdata{1});
 
-% Put raw data into a single variable for easy access
-rawdata{1} = num_val_MvsL;
-rawdata{2} = num_val_HvsL;
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
