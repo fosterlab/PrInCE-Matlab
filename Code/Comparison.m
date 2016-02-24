@@ -60,6 +60,7 @@
 % S9.
 
 
+diary([user.maindir 'logfile.txt'])
 disp('Comparison.m')
 
 
@@ -979,4 +980,5 @@ fprintf('    10. Make figures')
 makeFigures_comparison
 
 
+diary('off')
 

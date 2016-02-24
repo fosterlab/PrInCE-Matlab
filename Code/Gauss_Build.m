@@ -23,7 +23,7 @@
 % - Add 'user defined settings' at the very top of initialize
 % - Fix InputFile, MainOutputFile, and DebugOutputFile which are not currently used.
 
-
+diary([user.maindir 'logfile.txt'])
 disp('Gauss_Build.m')
 
 
@@ -230,3 +230,4 @@ makeFigures_gaussbuild
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
+diary('off')

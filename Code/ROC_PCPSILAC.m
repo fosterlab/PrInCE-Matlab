@@ -40,6 +40,7 @@
 % - My Corum_Dataset is 11516x1. Nick's Corum_Dataset is 1x16393. Why are they different sizes?
 
 
+diary([user.maindir 'logfile.txt'])
 disp('ROC_PCPSILAC.m')
 
 
@@ -1311,5 +1312,6 @@ for pri = 1:length(desiredPrecision)
 end
 
 
+diary('off')
 
 

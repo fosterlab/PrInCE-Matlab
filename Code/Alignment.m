@@ -41,15 +41,18 @@
 %
 %
 
+
+diary([user.maindir 'logfile.txt'])
 disp('Alignment.m')
 
+skipflag = 0;
 if user.Nreplicate==1
-  disp('User set Number of Replicates to 1. Skipping Alignment...')
+  disp('* NB: User set Number of Replicates to 1. Skipping Alignment...')
   user.skipalignment = 1;
   skipflag = 1;
 end
 if user.skipalignment==1 && skipflag==0
-  disp('User set skipalignment to True. Skipping Alignment...')
+  disp('* NB: User set skipalignment to True. Skipping Alignment...')
   skipflag = 1;
 end
 
@@ -463,4 +466,6 @@ if ~skipflag
   
   
 end
+
+diary('off')
 
