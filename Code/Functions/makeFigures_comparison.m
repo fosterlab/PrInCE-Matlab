@@ -30,7 +30,7 @@ for k=1:3
   set(f6_figure(k),'facecolor', myC(k,:), 'EdgeColor', 'k' )
 end
 legend('No change', 'Increase', 'Decrease', 'FontSize',8, 'Location', 'Best');
-xlim([-1,fraction_to_plot+1]);
+xlim([-1,frac2+1]);
 title('Changes in Gaussians observed across fractions');
 xlabel('Fractions');
 ylabel('# of Guassian centers');
@@ -780,7 +780,7 @@ for k=1:3
   set(f_all_figure(k),'facecolor', myC(k,:), 'EdgeColor', 'k' )
 end
 legend('No change', 'Increase', 'Decrease', 'FontSize',8, 'Location', 'Best');
-xlim([-2,fraction_to_plot+2]);
+xlim([-2,frac2+2]);
 title('Changes in Gaussians observed across fractions');
 xlabel('Fractions');
 ylabel('# of Guassian centers');
@@ -794,7 +794,7 @@ List_of_pdf_counter=1;
 %%
 
 %Determine which Gaussians change by comparing fitted data with raw data
-for Gaussian_counter1= 39:length(Unique_protein_names)
+for Gaussian_counter1 = 1:length(Unique_protein_names)
   
   %Protein being plotted
   Protein_to_plot=Finalised_Master_Gaussian_list.Protein_name{Gaussian_counter1};
@@ -821,15 +821,14 @@ for Gaussian_counter1= 39:length(Unique_protein_names)
   figure
   
   % Plot the Gaussians
-  subplot(replicate_num+2,1,1);
+  subplot(replicate_num+2,1,1), hold on
   %Count the number of gaussians detected
   number_of_gaussian_to_plot= nnz(Finalised_Master_Gaussian_list.Center(Gaussian_counter1,:));
   for hold_on_counter=1:number_of_gaussian_to_plot
-    hold on  %Graph Gaus
     Center_output=Finalised_Master_Gaussian_list.Center(Gaussian_counter1, hold_on_counter);
     Height_output=Finalised_Master_Gaussian_list.Height(Gaussian_counter1, hold_on_counter);
     Width_output=Finalised_Master_Gaussian_list.Width(Gaussian_counter1, hold_on_counter);
-    Fitted_gaus=1:0.1:fraction_to_plot;
+    Fitted_gaus=1:0.1:frac2;
     number_of_data_points=length(Fitted_gaus);
     gaus_colour_set=colour_to_use(hold_on_counter,:);
 %     for fill_in_counter=1:number_of_data_points
@@ -841,7 +840,11 @@ for Gaussian_counter1= 39:length(Unique_protein_names)
     patch(Fitted_gaus([1 1:end end]), [0 y1 0], gaus_colour_set(:)','EdgeColor',gaus_colour_set(:),'FaceAlpha',0.2,'LineWidth',2);
     plot(Fitted_gaus,y1,'Color','black','LineWidth',1);
   end
-  xlim([0,fraction_to_plot+1])
+  y = ylim;
+  s = ['R^2 = ' num2str(Finalised_Master_Gaussian_list.adjrsquare(Gaussian_counter1,1))];
+  text(1,y(1) + diff(y)*1.02,s)
+  ylim([y(1) y(2)*1.1])
+  xlim([0,frac2+1])
   title_name_plot=strcat('Gaussian curves identified across replicates of :',Protein_to_plot);
   title(title_name_plot,'FontSize', 12);
   ylabel('Isotopologue ratio','FontSize', 10);
@@ -851,13 +854,19 @@ for Gaussian_counter1= 39:length(Unique_protein_names)
   for jj = 1:replicate_num
     subplot(replicate_num+2,1,jj+1),hold on
     for ii = 1:Nchannels
-      plot((frac1:frac2)-frac1+1,squeeze(data2plot(ii,jj,:)),...
-        'Color', [0.5 0.5 0.5],'LineWidth',0.5);
       plot((frac1:frac2)-frac1+1,squeeze(data2plot(ii,jj,:)),'s',...
         'MarkerFaceColor',colour_to_use(2,:),'MarkerSize',4);
     end
   end
-  xlim([0,fraction_to_plot+1])
+  legend(user.silacratios,'location','best')
+  for jj = 1:replicate_num
+    subplot(replicate_num+2,1,jj+1),hold on
+    for ii = 1:Nchannels
+      plot((frac1:frac2)-frac1+1,squeeze(data2plot(ii,jj,:)),...
+        'Color', [0.5 0.5 0.5],'LineWidth',0.5);
+    end
+  end
+  xlim([0,frac2+1])
   
   % Plot the relative changes
   subplot(replicate_num+2,1,replicate_num+2),hold on
@@ -897,9 +906,9 @@ for Gaussian_counter1= 39:length(Unique_protein_names)
   pause
   
   Save_name_replicates=[figdir 'Comparison/ProteinGaussianMaps/' mat2str(Gaussian_counter1),'_1_PCP_SEC_Profiles of_',Protein_to_plot,'.png'];
-  List_of_pdf{List_of_pdf_counter,1}=Save_name_replicates;
-  List_of_pdf{List_of_pdf_counter,2}=List_of_pdf_counter;
-  List_of_pdf_counter=List_of_pdf_counter+1;
+  %List_of_pdf{List_of_pdf_counter,1}=Save_name_replicates;
+  %List_of_pdf{List_of_pdf_counter,2}=List_of_pdf_counter;
+  %List_of_pdf_counter=List_of_pdf_counter+1;
   saveas(gcf, Save_name_replicates);
   %print('-dpdf', '-r600', Save_name_replicates);
   close 'all';
@@ -926,7 +935,7 @@ for Gaussian_counter1= 4:length(Unique_protein_names)
   
   %determine if Center is less then fraction_to_plot
   for hold_on_counter=1:number_of_gaussian_to_plot
-    if ~(Finalised_Master_Gaussian_list.Center(Gaussian_counter1, hold_on_counter)>fraction_to_plot-2) % minus two add for comsetics
+    if ~(Finalised_Master_Gaussian_list.Center(Gaussian_counter1, hold_on_counter)>frac2-2) % minus two add for comsetics
       Center_test(hold_on_counter1)=Finalised_Master_Gaussian_list.Center(Gaussian_counter1, hold_on_counter);
       Height_test(hold_on_counter1)=Finalised_Master_Gaussian_list.Height(Gaussian_counter1, hold_on_counter);
       Width_test(hold_on_counter1)=Finalised_Master_Gaussian_list.Width(Gaussian_counter1, hold_on_counter);
@@ -956,7 +965,7 @@ for Gaussian_counter1= 4:length(Unique_protein_names)
       y1 =  Height_output*exp(-((Fitted_gaus-Center_output)/Width_output).^2);
       P1 = plot(Fitted_gaus,y1);
       set(P1,'Color','black','LineWidth',1);
-      xlim([0,fraction_to_plot]);
+      xlim([0,frac2]);
     end
     title_name_plot=strcat('Gaussian curves identified across replicates of :',Protein_to_plot);
     title(title_name_plot,'FontSize', 12);
@@ -1069,16 +1078,15 @@ for Gaussian_counter1= 4:length(Unique_protein_names)
 end
 end
 
+
 %%
 
 % 4. Make pie chart figure
 
-
-
 %Create array to store which replicate each protein
-Proteins_observed_in_replicates=zeros(number_of_unique_protein_with_gaussians, 8);
+Proteins_observed_in_replicates=zeros(length(Unique_protein_names), 8);
 
-for count_shared_guassians3=1:number_of_unique_protein_with_gaussians
+for count_shared_guassians3 = 1:length(Unique_protein_names)
   [internal_location_of_protein_of_interest_MvsL]=ind2sub(Number_All_guassians_identified_nonredunent_list(1), strmatch(Unique_protein_names(count_shared_guassians3), MvsL_Gaussians.Protein_name, 'exact'));
   [internal_location_of_protein_of_interest_HvsL]=ind2sub(Number_All_guassians_identified_nonredunent_list(1), strmatch(Unique_protein_names(count_shared_guassians3), HvsL_Gaussians.Protein_name, 'exact'));
   %Record which repliates the protein of interest was seen in MvsL replicates
@@ -1249,7 +1257,7 @@ pie_figure6(1,4)=nnz(Protein_information.Replicate4);
 fid_Proteins_in_each_rep = fopen([datadir1 'Protein_gaussian_observed_in_each_replicate.csv'],'w');
 fprintf (fid_Proteins_in_each_rep,'%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
   'Protein_name','Replicate 1 MvsL channel','Replicate 2 MvsL channel','Replicate 3 MvsL channel','Replicate 4 MvsL channel','Replicate 1 HvsL channel','Replicate 2 HvsL channel','Replicate 3 HvsL channel','Replicate 4 HvsL channel'); %Write Header
-for write_out_Proteins_in_rep=1:number_of_unique_protein_with_gaussians(1)
+for write_out_Proteins_in_rep = 1:length(Unique_protein_names)
   fprintf(fid_Proteins_in_each_rep,'%s,', Unique_protein_names{write_out_Proteins_in_rep});
   fprintf(fid_Proteins_in_each_rep,'%6.4g,', Proteins_observed_in_replicates(write_out_Proteins_in_rep,:));
   fprintf(fid_Proteins_in_each_rep,'\n');
