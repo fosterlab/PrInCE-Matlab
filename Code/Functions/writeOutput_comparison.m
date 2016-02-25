@@ -2,7 +2,7 @@
 
 % #output
 %Write out comparsion of gaussian in biological replicate
-s = [datadir 'Comparison/Unique_gaussians_with_changes_between' user.comparisonpairs{1} 'and' user.comparisonpairs{2} 'b.csv'];
+s = [datadir 'Comparison/Unique_gaussians_with_changes_between' user.comparisonpairs{1} 'and' user.comparisonpairs{2} '.csv'];
 fid_combined_gaus_with_changes_output= fopen(s,'wt'); % create the output file with the header infromation
 fprintf (fid_combined_gaus_with_changes_output,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
   'Protein name', 'Height', 'Center', 'Width', 'SSE', 'adjrsquare','Observed in channel','Changes Observed',...
@@ -25,7 +25,7 @@ end
 fclose(fid_combined_gaus_with_changes_output);
 
 
-fid_Summary_gaussian= fopen([datadir 'Comparison/Summary_gaussian_detectedb.csv'],'wt'); % create the summary file of the interaction output
+fid_Summary_gaussian= fopen([datadir 'Comparison/Summary_gaussian_detected.csv'],'wt'); % create the summary file of the interaction output
 fprintf (fid_Summary_gaussian,'%s,','Total gaussians');
 for ci = 1:Nchannels
   fprintf(fid_Summary_gaussian,'%s,',['Gaussians within ' Experimental_channels{ci} ' channel']);
@@ -44,7 +44,7 @@ fprintf(fid_Summary_gaussian,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
 
 % #output
 %Write table of is gaussian were fitted in the HvsL and/or MvsL
-fid_combined_gaus_output= fopen([datadir 'Comparison/Unique_gaussians_observed_between_replicatesb.csv'],'wt'); % create the output file with the header infromation
+fid_combined_gaus_output= fopen([datadir 'Comparison/Unique_gaussians_observed_between_replicates.csv'],'wt'); % create the output file with the header infromation
 fprintf (fid_combined_gaus_output,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
   'Protein name','Complex Size', 'Height', 'Center', 'Width', 'SSE', 'adjrsquare','Observed in channel', 'Area observed for Unique Gaussians',...
   'Area observed for MvsL Gaussians','Area observed for HvsL Gaussians','Area coverage of unique Gaussians','Area coverage of MvsL Gaussians',...
@@ -68,7 +68,7 @@ for writeout_counter1= 1:number_of_proteins
 end
 fclose(fid_combined_gaus_output);
 
-fid_Summary_gaussian= fopen([datadir 'Comparison/Summary_gaussian_detected_between_replicatesb.csv'],'wt'); % create the summary file of the interaction output
+fid_Summary_gaussian= fopen([datadir 'Comparison/Summary_gaussian_detected_between_replicates.csv'],'wt'); % create the summary file of the interaction output
 fprintf (fid_Summary_gaussian,'%s,','Total gaussians');
 for ci = 1:Nchannels
   fprintf(fid_Summary_gaussian,'%s,',['Gaussians within ' Experimental_channels{ci} ' channel']);
@@ -84,7 +84,7 @@ fprintf(fid_Summary_gaussian,'%6.4f,\n',shared_gaussian_counter);
 
 % #output
 %Write out trend observed in gaussian grouped by proteins and replicate
-fid_summed_area= fopen([datadir 'Comparison/Gaussian_trend_analysis_protein_replicateb.csv'],'wt'); % create the output file with the header infromation
+fid_summed_area= fopen([datadir 'Comparison/Gaussian_trend_analysis_protein_replicate.csv'],'wt'); % create the output file with the header infromation
 fprintf (fid_summed_area,'%s,%s,%s,%s\n',... %header for OutputGaus output
   'Protein name', 'Number of gaussians observed','Observed change',' Were changes consistent across all guassians'); %Write Header
 for writeout_counter1= 1:NuniqueGauss
@@ -100,7 +100,7 @@ for writeout_counter1= 1:NuniqueGauss
 end
 fclose(fid_summed_area);
 
-fid_summed_area1= fopen([datadir 'Comparison/Summary_gaussian_trend_analysis_protein_replicateb.csv'],'wt'); % create the output file with the header infromation
+fid_summed_area1= fopen([datadir 'Comparison/Summary_gaussian_trend_analysis_protein_replicate.csv'],'wt'); % create the output file with the header infromation
 fprintf (fid_summed_area1,'%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
   'Number of Protein observed across replicates', 'No change- consistent across gaussians', 'Increase- consistent across gaussians',...
   'Decrease- consistent across gaussians','Increase- inconsistent across gaussians', 'Decrease- inconsistent across gaussians',...
@@ -116,7 +116,7 @@ fclose(fid_summed_area1);
 
 % #output
 % write out table of master guassians list
-fid_master_list= fopen([datadir 'Comparison/Master_guassian_listb.csv'],'wt'); % create the output file with the header infromation
+fid_master_list= fopen([datadir 'Comparison/Master_guassian_list.csv'],'wt'); % create the output file with the header infromation
 fprintf (fid_master_list,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
   'Protein name', 'Unique_identifier (of best gaussian)','Replicate (of best gaussian)',...
   'Channel (of best gaussian)', 'Guassian_index_number (of best gaussian)',...
@@ -163,15 +163,15 @@ fclose(fid_master_chromatogram_list);
 
 % #output
 % write out table of master guassians list
-fid_master_list1= fopen([datadir 'Comparison/Master_guassian_list_fold_comparsion.csv'],'wt'); % create the output file with the header infromation
-fprintf (fid_master_list1,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s',... %header for OutputGaus output
+fid_master_list1= fopen([datadir 'Comparison/Master_gaussian_list_fold_comparsion.csv'],'wt'); % create the output file with the header infromation
+fprintf (fid_master_list1,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,',... %header for OutputGaus output
   'Protein name', 'Unique_identifier (of best gaussian)','Replicate (of best gaussian)',...
   'Channel (of best gaussian)', 'Guassian_index_number (of best gaussian)',...
   'Center (of best gaussian)', 'Height (of best gaussian)', 'Width (of best gaussian)',...
   'SSE (of best gaussian)', 'adjrsquare (of best gaussian)','Gaussian Area (of best gaussian)',...
   'Complex Size (of best gaussian)');
 for ii = 1:replicate_num
-  fprintf (fid_master_list1,'%s',['Change observed replicate ' num2str(replicate_num)]);
+  fprintf (fid_master_list1,'%s,',['Change observed replicate ' num2str(replicate_num)]);
 end
 fprintf('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',...
   'Std Dev of fold change','Normalised fold change',...
@@ -533,7 +533,7 @@ fprintf('    12. Write out txt for Go enrichment')
 %Aim: Write out file compatible with Perseus to rapidly allow the go
 %enrichment
 %Guassian level
-fid_Go_enrichment= fopen([datadir 'Comparison/Perseus_enrichment_Gaussian_level_fileb.csv'],'wt'); % create the output file with the header infromation
+fid_Go_enrichment= fopen([datadir 'Comparison/Perseus_enrichment_Gaussian_level_file.csv'],'wt'); % create the output file with the header infromation
 fprintf (fid_Go_enrichment,'%s,%s,%s,',... %header for OutputGaus output
   'Center','Protein name','Normalised Average fold change');
 for ii = 1:Nchannels
