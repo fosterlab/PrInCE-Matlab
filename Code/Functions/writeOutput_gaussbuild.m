@@ -315,7 +315,7 @@ for ci = 1:Nchannels
     for kk = 1:Ngauss(ci)
       ri = protgausI{ci}(kk,1);
       if replicate(ri) == divider_counter1
-        fprintf(fid_processing3,'%s, %6.4f,', txt_val{ci}{ri+1}, num_val{ci}(ri,1));
+        fprintf(fid_processing3,'%s, %6.4f,', txt_val{ci}{ri+1}, rawdata{ci}(ri,1));
         fprintf(fid_processing3,'%6.4g,',rawdata{ci}(ri,2:end)); %Chromatogram information
         fprintf(fid_processing3,'\n');
       end
