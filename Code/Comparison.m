@@ -101,7 +101,7 @@ for ii = 1:Nchannels
     % NB THIS IS BAD FIX IT!!!!
     % USING NICK'S DATA FOR NOW
     datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
-    ChromatogramIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Raw_data_maxquant.csv']; % from Alignment
+    ChromatogramIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Raw_data_maxquant_modified.xlsx']; % from Alignment
   else
     if user.skipalignment
       ChromatogramIn{ii} = user.MQfiles{ii};
@@ -192,12 +192,12 @@ for ii = 1:Nchannels
   
   % Clean chromatograms
   % YOU'RE ADDING 3 NANS TO THE END. MAKE SURE THIS IS CORRECT!!!!!!!!!!!!!!!!!!!!!!
-  tmp2 = zeros(size(num_val{ii},1),size(num_val{ii},2)+3);
-  for ri = 1:Nproteins % loop over proteins
-    num_val{ii}(ri,:) = cleanChromatogram(num_val{ii}(ri,:),[1 3]);
-    tmp2(ri,:) = [num_val{ii}(ri,:) nan(1,3)];
-  end
-  num_val{ii} = tmp2;
+%   tmp2 = zeros(size(num_val{ii},1),size(num_val{ii},2)+3);
+%   for ri = 1:Nproteins % loop over proteins
+%     num_val{ii}(ri,:) = cleanChromatogram(num_val{ii}(ri,:),[1 3]);
+%     tmp2(ri,:) = [num_val{ii}(ri,:) nan(1,3)];
+%   end
+%   num_val{ii} = tmp2;
   
   % The data is nan-padded. Find where the real data starts and stops.
   nanmax = size(num_val{ii},1);
@@ -480,8 +480,8 @@ for gg = 1:number_of_proteins
   rawratio = zeros(Nchannels,5);
   baddata = 0;
   for ii = 1:Nchannels
-    I = Center_to_test-2+frac1-1:Center_to_test+2+frac1-1;
-    rawratio(ii,:) = num_val{ii}(Idata,I); %Add six as Realigned raw data ranges from -5 to 60
+    I = Center_to_test+frac1+1 -2:Center_to_test+frac1+1 +2; % +1 since first element is replicate
+    rawratio(ii,:) = (num_val{ii}(Idata,I));
     baddata = baddata | nnz(rawratio(ii,:))==0;
   end
   
