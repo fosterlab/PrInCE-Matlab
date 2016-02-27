@@ -35,8 +35,6 @@ fprintf('\n    0. Initialize')
 % Load user settings
 maindir = user.maindir;
 experimental_channels = user.silacratios;
-InputFile{1} = user.MQfiles{1};
-InputFile{2} = user.MQfiles{2};
 
 
 Nchannels = length(experimental_channels);
@@ -78,7 +76,7 @@ fprintf('\n    1. Read input data')
 rawdata = cell(size(experimental_channels));
 txt_val = cell(size(experimental_channels));
 for ii = 1:Nchannels
-  [rawdata{ii},txt_val{ii}] = xlsread(InputFile{ii});
+  [rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
   
   % Remove first column as the replicate
   replicate = rawdata{ii}(:,1);
