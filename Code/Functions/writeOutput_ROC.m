@@ -18,7 +18,7 @@ end
 %Create header
 Column_header1=repmat('%s,', 1, size_interaction_replicates(2)+7);
 
-Interaction_pre_rep_name=strcat(datadir3,'Interactions_across_replicate_',mat2str(Precision_values(precision_write_out_counter)),'pcb.csv');
+Interaction_pre_rep_name=strcat(datadir3,'Interactions_across_replicate_',mat2str(Precision_values(precision_write_out_counter)),'pc.csv');
 Inter_pre_rep = fopen(Interaction_pre_rep_name,'w');
 fprintf (Inter_pre_rep,[Column_header1, '\n'],... %header for output
   'Protein interaction','Center A','Center B',...
@@ -38,7 +38,7 @@ for write_out_loop2=1:Total_unique_interactions
 end
 fclose(Inter_pre_rep);
 
-Final_Results_name=strcat(datadir3,'Summary_Results_',mat2str(Precision_values(precision_write_out_counter)),'pc_replicateb.csv');
+Final_Results_name=strcat(datadir3,'Summary_Results_',mat2str(Precision_values(precision_write_out_counter)),'pc_replicate.csv');
 fid_final= fopen(Final_Results_name,'wt'); % create the summary file of the interaction output
 fprintf (fid_final,'%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',... %header for OutputGaus output
   'Recall (non redundant)', 'Precision (non redundant)', 'TPR (non redundant)', 'FPR (non redundant)',...
@@ -55,7 +55,7 @@ fclose(fid_final);
 
 
 [~,scoreRank] = sort(nanmean(interaction_final.score,2));
-Final_list_Interactionsname=strcat(datadir3,'Final_Interactions_list_',mat2str(Precision_values(precision_write_out_counter)),'_precisionb.csv');
+Final_list_Interactionsname=strcat(datadir3,'Final_Interactions_list_',mat2str(Precision_values(precision_write_out_counter)),'_precision.csv');
 fid_final_1 = fopen(Final_list_Interactionsname,'w');
 fprintf (fid_final_1,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
   'Unique interactions','Protein A','Protein B','Center A',...
@@ -82,7 +82,7 @@ end
 fclose(fid_final_1);
 
 
-Final_Results_name=strcat(datadir3,'Global_Precision_across_replicates_',mat2str(Precision_values(precision_write_out_counter)),'pcb.csv');
+Final_Results_name=strcat(datadir3,'Global_Precision_across_replicates_',mat2str(Precision_values(precision_write_out_counter)),'pc.csv');
 fid_final2= fopen(Final_Results_name,'wt'); % create the summary file of the interaction output
 fprintf (fid_final2,'%s,%s,%s,%s,%s,\n',... %header for OutputGaus output
   'Number of replicates interaction observed in',...
@@ -101,7 +101,7 @@ fclose(fid_final2);
 
 
 %Write out treatment specific interactions
-Final_list_Interactionsname=strcat(datadir3,'Final_Treatment_specific_interactions_list_',mat2str(Precision_values(precision_write_out_counter)),'_precisionb.csv');
+Final_list_Interactionsname=strcat(datadir3,'Final_Treatment_specific_interactions_list_',mat2str(Precision_values(precision_write_out_counter)),'_precision.csv');
 fid_final_3 = fopen(Final_list_Interactionsname,'w');
 fprintf (fid_final_3,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
   'Unique interactions','Protein A','Protein B','Center A',...
@@ -126,7 +126,7 @@ fclose(fid_final_3);
 
 
 %Write out treatment specific interactions
-Final_list_Interactionsname=strcat(datadir3,'Final_Untreatment_specific_interactions_list_',mat2str(Precision_values(precision_write_out_counter)),'_precisionb.csv');
+Final_list_Interactionsname=strcat(datadir3,'Final_Untreatment_specific_interactions_list_',mat2str(Precision_values(precision_write_out_counter)),'_precision.csv');
 fid_final_4 = fopen(Final_list_Interactionsname,'w');
 fprintf (fid_final_4,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
   'Unique interactions','Protein A','Protein B','Center A',...

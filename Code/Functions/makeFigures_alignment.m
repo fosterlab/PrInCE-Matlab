@@ -13,7 +13,7 @@ x_rep = nan(Nreplicates,length(x));
 for rr = 1:Nreplicates
   b = pfit(ci,rr,1); % intercept
   m = pfit(ci,rr,2); % slope
-  x_rep(rr,:) = (x - b) / m;
+  x_rep(rr,:) = x*m + b;
 end
 
 % make initial patches for legend
@@ -56,7 +56,7 @@ saveas(Image, Image_name)
 
 raw_bin_values=1:50;
 
-for ci = 1:Number_of_experimental_channels
+for ci = 1:Nchannels
   figure
   
   for ii = 1:Nreplicates
@@ -97,7 +97,7 @@ for ii = 1:Nreplicates
   comparisons(ii,:) = [replicate_to_align_against(ci) ii];
 end
 
-for ci = 1:Number_of_experimental_channels
+for ci = 1:Nchannels
   for rr = 1:size(comparisons,1)
     rr1 = comparisons(rr,1);
     rr2 = comparisons(rr,2);
@@ -155,7 +155,7 @@ end
 
 %% Delta_C scatter, rep vs rep_align
 
-for ci = 1:Number_of_experimental_channels
+for ci = 1:Nchannels
   figure
   RR = replicate_to_align_against(ci);
   
@@ -164,12 +164,12 @@ for ci = 1:Number_of_experimental_channels
     plot([0 55],[0 55],'--r')
     overlap = intersect(summerised_names_G1{ci,ri},summerised_names_G1{ci,RR});
     overlap([1 2]) = [];
-    Ia = find(ismember(Gaus_import{ci,ri}.textdata(:,4),overlap));
-    Ib = find(ismember(Gaus_import{ci,RR}.textdata(:,4),overlap));
+    Ia = find(ismember(Gaus_import{ci,ri}.textdata(:,1),overlap));
+    Ib = find(ismember(Gaus_import{ci,RR}.textdata(:,1),overlap));
     x = Gaus_import{ci,ri}.data(Ia-1,2);
     y = Gaus_import{ci,RR}.data(Ib-1,2);
     scatter(x,y,20,abs(x-y),'filled')
-    xlabel('replicate 1')
+    xlabel(['replicate ' num2str(ri)])
     ylabel('alignment replicate')
   end
   

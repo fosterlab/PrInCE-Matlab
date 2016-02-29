@@ -16,13 +16,6 @@
 %     - That is, the spacing b/w fractions is not constant. That seems major, right?
 
 
-%%%%%%%%%%%%%%% Small changes:
-% 1. Make all file references and directories absolute. Remove 'cd'. Make this directory-independent!
-% 2. Replace all '\' with '/'
-% 3. Replace all 'if test==1' with 'if test'
-% 4. 'for replicate_to_align_against= y_maximum' does not need a for loop.
-
-
 %%%%%%%%%%%%%%% Big changes:
 % 1. Impute multiple missing values (more than just one, as is currently being done)
 % 2. Don't write csv files (these seem useful for debugging, but otherwise aren't needed).
@@ -35,11 +28,6 @@
 % 1. My Alignment numbers are off. Nick's are closer to the raw data (mine are quite far away).
 % 2. I'm adding too many leading nans (two too many?).
 
-
-%%%%%%%%%%%%%%% Questions:
-% 1. Why do the chromatograms have 5 extra points on either side?
-%
-%
 
 
 diary([user.maindir 'logfile.txt'])
@@ -69,15 +57,13 @@ if ~skipflag
   User_alignment_window1 = user.User_alignment_window1;
   clear InputFile
   for ii = 1:length(user.MQfiles)
-    InputFile{1} = user.MQfiles{1};
-    InputFile{2} = user.MQfiles{2};
+    InputFile{ii} = user.MQfiles{ii};
   end
   InputFile{4} = user.calfile;
   
   
-  
   %User_alignment_window2 = 8; %for Second round of alignment
-  Number_of_experimental_channels = length(Experimental_channels);  % Defines the number of experiments to be compared
+  Nchannels = length(Experimental_channels);  % Defines the number of experiments to be compared
   %Alignment_to_user= 'MvsL'; %Define the experimental channel to use for alignment
   %User_defined_zero_value = 0.2; %lowest value to be shown in Adjusted Chromatograms
   
@@ -104,11 +90,11 @@ if ~skipflag
   % InputFile{2} = [datadir 'Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.xlsx'];
   % InputFile{3} = [datadir 'Combined_replicates_2014_04_22_contaminates_removed_for_HvsM_scripts.xlsx'];
   % InputFile{4} = [datadir 'SEC_alignment.xlsx'];
-  flag3 = 1;
-  try ls(InputFile{3});
-  catch
-    flag3 = 0;
-  end
+  flag3 = 0;
+  %try ls(InputFile{3});
+  %catch
+  %  flag3 = 0;
+  %end
   
   
   % for now, read files in from Nick's data
@@ -116,13 +102,13 @@ if ~skipflag
   if user.nickflag %nick's output
     pw = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/MvsL/';
     Nreplicates = 3;
-    InputFile{5} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/MvsL/MvsL_Combined_OutputGaus.csv'; % From Gauss_build
-    InputFile{6} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/MvsL/MvsL_Summary_Gausians_for_individual_proteins.csv';   % ''
-    InputFile{7} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/HvsL/HvsL_Combined_OutputGaus.csv';  % ''
-    InputFile{8} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/HvsL/HvsL_Summary_Gausians_for_individual_proteins.csv'; % ''
-    GaussInputFile = cell(Number_of_experimental_channels, Nreplicates);
-    GassSumInputFile = cell(Number_of_experimental_channels, Nreplicates);
-    for ei=1:Number_of_experimental_channels
+%     GaussIn{5} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/MvsL/MvsL_Combined_OutputGaus.csv'; % From Gauss_build
+%     GaussIn{6} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/MvsL/MvsL_Summary_Gausians_for_individual_proteins.csv';   % ''
+%     GaussIn{7} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/HvsL/HvsL_Combined_OutputGaus.csv';  % ''
+%     GaussIn{8} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/HvsL/HvsL_Summary_Gausians_for_individual_proteins.csv'; % ''
+    GaussInputFile = cell(Nchannels, Nreplicates);
+    GassSumInputFile = cell(Nchannels, Nreplicates);
+    for ei=1:Nchannels
       tmp = Experimental_channels{ei};
       for replicates= 1:Nreplicates
         GaussInputFile{ei,replicates} = ['/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/' tmp '_alignment/Processed Gaussian/' tmp '_Combined_OutputGaus_rep' num2str(replicates) '.csv'];
@@ -132,13 +118,17 @@ if ~skipflag
   else %my output
     dd = dir([datadir2 '*Summary_Gausians_for_individual_proteins_rep*csv']);
     Nreplicates = length(dd) / length(Experimental_channels);
-    InputFile{5} = [datadir2 'MvsL_Combined_OutputGaus.csv'];                        % From Gauss_build
-    InputFile{6} = [datadir2 'MvsL_Summary_Gausians_for_individual_proteins.csv'];   % ''
-    InputFile{7} = [datadir2 'HvsL_Combined_OutputGaus.csv'];                        % ''
-    InputFile{8} = [datadir2 'HvsL_Summary_Gausians_for_individual_proteins.csv'];   % ''
-    GaussInputFile = cell(Number_of_experimental_channels, Nreplicates);
-    GassSumInputFile = cell(Number_of_experimental_channels, Nreplicates);
-    for ei=1:Number_of_experimental_channels
+%     for ii = 1:Nchannels
+%       GaussIn{ii} = [datadir2 user.silacratios{ii} '_Combined_OutputGaus.csv'];                        % From Gauss_build
+%       GaussIn{(ii-1)*2+1} = [datadir2 user.silacratios{ii} '_Summary_Gausians_for_individual_proteins.csv'];   % ''
+%     end
+%     GaussIn{5} = [datadir2 'MvsL_Combined_OutputGaus.csv'];                        % From Gauss_build
+%     GaussIn{6} = [datadir2 'MvsL_Summary_Gausians_for_individual_proteins.csv'];   % ''
+%     GaussIn{7} = [datadir2 'HvsL_Combined_OutputGaus.csv'];                        % ''
+%     GaussIn{8} = [datadir2 'HvsL_Summary_Gausians_for_individual_proteins.csv'];   % ''
+    GaussInputFile = cell(Nchannels, Nreplicates);
+    GassSumInputFile = cell(Nchannels, Nreplicates);
+    for ei=1:Nchannels
       for replicates= 1:Nreplicates
         GaussInputFile{ei,replicates} = [datadir2 Experimental_channels{ei} '_Combined_OutputGaus_rep' num2str(replicates) '.csv'];
         GassSumInputFile{ei,replicates} = [datadir2 Experimental_channels{ei} '_Summary_Gausians_for_individual_proteins_rep' num2str(replicates) '.csv'];
@@ -159,75 +149,69 @@ if ~skipflag
   fprintf('    1. Read input')
   
   % Import MaxQuant data files
-  [num_val_MvsL,txt_MvsL] = xlsread(InputFile{1}); %Import file raw Maxqaunt output
-  [num_val_HvsL,txt_HvsL] = xlsread(InputFile{2}); %Import file raw Maxqaunt output
-  if flag3; [num_val_HvsM,txt_HvsM] = xlsread(InputFile{3});end %Import file raw Maxqaunt output
-  [SEC_size_alignment] = xlsread(InputFile{4});
-  
-  % Import Gaussian fits
-  f1 = fopen(InputFile{5});
-  Processed_data1{1} = textscan(f1, '%s', 'Delimiter',','); %#
-  fclose(f1);
-  f2 = fopen(InputFile{6});
-  Processed_data2{1} = textscan(f2, '%s', 'Delimiter',','); %#
-  fclose(f2);
-  f1 = fopen(InputFile{7});
-  Processed_data1{2} = textscan(f1, '%s', 'Delimiter',','); %#
-  fclose(f1);
-  f2 = fopen(InputFile{8});
-  Processed_data2{2} = textscan(f2, '%s', 'Delimiter',','); %#
-  fclose(f2);
+  num_val = cell(Nchannels,1);
+  txt_val = cell(Nchannels,1);
+  for ii = 1:Nchannels
+    [num_val{ii},txt_val{ii}] = xlsread(user.MQfiles{ii}); %Import file raw Maxqaunt output
+    txt_val{ii} = txt_val{ii}(:,1);
+  end
+  %if flag3; [num_val{ii+1},txt_val{ii+1}] = xlsread(InputFile{3});end %Import file raw Maxqaunt output
+  [SEC_size_alignment] = xlsread(user.calfile);
   
   % Import Gauss fits for each replicate
   %   Gaus_import: mx6, where m is the number of proteins with a fitted Gaussian
+  %         columns: Height,Center,Width,SSE,adjrsquare,Complex Size
   %   Summary_gausian_infomration: nx6, where n is the unique protein number (1-3217)
-  Gaus_import = cell(Number_of_experimental_channels, Nreplicates);
-  Summary_gausian_infomration = cell(Number_of_experimental_channels, Nreplicates);
-  for ci = 1:Number_of_experimental_channels
+  Gaus_import = cell(Nchannels, Nreplicates);
+  Summary_gausian_infomration = cell(Nchannels, Nreplicates);
+  letters = 'abcdefghijklmnopqrstuvwxyz';
+  LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for ci = 1:Nchannels
     for replicates= 1:Nreplicates
       Gaus_import{ci,replicates} = importdata(GaussInputFile{ci,replicates});
       Summary_gausian_infomration{ci,replicates} = importdata(GassSumInputFile{ci,replicates});
+      
+      % Ensure Gaus_import.textdata is a single column of protein names
+      % simple rule: protein names are the column with the most letters
+      a = (cellfun(@(x) ismember(x,LETTERS),Gaus_import{ci,replicates}.textdata(2:end,:),'uniformoutput',0));
+      nLETTERS = sum(cell2mat(cellfun(@(x) sum(x),a,'uniformoutput',0)));
+      a = (cellfun(@(x) ismember(x,letters),Gaus_import{ci,replicates}.textdata(2:end,:),'uniformoutput',0));
+      nletters = sum(cell2mat(cellfun(@(x) sum(x),a,'uniformoutput',0)));
+      [~,I] = max(nLETTERS + nletters);
+      Gaus_import{ci,replicates}.textdata = Gaus_import{ci,replicates}.textdata(:,I);
     end
-  end
-  
-  % make protgausI
-  protgausI = cell(Number_of_experimental_channels, Nreplicates);
-  for ci = 1:Number_of_experimental_channels
-    for rr = 1:Nreplicates
-      protgausI{ci,rr} = nan(size(Gaus_import{ci,rr}.textdata,1)-1);
-      for gi = 1:size(Gaus_import{ci,rr}.textdata,1)-1
-        protgausI{ci,rr}(gi) = str2num(Gaus_import{ci,rr}.textdata{gi+1,3});
-      end
-    end
-  end
+  end  
   
   % Calibration
-  SEC_fit=polyfit(SEC_size_alignment(1,:),SEC_size_alignment(2,:),1);
+  %SEC_fit=polyfit(SEC_size_alignment(1,:),SEC_size_alignment(2,:),1);
   
   %Number of fractions
-  %fraction_number=size(num_val_MvsL);
-  %fraction_number(2) = fraction_number(2)-1;
-  [~, fraction_number]=size(num_val_MvsL);
+  [~, fraction_number]=size(num_val{1});
   fraction_number = fraction_number-1;
-  
-  % number of fractions,equal to # fractions + 10
-  Chromatograms_axis = fraction_number+10;
+  if fraction_number~= user.Nfraction
+    disp('Alignment: user.Nfraction does not equal detected number of fractions')
+  end
   
   % replicates
-  replicates =  num_val_MvsL(:,1);
+  replicates =  num_val{1}(:,1);
   
   % Clean chromatograms
-  cleandata{1} = nan(size(num_val_MvsL,1),size(num_val_MvsL,2)+10);
-  cleandata{2} = nan(size(num_val_HvsL,1),size(num_val_HvsL,2)+10);
-  if flag3; cleandata{3} = nan(size(num_val_HvsM,1),size(num_val_HvsM,2)+10);end
-  cleandata{1}(:,1) = num_val_MvsL(:,1);
-  cleandata{2}(:,2) = num_val_HvsL(:,1);
-  if flag3; cleandata{3}(:,3) = num_val_HvsM(:,1);end
-  for ri = 1:size(num_val_MvsL,1) % loop over proteins
-    cleandata{1}(ri,2:end) = cleanChromatogram(num_val_MvsL(ri,2:end),[1 3 5 7]);
-    cleandata{2}(ri,2:end) = cleanChromatogram(num_val_HvsL(ri,2:end),[1 3 5 7]);
-    if flag3; cleandata{3}(ri,2:end) = cleanChromatogram(num_val_HvsM(ri,2:end),[1 3 5 7]);end
+  cleandata = cell(Nchannels,1);
+  for ii = 1:Nchannels
+    cleandata{ii} = nan(size(num_val{ii},1),size(num_val{ii},2)+10);
+    %if flag3; cleandata{3} = nan(size(num_val_HvsM,1),size(num_val_HvsM,2)+10);end
+    cleandata{ii}(:,1) = num_val{ii}(:,1);
+    %if flag3; cleandata{3}(:,3) = num_val_HvsM(:,1);end
+    for ri = 1:size(num_val{1},1) % loop over proteins
+      cleandata{ii}(ri,2:end) = cleanChromatogram(num_val{ii}(ri,2:end),[1 3 5 7]);
+      %if flag3; cleandata{3}(ri,2:end) = cleanChromatogram(num_val_HvsM(ri,2:end),[1 3 5 7]);end
+    end
   end
+  
+  % The data is zero-padded. Find where the real data starts and stops.
+  tmp = find(sum(cleandata{ii}==0)==size(cleandata{ii},1));
+  frac1 = max([2 tmp(find(tmp<user.Nfraction/2,1,'last'))])+1; % start of real data
+  frac2 = tmp(find(tmp>user.Nfraction/2,1,'first'))-1; % end of real data
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
@@ -241,9 +225,9 @@ if ~skipflag
   tic
   fprintf('    2. Find the best replicates to align to')
   
-  replicate_to_align_against = nan(Number_of_experimental_channels,1);
-  summerised_names_G1 = cell(Number_of_experimental_channels,Nreplicates); % proteins with 1 Gaussian
-  for ci = 1:Number_of_experimental_channels
+  replicate_to_align_against = nan(Nchannels,1);
+  summerised_names_G1 = cell(Nchannels,Nreplicates); % proteins with 1 Gaussian
+  for ci = 1:Nchannels
     
     % i) Find names of proteins with a single Gaussian in each replicate
     %summerised_protein_number_G1 = cell(Nreplicates,1);
@@ -283,9 +267,9 @@ if ~skipflag
   tic
   fprintf('    3. Calculate best fit lines for adjustment')
   
-  pfit = nan(Number_of_experimental_channels,Nreplicates,2);
+  pfit = nan(Nchannels,Nreplicates,2);
   
-  for ci = 1:Number_of_experimental_channels
+  for ci = 1:Nchannels
     align_rep = replicate_to_align_against(ci);
     for rr = 1:Nreplicates
       
@@ -296,19 +280,15 @@ if ~skipflag
       overlap([1 2]) = [];
       
       % ii) Find their centers
-      Ia = find(ismember(Gaus_import{ci,align_rep}.textdata(:,4),overlap));
-      Ib = find(ismember(Gaus_import{ci,rep_to_align}.textdata(:,4),overlap));
+      Ia = find(ismember(Gaus_import{ci,align_rep}.textdata(:,1),overlap));
+      Ib = find(ismember(Gaus_import{ci,rep_to_align}.textdata(:,1),overlap));
       Ca = Gaus_import{ci,align_rep}.data(Ia-1,2); % align to this replicate, x
       Cb = Gaus_import{ci,rep_to_align}.data(Ib-1,2);% align this replicate, y
       
-      % quality control...
-      if length(overlap)~=length(Ia) || length(overlap)~=length(Ib)
-        disp('Error: Alignment.m: uhhhh')
-      end
-      
       % iii) Fit a line
       I = abs(Ca - Cb)<User_alignment_window1;
-      pfit(ci,rr,:) = robustfit(Ca(I), Cb(I));
+      %pfit(ci,rr,:) = robustfit(Ca(I), Cb(I));
+      pfit(ci,rr,:) = robustfit(Cb(I), Ca(I));
       
     end
   end
@@ -326,7 +306,7 @@ if ~skipflag
   
   Adjusted_Gaus_import = Gaus_import;
   
-  for ci = 1:Number_of_experimental_channels
+  for ci = 1:Nchannels
     align_rep = replicate_to_align_against(ci);
     for rr = 1:Nreplicates
       
@@ -334,35 +314,27 @@ if ~skipflag
       m = pfit(ci,rr,2); % slope
       
       % i) Gaussian fits: shift Center
-      adjustedCenters = (Gaus_import{ci,rr}.data(:,2) - b) / m;
+      adjustedCenters = Gaus_import{ci,rr}.data(:,2)*m + b;
       Adjusted_Gaus_import{ci,rr}.data(:,2) = adjustedCenters;
     end
   end
   
   % ii) Chromatograms: shift data points
   x = -4:fraction_number+5;
-  adjusted_raw_data{1} = nan(size(cleandata{1}));
-  adjusted_raw_data{2} = nan(size(cleandata{2}));
-  for ri=1:size(num_val_MvsL)
-    % MvsL
-    y = cleandata{1}(ri,2:end);
-    rr = num_val_MvsL(ri,1);
-    b = pfit(ci,rr,1); % intercept
-    m = pfit(ci,rr,2); % slope
-    x2 = (x-b)/m;
-    y2 = interp1(x,y,x2);
-    y2(y2<.2) = nan;
-    adjusted_raw_data{1}(ri,2:end) = y2;
-    
-    % HvsL
-    y = cleandata{2}(ri,2:end);
-    rr = num_val_HvsL(ri,1);
-    b = pfit(ci,rr,1); % intercept
-    m = pfit(ci,rr,2); % slope
-    x2 = (x-b)/m;
-    y2 = interp1(x,y,x2);
-    y2(y2<.2) = nan;
-    adjusted_raw_data{2}(ri,2:end) = y2;
+  adjusted_raw_data = cell(Nchannels,1);
+  for ii = 1:Nchannels
+    adjusted_raw_data{ii} = nan(size(cleandata{ii},1),size(cleandata{ii},2)-1);
+    for ri=1:size(num_val{1})
+      y = cleandata{ii}(ri,2:end);
+      y(isnan(y)) = 0;
+      rr = replicates(ri);
+      b = pfit(ci,rr,1); % intercept
+      m = pfit(ci,rr,2); % slope
+      x2 = x*m + b;
+      y2 = interp1(x,y,x2);
+      y2(y2==0) = nan;
+      adjusted_raw_data{ii}(ri,:) = y2;
+    end
   end
   
   tt = toc;
@@ -382,26 +354,26 @@ if ~skipflag
   
   ci = 1;
   
-  Delta_center = cell(Number_of_experimental_channels,Nreplicates,Nreplicates);
-  Delta_height = cell(Number_of_experimental_channels,Nreplicates,Nreplicates);
-  Delta_width = cell(Number_of_experimental_channels,Nreplicates,Nreplicates);
-  EuDis = cell(Number_of_experimental_channels,Nreplicates,Nreplicates);
+  Delta_center = cell(Nchannels,Nreplicates,Nreplicates);
+  Delta_height = cell(Nchannels,Nreplicates,Nreplicates);
+  Delta_width = cell(Nchannels,Nreplicates,Nreplicates);
+  EuDis = cell(Nchannels,Nreplicates,Nreplicates);
   
-  x = 1:fraction_number+10;
+  x = 1:user.Nfraction+10;
   
-  for ci = 1:Number_of_experimental_channels,
+  for ci = 1:Nchannels,
     for rr1 = 1:Nreplicates
       for rr2 = 1:Nreplicates
         
         % i) Find the overlapping proteins
         overlap = intersect(summerised_names_G1{ci,rr1},summerised_names_G1{ci,rr2});
         overlap([1 2]) = [];
-        Ia = find(ismember(Gaus_import{ci,rr1}.textdata(:,4),overlap));
-        Ib = find(ismember(Gaus_import{ci,rr2}.textdata(:,4),overlap));
+        Ia = find(ismember(Gaus_import{ci,rr1}.textdata(:,1),overlap));
+        Ib = find(ismember(Gaus_import{ci,rr2}.textdata(:,1),overlap));
         
         % ii) Calculate Gaussian curves
-        G1 = zeros(fraction_number+10,length(overlap));
-        G2 = zeros(fraction_number+10,length(overlap));
+        G1 = zeros(user.Nfraction+10,length(overlap));
+        G2 = zeros(user.Nfraction+10,length(overlap));
         for ri = 1:length(overlap)
           c1 = Gaus_import{ci,rr1}.data(Ia(ri)-1,1:3);
           c2 = Gaus_import{ci,rr2}.data(Ib(ri)-1,1:3);
@@ -414,11 +386,6 @@ if ~skipflag
         Delta_height{ci,rr1,rr2} = abs(Gaus_import{ci,rr1}.data(Ia-1,1) - Gaus_import{ci,rr2}.data(Ib-1,1));
         Delta_width{ci,rr1,rr2} = abs(Gaus_import{ci,rr1}.data(Ia-1,3) - Gaus_import{ci,rr2}.data(Ib-1,3));
         EuDis{ci,rr1,rr2} = sqrt(sum((G1 - G2) .^ 2));
-        
-        % quality control...
-        if length(overlap)~=length(Ia) || length(overlap)~=length(Ib)
-          disp('Error: Alignment.m: uhhhh 2')
-        end
         
       end
     end
@@ -439,12 +406,6 @@ if ~skipflag
   %  fid11_Name = strcat('Adjusted_',Experimental_channel,'_Raw_data_maxquant.csv');
   tic
   fprintf('    6. Write output')
-  
-  if flag3
-    protnames = {txt_MvsL, txt_HvsL, txt_HvsM};
-  else
-    protnames = {txt_MvsL, txt_HvsL};
-  end
   
   writeOutput_alignment
   

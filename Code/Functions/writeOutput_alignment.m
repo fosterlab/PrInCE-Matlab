@@ -39,9 +39,9 @@ for ci = 1:length(Experimental_channels)
     for ri=1:length(I)
       ii = I(ri);
       
-      fprintf(fid9, '%s,', protnames{ci}{ii+1});
+      fprintf(fid9, '%s,', txt_val{ci}{ii+1});
       fprintf(fid9,'%6.4f,', rr);
-      fprintf(fid9,'%6.4f,', adjusted_raw_data{ci}(ii,1:lenght_new_fraction));
+      fprintf(fid9,'%6.4f,', adjusted_raw_data{ci}(ii,:));
       fprintf(fid9,'\n');
     end
     fclose(fid9);
@@ -62,7 +62,7 @@ for ci = 1:length(Experimental_channels)
     for Roc_counter=1:size(Gaus_import{ci,rr}.textdata,1)-1
       %find location of protein to write out
       location_Protein_in_Raw = ind2sub(length(Summary_gausian_infomration{ci,rr}.textdata(:,2)),...
-        strmatch(Gaus_import{ci,rr}.textdata(Roc_counter+1,4),Summary_gausian_infomration{ci,rr}.textdata(:,2),'exact'));
+        strmatch(Gaus_import{ci,rr}.textdata(Roc_counter+1,1),Summary_gausian_infomration{ci,rr}.textdata(:,2),'exact'));
       locations_of_protein_data(Roc_counter) = location_Protein_in_Raw(1);
     end
     
@@ -73,9 +73,9 @@ for ci = 1:length(Experimental_channels)
     fprintf (fid9B, [Column_header, '\n'],...
       'Protein name', 'Replicate', Column_name{:});  %Write Header
     for Roc_counter2 = 1:length(locations_of_protein_data)
-      fprintf(fid9B, '%s,', protnames{ci}{locations_of_protein_data(Roc_counter2),1});
+      fprintf(fid9B, '%s,', txt_val{ci}{locations_of_protein_data(Roc_counter2),1});
       fprintf(fid9B,'%6.4f,',rr);
-      fprintf(fid9B,'%6.4f,', adjusted_raw_data{ci}(locations_of_protein_data(Roc_counter2)-1,1:lenght_new_fraction));
+      fprintf(fid9B,'%6.4f,', adjusted_raw_data{ci}(locations_of_protein_data(Roc_counter2)-1,:));
       fprintf(fid9B,'\n');
     end
     fclose(fid9B);
@@ -104,7 +104,7 @@ for ci = 1:length(Experimental_channels)
     fprintf (fid7,'%s,%s,%s,%s,%s,%s,%s\n',...
       'Protein name', 'Height', 'Center','Width','SSE','adjrsquare', 'Complex Size');  %Write Header
     for ri = 1:size(Adjusted_Gaus_import{ci,rr}.data,1)
-      fprintf(fid7, '%s,', Adjusted_Gaus_import{ci,rr}.textdata{ri+1,4});
+      fprintf(fid7, '%s,', Adjusted_Gaus_import{ci,rr}.textdata{ri+1,1});
       fprintf(fid7,'%6.4f,', Adjusted_Gaus_import{ci,rr}.data(ri,:));
       fprintf(fid7,'\n');
     end
@@ -123,15 +123,15 @@ for ci = 1:length(Experimental_channels)
   fid7_Name = [datadir1 'Adjusted_' Experimental_channel '_Combined_OutputGaus.csv'];
   fid10 = fopen(fid7_Name,'at');
   fprintf (fid10,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',...
-    'Guassian index number', 'Protein_number','Replicate',...
     'Protein name', 'Height', 'Center','Width','SSE','adjrsquare', 'Complex Size');  %Write Header
+    %'Guassian index number', 'Protein_number','Replicate',...
   
   for rr = 1:Nreplicates
     for combined_gaus_writeout = 1:size(Adjusted_Gaus_import{ci,rr}.data,1)
-      fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.textdata{combined_gaus_writeout+1,1}));
-      fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.textdata{combined_gaus_writeout+1,2}));
-      fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.textdata{combined_gaus_writeout+1,3}));
-      fprintf(fid10, '%s,', Adjusted_Gaus_import{ci,rr}.textdata{combined_gaus_writeout+1,4});
+      %fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.data{combined_gaus_writeout+1,1}));
+      %fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.data{combined_gaus_writeout+1,2}));
+      %fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.data{combined_gaus_writeout+1,3}));
+      fprintf(fid10, '%s,', Adjusted_Gaus_import{ci,rr}.textdata{combined_gaus_writeout+1,1});
       fprintf(fid10,'%6.4f,', Adjusted_Gaus_import{ci,rr}.data(combined_gaus_writeout,:));
       fprintf(fid10,'\n');
     end
@@ -154,7 +154,7 @@ for ci = 1:length(Experimental_channels)
   fprintf(fid11,'%s,%s,%s\n','Protein name','Replicate','Ratios');
   
   for ii = 1:size(adjusted_raw_data{ci},1)
-    fprintf(fid11, '%s,',  protnames{ci}{ii+1,1});
+    fprintf(fid11, '%s,',  txt_val{ci}{ii+1,1});
     fprintf(fid11, '%6f,', replicates(ii));
     fprintf(fid11, '%f,',  adjusted_raw_data{ci}(ii,:));
     fprintf(fid11,'\n');

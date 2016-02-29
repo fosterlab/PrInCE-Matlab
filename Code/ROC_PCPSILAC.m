@@ -212,6 +212,11 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     tmp1 = tmp.data;
     tmp2 = tmp.textdata;
   end
+  % Ensure tmp2 is a single column of protein names
+  if size(tmp2,2)~=1
+    disp('Comparison: Error: violated assumption, textdata is not single column of protein names')
+  end
+  tmp2 = tmp2(:,1);
   Gaus_import = [tmp2 num2cell( cat(1,zeros(1,size(tmp1,2)),tmp1) )];
 
   

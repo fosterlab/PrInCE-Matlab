@@ -138,7 +138,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 %% 3. Fit 1-5 Gaussians on each cleaned chromatogram
-tic
+t1=tic;
 fprintf('\n    3. Fit 1-5 Gaussians on each cleaned chromatogram')
 
 % pre-allocate some variables
@@ -149,6 +149,7 @@ adjrsquare = nan(size(Coef));
 Try_Fit = zeros(size(Coef));
 
 gausscount = 0;
+t2=tic;
 for ci = 1:Nchannels % loop over channels
   parfor ri = 1:Nproteins % loop over proteins
     
@@ -164,7 +165,9 @@ for ci = 1:Nchannels % loop over channels
     % choose 5 models and fit the best one
     %model = choosemodel_holdout(clean_chromatogram,MaxIter);
     model = choosemodel_AIC(clean_chromatogram,Xclean,'AICc');
-    disp(['    fit protein number ' num2str(ri) ' (' txt_val{1}{ri+1} ') with ' num2str(model.Ngauss) ' Gaussians...'])
+    fprintf(['\n    fit protein number ' num2str(ri) ' (' txt_val{1}{ri+1} ') with ' num2str(model.Ngauss) ' Gaussians'])
+    tt = toc(t2);
+    fprintf('  ...  %.2f seconds\n',tt)
     %[Coef{ci,ri},SSE(ci,ri),adjrsquare(ci,ri),fit_flag(ci,ri)] = fitgaussmodel(clean_chromatogram,model);
     Coef{ci,ri} = model.coeffs;
     SSE(ci,ri) = model.SSE;
@@ -203,7 +206,7 @@ for ci = 1:Nchannels
   Ngauss(ci) = gausscount;
 end
 
-tt = toc;
+tt = toc(t1);
 fprintf('  ...  %.2f seconds\n',tt)
 
 

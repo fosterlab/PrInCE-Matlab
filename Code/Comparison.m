@@ -218,6 +218,12 @@ if ~skipflag
     frac1 = max([2 tmp(find(tmp<Nfraction/2,1,'last'))]); % start of real data
     frac2 = tmp(find(tmp>Nfraction/2,1,'first'))-1; % end of real data
     
+    % Ensure txt_val is a single column of protein names
+    if size(txt_val{ii},2)~=1
+      disp('Comparison: Error: violated assumption, textdata is not single column of protein names')
+    end
+    txt_val{ii} = txt_val{ii}(:,1);
+    
     % Add unique identifiers to the chromatograms
     Unique_indentifer_maxqaunt = cell(Nproteins,1);
     Unique_indentifer_maxqaunt{1} = {'Unique_identifier'}; % replicate_ProteinName
