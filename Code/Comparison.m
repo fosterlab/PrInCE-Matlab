@@ -215,14 +215,17 @@ if ~skipflag
     % The data is nan-padded. Find where the real data starts and stops.
     nanmax = size(num_val{ii},1);
     tmp = find(sum(isnan(num_val{ii}))==size(num_val{ii},1));
+    if isempty(tmp)
+      tmp = -1;
+    end
     frac1 = max([2 tmp(find(tmp<Nfraction/2,1,'last'))]); % start of real data
-    frac2 = tmp(find(tmp>Nfraction/2,1,'first'))-1; % end of real data
+    frac2 = min([size(num_val{1},2) tmp(find(tmp>Nfraction/2,1,'first'))]); % end of real data
     
     % Ensure txt_val is a single column of protein names
-    if size(txt_val{ii},2)~=1
-      disp('Comparison: Error: violated assumption, textdata is not single column of protein names')
-    end
     txt_val{ii} = txt_val{ii}(:,1);
+    %if size(txt_val{ii},2)~=1
+    %  fprintf('\nComparison: Error: violated assumption, textdata is not single column of protein names')
+    %end
     
     % Add unique identifiers to the chromatograms
     Unique_indentifer_maxqaunt = cell(Nproteins,1);
@@ -496,10 +499,10 @@ if ~skipflag
     end
     
     % retrieve raw data
-    rawratio = zeros(Nchannels,5);
+    rawratio = nan(Nchannels,5);
     baddata = 0;
     for ii = 1:Nchannels
-      I = Center_to_test+frac1+1 -2:Center_to_test+frac1+1 +2; % +1 since first element is replicate
+      I = Center_to_test+frac1-1 -2:Center_to_test+frac1-1 +2;
       rawratio(ii,:) = (num_val{ii}(Idata,I));
       baddata = baddata | nnz(rawratio(ii,:))==0;
     end

@@ -55,11 +55,7 @@ if ~skipflag
   maindir = user.maindir;
   Experimental_channels = user.silacratios;
   User_alignment_window1 = user.User_alignment_window1;
-  clear InputFile
-  for ii = 1:length(user.MQfiles)
-    InputFile{ii} = user.MQfiles{ii};
-  end
-  InputFile{4} = user.calfile;
+  Nreplicates = user.Nreplicate;
   
   
   %User_alignment_window2 = 8; %for Second round of alignment
@@ -101,11 +97,6 @@ if ~skipflag
   % in the future read them in from my data
   if user.nickflag %nick's output
     pw = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/MvsL/';
-    Nreplicates = 3;
-%     GaussIn{5} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/MvsL/MvsL_Combined_OutputGaus.csv'; % From Gauss_build
-%     GaussIn{6} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/MvsL/MvsL_Summary_Gausians_for_individual_proteins.csv';   % ''
-%     GaussIn{7} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/HvsL/HvsL_Combined_OutputGaus.csv';  % ''
-%     GaussIn{8} = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/HvsL/HvsL_Summary_Gausians_for_individual_proteins.csv'; % ''
     GaussInputFile = cell(Nchannels, Nreplicates);
     GassSumInputFile = cell(Nchannels, Nreplicates);
     for ei=1:Nchannels
@@ -116,16 +107,14 @@ if ~skipflag
       end
     end
   else %my output
-    dd = dir([datadir2 '*Summary_Gausians_for_individual_proteins_rep*csv']);
-    Nreplicates = length(dd) / length(Experimental_channels);
-%     for ii = 1:Nchannels
-%       GaussIn{ii} = [datadir2 user.silacratios{ii} '_Combined_OutputGaus.csv'];                        % From Gauss_build
-%       GaussIn{(ii-1)*2+1} = [datadir2 user.silacratios{ii} '_Summary_Gausians_for_individual_proteins.csv'];   % ''
-%     end
-%     GaussIn{5} = [datadir2 'MvsL_Combined_OutputGaus.csv'];                        % From Gauss_build
-%     GaussIn{6} = [datadir2 'MvsL_Summary_Gausians_for_individual_proteins.csv'];   % ''
-%     GaussIn{7} = [datadir2 'HvsL_Combined_OutputGaus.csv'];                        % ''
-%     GaussIn{8} = [datadir2 'HvsL_Summary_Gausians_for_individual_proteins.csv'];   % ''
+    dd = dir([datadir2 '*Combined_OutputGaus_rep*csv']);
+    tmp = length(dd) / length(Experimental_channels);
+    
+    % Check that all replicate files were made in Gauss_Build
+    if Nreplicates ~= tmp
+      disp(['Error: Alignment: Number of replicates set to ' num2str(Nreplicates) ', ' num2str(tmp) ' detected'])
+    end
+    
     GaussInputFile = cell(Nchannels, Nreplicates);
     GassSumInputFile = cell(Nchannels, Nreplicates);
     for ei=1:Nchannels

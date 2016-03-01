@@ -1081,279 +1081,264 @@ end
 
 
 %%
-
-% 4. Make pie chart figure
-
-%Create array to store which replicate each protein
-Proteins_observed_in_replicates=zeros(length(Unique_protein_names), 8);
-
-for count_shared_guassians3 = 1:length(Unique_protein_names)
-  [internal_location_of_protein_of_interest_MvsL]=ind2sub(Number_All_guassians_identified_nonredunent_list(1), strmatch(Unique_protein_names(count_shared_guassians3), MvsL_Gaussians.Protein_name, 'exact'));
-  [internal_location_of_protein_of_interest_HvsL]=ind2sub(Number_All_guassians_identified_nonredunent_list(1), strmatch(Unique_protein_names(count_shared_guassians3), HvsL_Gaussians.Protein_name, 'exact'));
-  %Record which repliates the protein of interest was seen in MvsL replicates
-  Number_of_times_seen_MvsL=length(internal_location_of_protein_of_interest_MvsL);
-  for Number_of_times_seen_counter1= 1:Number_of_times_seen_MvsL
-    if MvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 1;
-      Proteins_observed_in_replicates(count_shared_guassians3,1)=1;
-    elseif MvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 2;
-      Proteins_observed_in_replicates(count_shared_guassians3,2)=1;
-    elseif MvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 3;
-      Proteins_observed_in_replicates(count_shared_guassians3,3)=1;
-    elseif MvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 4;
-      Proteins_observed_in_replicates(count_shared_guassians3,4)=1;
-    elseif MvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 0;
-      Proteins_observed_in_replicates(count_shared_guassians3,4)=0;
-      Proteins_observed_in_replicates(count_shared_guassians3,3)=0;
-      Proteins_observed_in_replicates(count_shared_guassians3,2)=0;
-      Proteins_observed_in_replicates(count_shared_guassians3,1)=0;
+if 0 % this is unfinished
+  
+  % 4. Make pie chart figure
+  
+  %Create array to store which replicate each protein
+  Proteins_observed_in_replicates=zeros(length(Unique_protein_names), 8);
+  
+  for ii = 1:Nchannels
+    for count_shared_guassians3 = 1:length(Unique_protein_names)
+      internal_location_of_protein_of_interest_MvsL = find(strmatch(Unique_protein_names(count_shared_guassians3), GaussSummary(ii).Protein_name, 'exact'));
+      %Record which repliates the protein of interest was seen in MvsL replicates
+      Number_of_times_seen_MvsL=length(internal_location_of_protein_of_interest_MvsL);
+      for Number_of_times_seen_counter1= 1:Number_of_times_seen_MvsL
+        if GaussSummary(ii).Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 1;
+          Proteins_observed_in_replicates(count_shared_guassians3,1)=1;
+        elseif GaussSummary(ii).Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 2;
+          Proteins_observed_in_replicates(count_shared_guassians3,2)=1;
+        elseif GaussSummary(ii).Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 3;
+          Proteins_observed_in_replicates(count_shared_guassians3,3)=1;
+        elseif GaussSummary(ii).Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 4;
+          Proteins_observed_in_replicates(count_shared_guassians3,4)=1;
+        elseif GaussSummary(ii).Replicate(internal_location_of_protein_of_interest_MvsL(Number_of_times_seen_counter1)) == 0;
+          Proteins_observed_in_replicates(count_shared_guassians3,4)=0;
+          Proteins_observed_in_replicates(count_shared_guassians3,3)=0;
+          Proteins_observed_in_replicates(count_shared_guassians3,2)=0;
+          Proteins_observed_in_replicates(count_shared_guassians3,1)=0;
+        end
+      end
     end
+    %Write Protein information to Protein structure array
+    Protein_information.Protein_name=Unique_protein_names;
+    Protein_information.Observed_MvsL_replicate1= Proteins_observed_in_replicates(:,1);
+    Protein_information.Observed_MvsL_replicate2= Proteins_observed_in_replicates(:,2);
+    Protein_information.Observed_MvsL_replicate3= Proteins_observed_in_replicates(:,3);
+    Protein_information.Observed_MvsL_replicate4= Proteins_observed_in_replicates(:,4);
+    Protein_information.Observed_HvsL_replicate1= Proteins_observed_in_replicates(:,5);
+    Protein_information.Observed_HvsL_replicate2= Proteins_observed_in_replicates(:,6);
+    Protein_information.Observed_HvsL_replicate3= Proteins_observed_in_replicates(:,7);
+    Protein_information.Observed_HvsL_replicate4= Proteins_observed_in_replicates(:,8);
+    
   end
   
-  %Record which repliates the protein of interest was seen in HvsL replicates
-  Number_of_times_seen_HvsL=length(internal_location_of_protein_of_interest_HvsL);
-  for Number_of_times_seen_counter2= 1:Number_of_times_seen_HvsL
-    if HvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 1;
-      Proteins_observed_in_replicates(count_shared_guassians3,5)=1;
-    elseif HvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 2;
-      Proteins_observed_in_replicates(count_shared_guassians3,6)=1;
-    elseif HvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 3;
-      Proteins_observed_in_replicates(count_shared_guassians3,7)=1;
-    elseif HvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 4;
-      Proteins_observed_in_replicates(count_shared_guassians3,8)=1;
-    elseif HvsL_Gaussians.Replicate(internal_location_of_protein_of_interest_HvsL(Number_of_times_seen_counter2)) == 0;
-      Proteins_observed_in_replicates(count_shared_guassians3,5)=0;
-      Proteins_observed_in_replicates(count_shared_guassians3,6)=0;
-      Proteins_observed_in_replicates(count_shared_guassians3,7)=0;
-      Proteins_observed_in_replicates(count_shared_guassians3,8)=0;
-    end
+  
+  %Number of times observed in specific channels
+  Protein_information.Total_number_channels_observed= (sum(Proteins_observed_in_replicates(:,:)'))';
+  Protein_information.Observed_in_MvsL= (sum(Proteins_observed_in_replicates(:,1:4)')>0)';
+  Protein_information.Observed_in_HvsL= (sum(Proteins_observed_in_replicates(:,5:8)')>0)';
+  Protein_information.Number_Observed_in_MvsL= (sum(Proteins_observed_in_replicates(:,1:4)'))';
+  Protein_information.Number_Observed_in_HvsL= (sum(Proteins_observed_in_replicates(:,5:8)'))';
+  Protein_information.Observed_only_HvsL= ((Protein_information.Observed_in_HvsL>0) & (Protein_information.Observed_in_MvsL==0));
+  Protein_information.Observed_only_MvsL= ((Protein_information.Observed_in_MvsL>0) & (Protein_information.Observed_in_HvsL==0));
+  Protein_information.Observed_both= ((Protein_information.Observed_in_MvsL>0) & (Protein_information.Observed_in_HvsL>0));
+  
+  %Number of time observed in replicates
+  Protein_information.Replicate1=Protein_information.Observed_MvsL_replicate1 & Protein_information.Observed_HvsL_replicate1;
+  Protein_information.Replicate2=Protein_information.Observed_MvsL_replicate2 & Protein_information.Observed_HvsL_replicate2;
+  Protein_information.Replicate3=Protein_information.Observed_MvsL_replicate3 & Protein_information.Observed_HvsL_replicate3;
+  Protein_information.Replicate4=Protein_information.Observed_MvsL_replicate4 & Protein_information.Observed_HvsL_replicate4;
+  
+  %Number of times observed between replicates
+  Protein_information.Observed_in_zero_HvsL= (Protein_information.Number_Observed_in_HvsL==0);
+  Protein_information.Observed_in_zero_MvsL= (Protein_information.Number_Observed_in_MvsL==0);
+  Protein_information.Observed_in_one_HvsL= (Protein_information.Number_Observed_in_HvsL==1);
+  Protein_information.Observed_in_one_MvsL= (Protein_information.Number_Observed_in_MvsL==1);
+  Protein_information.Observed_in_two_HvsL= (Protein_information.Number_Observed_in_HvsL==2);
+  Protein_information.Observed_in_two_MvsL= (Protein_information.Number_Observed_in_MvsL==2);
+  Protein_information.Observed_in_three_HvsL= (Protein_information.Number_Observed_in_HvsL==3);
+  Protein_information.Observed_in_three_MvsL= (Protein_information.Number_Observed_in_MvsL==3);
+  Protein_information.Observed_in_four_HvsL= (Protein_information.Number_Observed_in_HvsL==4);
+  Protein_information.Observed_in_four_MvsL= (Protein_information.Number_Observed_in_MvsL==4);
+  
+  %Number of times observed between replicates and channels
+  %HvsL
+  Protein_information.Observed_in_one_HvsL_both_channels= Protein_information.Observed_in_one_HvsL & Protein_information.Observed_both;
+  Protein_information.Observed_in_two_HvsL_both_channels= Protein_information.Observed_in_two_HvsL & Protein_information.Observed_both;
+  Protein_information.Observed_in_three_HvsL_both_channels= Protein_information.Observed_in_three_HvsL & Protein_information.Observed_both;
+  Protein_information.Observed_in_four_HvsL_both_channels= Protein_information.Observed_in_four_HvsL & Protein_information.Observed_both;
+  %MvsL
+  Protein_information.Observed_in_one_MvsL_both_channels= Protein_information.Observed_in_one_MvsL & Protein_information.Observed_both;
+  Protein_information.Observed_in_two_MvsL_both_channels= Protein_information.Observed_in_two_MvsL & Protein_information.Observed_both;
+  Protein_information.Observed_in_three_MvsL_both_channels= Protein_information.Observed_in_three_MvsL & Protein_information.Observed_both;
+  Protein_information.Observed_in_four_MvsL_both_channels= Protein_information.Observed_in_four_MvsL & Protein_information.Observed_both;
+  %HvsL
+  Protein_information.Observed_in_zero_MvsL_HvsL_channels= Protein_information.Observed_in_zero_MvsL & Protein_information.Observed_only_HvsL;
+  Protein_information.Observed_in_one_HvsL_HvsL_channels= Protein_information.Observed_in_one_HvsL & Protein_information.Observed_only_HvsL;
+  Protein_information.Observed_in_two_HvsL_HvsL_channels= Protein_information.Observed_in_two_HvsL & Protein_information.Observed_only_HvsL;
+  Protein_information.Observed_in_three_HvsL_HvsL_channels= Protein_information.Observed_in_three_HvsL & Protein_information.Observed_only_HvsL;
+  Protein_information.Observed_in_four_HvsL_HvsL_channels= Protein_information.Observed_in_four_HvsL & Protein_information.Observed_only_HvsL;
+  %MvsL
+  Protein_information.Observed_in_zero_HvsL_MvsL_channels= Protein_information.Observed_in_zero_HvsL & Protein_information.Observed_only_MvsL;
+  Protein_information.Observed_in_one_MvsL_MvsL_channels= Protein_information.Observed_in_one_MvsL & Protein_information.Observed_only_MvsL;
+  Protein_information.Observed_in_two_MvsL_MvsL_channels= Protein_information.Observed_in_two_MvsL & Protein_information.Observed_only_MvsL;
+  Protein_information.Observed_in_three_MvsL_MvsL_channels= Protein_information.Observed_in_three_MvsL & Protein_information.Observed_only_MvsL;
+  Protein_information.Observed_in_four_MvsL_MvsL_channels= Protein_information.Observed_in_four_MvsL & Protein_information.Observed_only_MvsL;
+  
+  %Determine overlap of proteins identifications between replicates
+  
+  %Compare how many proteins were observed in each channel (use for Figure 1)
+  pie_figure1(1,1)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==1));
+  pie_figure1(1,2)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==2));
+  pie_figure1(1,3)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==3));
+  pie_figure1(1,4)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==4));
+  pie_figure1(1,5)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==5));
+  pie_figure1(1,6)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==6));
+  pie_figure1(1,7)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==7));
+  pie_figure1(1,8)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==8));
+  
+  %Comparing what channels the proteins were observed in across all
+  %replicates
+  pie_figure2(1,1)=nnz(Protein_information.Observed_both);
+  pie_figure2(1,2)=nnz(Protein_information.Observed_only_HvsL);
+  pie_figure2(1,3)=nnz(Protein_information.Observed_only_MvsL);
+  
+  %Compare what the number of times observed between replicates (Figure 3)
+  pie_figure3(1,1)=nnz(Protein_information.Observed_in_zero_MvsL);
+  pie_figure3(1,3)=nnz(Protein_information.Observed_in_one_MvsL);
+  pie_figure3(1,5)=nnz(Protein_information.Observed_in_two_MvsL);
+  pie_figure3(1,7)=nnz(Protein_information.Observed_in_three_MvsL);
+  pie_figure3(1,9)=nnz(Protein_information.Observed_in_four_MvsL);
+  pie_figure3(1,2)=nnz(Protein_information.Observed_in_zero_HvsL);
+  pie_figure3(1,4)=nnz(Protein_information.Observed_in_one_HvsL);
+  pie_figure3(1,6)=nnz(Protein_information.Observed_in_two_HvsL);
+  pie_figure3(1,8)=nnz(Protein_information.Observed_in_three_HvsL);
+  pie_figure3(1,10)=nnz(Protein_information.Observed_in_four_HvsL);
+  
+  %Compare the Number of times observed between replicates and channels
+  %(Figure 4)
+  pie_figure4(1,1)=nnz(Protein_information.Observed_in_zero_HvsL_MvsL_channels);
+  pie_figure4(1,3)=nnz(Protein_information.Observed_in_one_HvsL_HvsL_channels);
+  pie_figure4(1,5)=nnz(Protein_information.Observed_in_two_HvsL_HvsL_channels);
+  pie_figure4(1,2)=nnz(Protein_information.Observed_in_zero_MvsL_HvsL_channels);
+  pie_figure4(1,4)=nnz(Protein_information.Observed_in_one_MvsL_MvsL_channels);
+  pie_figure4(1,6)=nnz(Protein_information.Observed_in_two_MvsL_MvsL_channels);
+  pie_figure4(1,7)=nnz(Protein_information.Observed_in_three_HvsL_HvsL_channels);
+  pie_figure4(1,8)=nnz(Protein_information.Observed_in_three_MvsL_MvsL_channels);
+  pie_figure4(1,9)=nnz(Protein_information.Observed_in_four_HvsL_HvsL_channels);
+  pie_figure4(1,10)=nnz(Protein_information.Observed_in_four_MvsL_MvsL_channels);
+  
+  %(Figure 5)
+  pie_figure5(1,1)=nnz(Protein_information.Observed_in_one_HvsL_both_channels);
+  pie_figure5(1,3)=nnz(Protein_information.Observed_in_two_HvsL_both_channels);
+  pie_figure5(1,5)=nnz(Protein_information.Observed_in_three_HvsL_both_channels);
+  pie_figure5(1,7)=nnz(Protein_information.Observed_in_four_HvsL_both_channels);
+  pie_figure5(1,2)=nnz(Protein_information.Observed_in_one_MvsL_both_channels);
+  pie_figure5(1,4)=nnz(Protein_information.Observed_in_two_MvsL_both_channels);
+  pie_figure5(1,6)=nnz(Protein_information.Observed_in_three_MvsL_both_channels);
+  pie_figure5(1,8)=nnz(Protein_information.Observed_in_four_MvsL_both_channels);
+  
+  
+  %Compare what the number of times proteins observed between replicates (Figure 3)
+  pie_figure6(1,1)=nnz(Protein_information.Replicate1);
+  pie_figure6(1,2)=nnz(Protein_information.Replicate2);
+  pie_figure6(1,3)=nnz(Protein_information.Replicate3);
+  pie_figure6(1,4)=nnz(Protein_information.Replicate4);
+  
+  % #output
+  %write out list of which proteins were observed (as gaussians in each replicate)
+  fid_Proteins_in_each_rep = fopen([datadir 'Comparison/Protein_gaussian_observed_in_each_replicate.csv'],'w');
+  fprintf (fid_Proteins_in_each_rep,'%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
+    'Protein_name','Replicate 1 MvsL channel','Replicate 2 MvsL channel','Replicate 3 MvsL channel','Replicate 4 MvsL channel','Replicate 1 HvsL channel','Replicate 2 HvsL channel','Replicate 3 HvsL channel','Replicate 4 HvsL channel'); %Write Header
+  for write_out_Proteins_in_rep = 1:length(Unique_protein_names)
+    fprintf(fid_Proteins_in_each_rep,'%s,', Unique_protein_names{write_out_Proteins_in_rep});
+    fprintf(fid_Proteins_in_each_rep,'%6.4g,', Proteins_observed_in_replicates(write_out_Proteins_in_rep,:));
+    fprintf(fid_Proteins_in_each_rep,'\n');
+  end
+  fclose(fid_Proteins_in_each_rep);
+  
+  %write out analysis of observation
+  fid_Proteins_in_each_rep2 = fopen([datadir 'Comparison/Protein_observed_in_each_replicate.csv'],'w');
+  fprintf (fid_Proteins_in_each_rep2,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
+    'Protein_Observed_in_both_channels','Protein_Observed_only_in_MvsL_channel','Protein_Observed_only_in_HvsL_channel',...
+    'Protein_Observed_in_MvsL_once_channels','Protein_Observed_in_MvsL_twice_channel','Protein_Observedin_MvsL_three_times_channel','Protein_Observedin_MvsL_four_times_channel',...
+    'Protein_Observed_in_HvsL_once_channels','Protein_Observed_in_HvsL_twice_channel','Protein_Observedin_HvsL_three_times_channel','Protein_Observedin_HvsL_four_times_channel'); %Write Header
+  fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure2(1,1));
+  fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure2(1,3));
+  fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure2(1,2));
+  fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,3));
+  fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,5));
+  fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,7));
+  fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,9));
+  fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,4));
+  fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,6));
+  fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,8));
+  fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,10));
+  fclose(fid_Proteins_in_each_rep2);
+  
+  %write out analysis of observation
+  fid_Proteins_in_each_rep3 = fopen([datadir 'Comparison/Protein_observed_in_each_replicate_and_channels.csv'],'w');
+  fprintf (fid_Proteins_in_each_rep3,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
+    'Protein_Observed_only_in_MvsL_channel','Protein_Observed_only_in_HvsL_channel','Protein_Observed_only_in_HvsL_channel_once',...
+    'Protein_Observed_only_in_HvsL_channel_twice','Protein_Observed_only_in_HvsL_channel_three_times','Protein_Observed_only_in_HvsL_channel_four_times',...
+    'Protein_Observed_only_in_MvsL_channel_once','Protein_Observed_only_in_MvsL_channesl_twice','Protein_Observed_only_in_MvsL_channel_three_times',...
+    'Protein_Observed_only_in_MvsL_channel_four_times','Protein_Observed_Both_channesl_once_HvsL','Protein_Observed_Both_channesl_twice_HvsL',...
+    'Protein_Observed_Both_channesl_three_times_HvsL','Protein_Observed_Both_channesl_four_times_HvsL','Protein_Observed_Both_channesl_once_MvsL',...
+    'Protein_Observed_Both_channesl_twice_MvsL','Protein_Observed_Both_channesl_three_times_MvsL','Protein_Observed_Both_channesl_four_times_MvsL'); %Write Header
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,1));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,2));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,3));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,5));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,7));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,9));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,4));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,6));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,8));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,10));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,1));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,3));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,5));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,7));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,2));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,4));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,6));
+  fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,8));
+  fclose(fid_Proteins_in_each_rep3);
+  
+  
+  %Figure parameters, Figure 1
+  %Note: Option are present to also output a visulation on the overlap
+  %between replicates and isotopologue channels but this has found to be
+  %largely uninformative
+  f1 = figure;
+  P(1)=subplot(1,1,1);
+  Figure1= pie(pie_figure1);
+  hp = findobj(P(1), 'Type', 'patch');
+  figure_pos = get(P(1),'position');
+  
+  %create varible for legend
+  combinedstrings=cell(length(hp),1);
+  
+  for colour_count=1:length(hp)
+    set(hp(colour_count), 'FaceColor', colour_to_use(colour_count,:)); % set colour according to defined palate
+    combinedstrings{colour_count,1}=mat2str(colour_count);
   end
   
+  set(P(1), 'position',[figure_pos(1)*1.6 figure_pos(2)*1.0 figure_pos(3:4)]);
+  
+  %Create label
+  hText = findobj(Figure1,'Type','text'); % text handles
+  percentValues = get(hText,'String'); % percent values
+  
+  %Position text
+  textPositions_cell = get(hText,'Position'); % cell array
+  textPositions = cell2mat(textPositions_cell); % numeric array
+  textPositions(:,1) = textPositions(:,1)*1.2; % add offset
+  %set(hText,'Position',num2cell(textPositions,[3,2]));
+  for jj = 1:size(hText,1)
+    set(hText(jj),'Position',textPositions(jj,:));
+  end
+  
+  %# add legend
+  Legend_1_position = legend(P(1), combinedstrings);
+  Legend_pos = get(Legend_1_position,'position');
+  set(Legend_1_position, 'position',[0.05 0.25 0.15 0.5]);
+  
+  saveas(f1, [figdir 'Comparison/Protein_analysis.png']);
+  
+  tt = toc;
+  tt = round(tt/10)*10;
+  fprintf('  ...  %.2f seconds\n',tt)
+  
 end
-
-%Write Protein information to Protein structure array
-Protein_information.Protein_name=Unique_protein_names;
-Protein_information.Observed_MvsL_replicate1= Proteins_observed_in_replicates(:,1);
-Protein_information.Observed_MvsL_replicate2= Proteins_observed_in_replicates(:,2);
-Protein_information.Observed_MvsL_replicate3= Proteins_observed_in_replicates(:,3);
-Protein_information.Observed_MvsL_replicate4= Proteins_observed_in_replicates(:,4);
-Protein_information.Observed_HvsL_replicate1= Proteins_observed_in_replicates(:,5);
-Protein_information.Observed_HvsL_replicate2= Proteins_observed_in_replicates(:,6);
-Protein_information.Observed_HvsL_replicate3= Proteins_observed_in_replicates(:,7);
-Protein_information.Observed_HvsL_replicate4= Proteins_observed_in_replicates(:,8);
-
-%Number of times observed in specific channels
-Protein_information.Total_number_channels_observed= (sum(Proteins_observed_in_replicates(:,:)'))';
-Protein_information.Observed_in_MvsL= (sum(Proteins_observed_in_replicates(:,1:4)')>0)';
-Protein_information.Observed_in_HvsL= (sum(Proteins_observed_in_replicates(:,5:8)')>0)';
-Protein_information.Number_Observed_in_MvsL= (sum(Proteins_observed_in_replicates(:,1:4)'))';
-Protein_information.Number_Observed_in_HvsL= (sum(Proteins_observed_in_replicates(:,5:8)'))';
-Protein_information.Observed_only_HvsL= ((Protein_information.Observed_in_HvsL>0) & (Protein_information.Observed_in_MvsL==0));
-Protein_information.Observed_only_MvsL= ((Protein_information.Observed_in_MvsL>0) & (Protein_information.Observed_in_HvsL==0));
-Protein_information.Observed_both= ((Protein_information.Observed_in_MvsL>0) & (Protein_information.Observed_in_HvsL>0));
-
-%Number of time observed in replicates
-Protein_information.Replicate1=Protein_information.Observed_MvsL_replicate1 & Protein_information.Observed_HvsL_replicate1;
-Protein_information.Replicate2=Protein_information.Observed_MvsL_replicate2 & Protein_information.Observed_HvsL_replicate2;
-Protein_information.Replicate3=Protein_information.Observed_MvsL_replicate3 & Protein_information.Observed_HvsL_replicate3;
-Protein_information.Replicate4=Protein_information.Observed_MvsL_replicate4 & Protein_information.Observed_HvsL_replicate4;
-
-%Number of times observed between replicates
-Protein_information.Observed_in_zero_HvsL= (Protein_information.Number_Observed_in_HvsL==0);
-Protein_information.Observed_in_zero_MvsL= (Protein_information.Number_Observed_in_MvsL==0);
-Protein_information.Observed_in_one_HvsL= (Protein_information.Number_Observed_in_HvsL==1);
-Protein_information.Observed_in_one_MvsL= (Protein_information.Number_Observed_in_MvsL==1);
-Protein_information.Observed_in_two_HvsL= (Protein_information.Number_Observed_in_HvsL==2);
-Protein_information.Observed_in_two_MvsL= (Protein_information.Number_Observed_in_MvsL==2);
-Protein_information.Observed_in_three_HvsL= (Protein_information.Number_Observed_in_HvsL==3);
-Protein_information.Observed_in_three_MvsL= (Protein_information.Number_Observed_in_MvsL==3);
-Protein_information.Observed_in_four_HvsL= (Protein_information.Number_Observed_in_HvsL==4);
-Protein_information.Observed_in_four_MvsL= (Protein_information.Number_Observed_in_MvsL==4);
-
-%Number of times observed between replicates and channels
-%HvsL
-Protein_information.Observed_in_one_HvsL_both_channels= Protein_information.Observed_in_one_HvsL & Protein_information.Observed_both;
-Protein_information.Observed_in_two_HvsL_both_channels= Protein_information.Observed_in_two_HvsL & Protein_information.Observed_both;
-Protein_information.Observed_in_three_HvsL_both_channels= Protein_information.Observed_in_three_HvsL & Protein_information.Observed_both;
-Protein_information.Observed_in_four_HvsL_both_channels= Protein_information.Observed_in_four_HvsL & Protein_information.Observed_both;
-%MvsL
-Protein_information.Observed_in_one_MvsL_both_channels= Protein_information.Observed_in_one_MvsL & Protein_information.Observed_both;
-Protein_information.Observed_in_two_MvsL_both_channels= Protein_information.Observed_in_two_MvsL & Protein_information.Observed_both;
-Protein_information.Observed_in_three_MvsL_both_channels= Protein_information.Observed_in_three_MvsL & Protein_information.Observed_both;
-Protein_information.Observed_in_four_MvsL_both_channels= Protein_information.Observed_in_four_MvsL & Protein_information.Observed_both;
-%HvsL
-Protein_information.Observed_in_zero_MvsL_HvsL_channels= Protein_information.Observed_in_zero_MvsL & Protein_information.Observed_only_HvsL;
-Protein_information.Observed_in_one_HvsL_HvsL_channels= Protein_information.Observed_in_one_HvsL & Protein_information.Observed_only_HvsL;
-Protein_information.Observed_in_two_HvsL_HvsL_channels= Protein_information.Observed_in_two_HvsL & Protein_information.Observed_only_HvsL;
-Protein_information.Observed_in_three_HvsL_HvsL_channels= Protein_information.Observed_in_three_HvsL & Protein_information.Observed_only_HvsL;
-Protein_information.Observed_in_four_HvsL_HvsL_channels= Protein_information.Observed_in_four_HvsL & Protein_information.Observed_only_HvsL;
-%MvsL
-Protein_information.Observed_in_zero_HvsL_MvsL_channels= Protein_information.Observed_in_zero_HvsL & Protein_information.Observed_only_MvsL;
-Protein_information.Observed_in_one_MvsL_MvsL_channels= Protein_information.Observed_in_one_MvsL & Protein_information.Observed_only_MvsL;
-Protein_information.Observed_in_two_MvsL_MvsL_channels= Protein_information.Observed_in_two_MvsL & Protein_information.Observed_only_MvsL;
-Protein_information.Observed_in_three_MvsL_MvsL_channels= Protein_information.Observed_in_three_MvsL & Protein_information.Observed_only_MvsL;
-Protein_information.Observed_in_four_MvsL_MvsL_channels= Protein_information.Observed_in_four_MvsL & Protein_information.Observed_only_MvsL;
-
-%Determine overlap of proteins identifications between replicates
-
-%Compare how many proteins were observed in each channel (use for Figure 1)
-pie_figure1(1,1)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==1));
-pie_figure1(1,2)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==2));
-pie_figure1(1,3)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==3));
-pie_figure1(1,4)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==4));
-pie_figure1(1,5)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==5));
-pie_figure1(1,6)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==6));
-pie_figure1(1,7)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==7));
-pie_figure1(1,8)=nnz(Protein_information.Total_number_channels_observed(Protein_information.Total_number_channels_observed==8));
-
-%Comparing what channels the proteins were observed in across all
-%replicates
-pie_figure2(1,1)=nnz(Protein_information.Observed_both);
-pie_figure2(1,2)=nnz(Protein_information.Observed_only_HvsL);
-pie_figure2(1,3)=nnz(Protein_information.Observed_only_MvsL);
-
-%Compare what the number of times observed between replicates (Figure 3)
-pie_figure3(1,1)=nnz(Protein_information.Observed_in_zero_MvsL);
-pie_figure3(1,3)=nnz(Protein_information.Observed_in_one_MvsL);
-pie_figure3(1,5)=nnz(Protein_information.Observed_in_two_MvsL);
-pie_figure3(1,7)=nnz(Protein_information.Observed_in_three_MvsL);
-pie_figure3(1,9)=nnz(Protein_information.Observed_in_four_MvsL);
-pie_figure3(1,2)=nnz(Protein_information.Observed_in_zero_HvsL);
-pie_figure3(1,4)=nnz(Protein_information.Observed_in_one_HvsL);
-pie_figure3(1,6)=nnz(Protein_information.Observed_in_two_HvsL);
-pie_figure3(1,8)=nnz(Protein_information.Observed_in_three_HvsL);
-pie_figure3(1,10)=nnz(Protein_information.Observed_in_four_HvsL);
-
-%Compare the Number of times observed between replicates and channels
-%(Figure 4)
-pie_figure4(1,1)=nnz(Protein_information.Observed_in_zero_HvsL_MvsL_channels);
-pie_figure4(1,3)=nnz(Protein_information.Observed_in_one_HvsL_HvsL_channels);
-pie_figure4(1,5)=nnz(Protein_information.Observed_in_two_HvsL_HvsL_channels);
-pie_figure4(1,2)=nnz(Protein_information.Observed_in_zero_MvsL_HvsL_channels);
-pie_figure4(1,4)=nnz(Protein_information.Observed_in_one_MvsL_MvsL_channels);
-pie_figure4(1,6)=nnz(Protein_information.Observed_in_two_MvsL_MvsL_channels);
-pie_figure4(1,7)=nnz(Protein_information.Observed_in_three_HvsL_HvsL_channels);
-pie_figure4(1,8)=nnz(Protein_information.Observed_in_three_MvsL_MvsL_channels);
-pie_figure4(1,9)=nnz(Protein_information.Observed_in_four_HvsL_HvsL_channels);
-pie_figure4(1,10)=nnz(Protein_information.Observed_in_four_MvsL_MvsL_channels);
-
-%(Figure 5)
-pie_figure5(1,1)=nnz(Protein_information.Observed_in_one_HvsL_both_channels);
-pie_figure5(1,3)=nnz(Protein_information.Observed_in_two_HvsL_both_channels);
-pie_figure5(1,5)=nnz(Protein_information.Observed_in_three_HvsL_both_channels);
-pie_figure5(1,7)=nnz(Protein_information.Observed_in_four_HvsL_both_channels);
-pie_figure5(1,2)=nnz(Protein_information.Observed_in_one_MvsL_both_channels);
-pie_figure5(1,4)=nnz(Protein_information.Observed_in_two_MvsL_both_channels);
-pie_figure5(1,6)=nnz(Protein_information.Observed_in_three_MvsL_both_channels);
-pie_figure5(1,8)=nnz(Protein_information.Observed_in_four_MvsL_both_channels);
-
-
-%Compare what the number of times proteins observed between replicates (Figure 3)
-pie_figure6(1,1)=nnz(Protein_information.Replicate1);
-pie_figure6(1,2)=nnz(Protein_information.Replicate2);
-pie_figure6(1,3)=nnz(Protein_information.Replicate3);
-pie_figure6(1,4)=nnz(Protein_information.Replicate4);
-
-% #output
-%write out list of which proteins were observed (as gaussians in each replicate)
-fid_Proteins_in_each_rep = fopen([datadir1 'Protein_gaussian_observed_in_each_replicate.csv'],'w');
-fprintf (fid_Proteins_in_each_rep,'%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
-  'Protein_name','Replicate 1 MvsL channel','Replicate 2 MvsL channel','Replicate 3 MvsL channel','Replicate 4 MvsL channel','Replicate 1 HvsL channel','Replicate 2 HvsL channel','Replicate 3 HvsL channel','Replicate 4 HvsL channel'); %Write Header
-for write_out_Proteins_in_rep = 1:length(Unique_protein_names)
-  fprintf(fid_Proteins_in_each_rep,'%s,', Unique_protein_names{write_out_Proteins_in_rep});
-  fprintf(fid_Proteins_in_each_rep,'%6.4g,', Proteins_observed_in_replicates(write_out_Proteins_in_rep,:));
-  fprintf(fid_Proteins_in_each_rep,'\n');
-end
-fclose(fid_Proteins_in_each_rep);
-
-%write out analysis of observation
-fid_Proteins_in_each_rep2 = fopen([datadir1 'Protein_observed_in_each_replicate.csv'],'w');
-fprintf (fid_Proteins_in_each_rep2,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
-  'Protein_Observed_in_both_channels','Protein_Observed_only_in_MvsL_channel','Protein_Observed_only_in_HvsL_channel',...
-  'Protein_Observed_in_MvsL_once_channels','Protein_Observed_in_MvsL_twice_channel','Protein_Observedin_MvsL_three_times_channel','Protein_Observedin_MvsL_four_times_channel',...
-  'Protein_Observed_in_HvsL_once_channels','Protein_Observed_in_HvsL_twice_channel','Protein_Observedin_HvsL_three_times_channel','Protein_Observedin_HvsL_four_times_channel'); %Write Header
-fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure2(1,1));
-fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure2(1,3));
-fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure2(1,2));
-fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,3));
-fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,5));
-fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,7));
-fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,9));
-fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,4));
-fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,6));
-fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,8));
-fprintf(fid_Proteins_in_each_rep2,'%6.4f,', pie_figure3(1,10));
-fclose(fid_Proteins_in_each_rep2);
-
-%write out analysis of observation
-fid_Proteins_in_each_rep3 = fopen([datadir1 'Protein_observed_in_each_replicate_and_channels.csv'],'w');
-fprintf (fid_Proteins_in_each_rep3,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
-  'Protein_Observed_only_in_MvsL_channel','Protein_Observed_only_in_HvsL_channel','Protein_Observed_only_in_HvsL_channel_once',...
-  'Protein_Observed_only_in_HvsL_channel_twice','Protein_Observed_only_in_HvsL_channel_three_times','Protein_Observed_only_in_HvsL_channel_four_times',...
-  'Protein_Observed_only_in_MvsL_channel_once','Protein_Observed_only_in_MvsL_channesl_twice','Protein_Observed_only_in_MvsL_channel_three_times',...
-  'Protein_Observed_only_in_MvsL_channel_four_times','Protein_Observed_Both_channesl_once_HvsL','Protein_Observed_Both_channesl_twice_HvsL',...
-  'Protein_Observed_Both_channesl_three_times_HvsL','Protein_Observed_Both_channesl_four_times_HvsL','Protein_Observed_Both_channesl_once_MvsL',...
-  'Protein_Observed_Both_channesl_twice_MvsL','Protein_Observed_Both_channesl_three_times_MvsL','Protein_Observed_Both_channesl_four_times_MvsL'); %Write Header
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,1));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,2));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,3));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,5));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,7));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,9));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,4));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,6));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,8));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure4(1,10));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,1));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,3));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,5));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,7));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,2));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,4));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,6));
-fprintf(fid_Proteins_in_each_rep3,'%6.4f,', pie_figure5(1,8));
-fclose(fid_Proteins_in_each_rep3);
-
-
-%Figure parameters, Figure 1
-%Note: Option are present to also output a visulation on the overlap
-%between replicates and isotopologue channels but this has found to be
-%largely uninformative
-f1 = figure;
-P(1)=subplot(1,1,1);
-Figure1= pie(pie_figure1);
-hp = findobj(P(1), 'Type', 'patch');
-figure_pos = get(P(1),'position');
-
-%create varible for legend
-combinedstrings=cell(length(hp),1);
-
-for colour_count=1:length(hp)
-  set(hp(colour_count), 'FaceColor', colour_to_use(colour_count,:)); % set colour according to defined palate
-  combinedstrings{colour_count,1}=mat2str(colour_count);
-end
-
-set(P(1), 'position',[figure_pos(1)*1.6 figure_pos(2)*1.0 figure_pos(3:4)]);
-
-%Create label
-hText = findobj(Figure1,'Type','text'); % text handles
-percentValues = get(hText,'String'); % percent values
-
-%Position text
-textPositions_cell = get(hText,'Position'); % cell array
-textPositions = cell2mat(textPositions_cell); % numeric array
-textPositions(:,1) = textPositions(:,1)*1.2; % add offset
-%set(hText,'Position',num2cell(textPositions,[3,2]));
-for jj = 1:size(hText,1)
-  set(hText(jj),'Position',textPositions(jj,:));
-end
-
-%# add legend
-Legend_1_position = legend(P(1), combinedstrings);
-Legend_pos = get(Legend_1_position,'position');
-set(Legend_1_position, 'position',[0.05 0.25 0.15 0.5]);
-
-saveas(f1, [figdir 'Comparison/Protein_analysis.png']);
-
-tt = toc;
-tt = round(tt/10)*10;
-fprintf('  ...  %.2f seconds\n',tt)

@@ -54,7 +54,6 @@ fprintf('\n    0. Initialize')
 % Load user settings
 maindir = user.maindir;
 Experimental_channels = user.silacratios;
-user.treatmentcondition;
 desiredPrecision = user.desiredPrecision;
 number_of_channels = length(user.silacratios);
 InputFile{1} = user.majorproteingroupsfile;
