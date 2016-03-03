@@ -27,6 +27,7 @@ diary([user.maindir 'logfile.txt'])
 disp('Gauss_Build.m')
 
 
+
 %% 0. Initialize
 tic
 fprintf('\n    0. Initialize')
@@ -135,7 +136,7 @@ end
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
-
+myMemCount
 
 %% 3. Fit 1-5 Gaussians on each cleaned chromatogram
 t1=tic;
@@ -162,30 +163,25 @@ for ci = 1:Nchannels % loop over channels
     end
     Try_Fit(ci,ri)=1;
     
-    % choose 5 models and fit the best one
+    % fit 5 models and chose the best one
     %model = choosemodel_holdout(clean_chromatogram,MaxIter);
-    model = choosemodel_AIC(clean_chromatogram,Xclean,'AICc');
-    fprintf(['\n    fit protein number ' num2str(ri) ' (' txt_val{1}{ri+1} ') with ' num2str(model.Ngauss) ' Gaussians'])
-    tt = toc(t2);
-    fprintf('  ...  %.2f seconds\n',tt)
-    %[Coef{ci,ri},SSE(ci,ri),adjrsquare(ci,ri),fit_flag(ci,ri)] = fitgaussmodel(clean_chromatogram,model);
-    Coef{ci,ri} = model.coeffs;
-    SSE(ci,ri) = model.SSE;
-    adjrsquare(ci,ri) = model.adjrsquare;
-    
-%     figure,hold on
-%     x = -4:60;
-%     plot(x,clean_chromatogram)
-%     yhat = feval(model.curveFit,x);
-%     plot(x,yhat,'r')
-%     model.BIC
-%     pause
-%     close all
+    try
+      model = choosemodel_AIC(clean_chromatogram,Xclean,'AICc');
+      fprintf(['\n    fit protein number ' num2str(ri) ' (' txt_val{1}{ri+1} ') with ' num2str(model.Ngauss) ' Gaussians'])
+      tt = toc(t2);
+      fprintf('  ...  %.2f seconds\n',tt)
+      %[Coef{ci,ri},SSE(ci,ri),adjrsquare(ci,ri),fit_flag(ci,ri)] = fitgaussmodel(clean_chromatogram,model);
+      Coef{ci,ri} = model.coeffs;
+      SSE(ci,ri) = model.SSE;
+      adjrsquare(ci,ri) = model.adjrsquare;
+    catch
+      Try_Fit(ci,ri)=0;
+    end
     
   end
 end
 
-% Make protgausI{ci}, where each row is for a Gaussian: [protein number, gaussian number, replicate number]
+% Make protgausI{ci}, where each row is a Gaussian: [protein number, gaussian number, replicate number]
 % It's just an indexing variable, that matches up gaussians to protein number.
 protgausI = cell(Nchannels,1); 
 Ngauss = zeros(Nchannels,1);
