@@ -1,5 +1,6 @@
 
-colsr = {[1 0 0 ] [0 1 0] [0 0 1]};
+%colsr = {[1 0 0 ] [0 1 0] [0 0 1]};
+colsr = rand(Nreplicates,3);
 
 
 %% Bar alignment figures
@@ -18,7 +19,7 @@ end
 
 % make initial patches for legend
 for rr = 1:Nreplicates
-  patch([-1 -1 -2 -2]*.01 - 100,[-2 -1 -1 -2]*.01 -100,colsr{rr})
+  patch([-1 -1 -2 -2]*.01 - 100,[-2 -1 -1 -2]*.01 -100,colsr(rr,:))
 end
 
 for rr = 1:Nreplicates
@@ -26,7 +27,7 @@ for rr = 1:Nreplicates
     if mod(pp,5) == 0;
       cc = [.5 .5 .5];
     else
-      cc = colsr{rr};
+      cc = colsr(rr,:);
     end
     patch([x_rep(rr,pp) x_rep(rr,pp) x_rep(rr,pp+1) x_rep(rr,pp+1)],[rr rr+1 rr+1 rr],cc)
   end
@@ -34,12 +35,16 @@ for rr = 1:Nreplicates
 end
 
 %Figure details
-axis([-3 60 0.5 4.5]);
+axis([-3 60 0.5 Nreplicates+1.5]);
 title_name_plot=strcat('Alignment of Replicate data');
 title(title_name_plot,'FontSize', 14);
 ylabel('Replicates','FontSize', 12);
 xlabel('Fractions','FontSize', 12);
-legend('Replicate 1','Replicate 2','Replicate 3', 'Orientation', 'horizontal','Location', 'SouthOutside')
+sleg = cell(Nreplicates,1);
+for jj = 1:Nreplicates
+  sleg{jj} = ['Replicate ' num2str(jj)];
+end
+legend(sleg, 'Orientation', 'horizontal','Location', 'SouthOutside')
 
 set(gca,'YTickLabel',[]);
 set(gca,'XAxisLocation','top');
