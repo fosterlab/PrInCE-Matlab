@@ -270,7 +270,7 @@ Unique_replicate = unique(replicate);
 
 for ci = 1:Nchannels
   Experimental_channel = user.silacratios{ci};
-  for divider_counter1=1:Unique_replicate
+  for divider_counter1 = 1:length(Unique_replicate)
     %Create name of gaussian file to output divided gaus data to
     Process_Summary_gausian_info_Name= [datadir Experimental_channel,'_Summary_Gausians_for_individual_proteins_rep',mat2str(divider_counter1),'.csv'];
     
@@ -280,10 +280,10 @@ for ci = 1:Nchannels
       'Number_of_Gausians_within_defined_boundaries',...
       'Number_of_Gausians_filtered'); %Write Header
     
-    for kk = 1:Ngauss(ci)
+    for kk = 1:size(protgausI{ci},1)
       ri = protgausI{ci}(kk,1);
       if replicate(ri) == divider_counter1
-        fprintf(fid4, '%s,%s,%s,%s,%s\n', num2str(ri),...
+        fprintf(fid_processing, '%s,%s,%s,%s,%s\n', num2str(ri),...
           txt_val{ci}{ri+1},...  % Protein_names
           num2str(No_Gaus(ri)),...
           num2str(Gaussians_used_in_analysis_counter(ci,ri)),...
@@ -303,7 +303,7 @@ end
 for ci = 1:Nchannels
   
   %Divid up Summary_Gausians_for_individual_proteins_rep
-  for divider_counter1=1:Unique_replicate
+  for divider_counter1 = 1:length(Unique_replicate)
     
     %Create name of gaussian file to output divided gaus data for MvsL
     Process_Replicate_raw_data1= [datadir user.silacratios{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv'];
