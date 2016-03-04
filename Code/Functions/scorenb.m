@@ -28,7 +28,6 @@ Nmodel = 15;
 score = nan(size(X,1),Nmodel);
 feats = nan(Nmodel,size(X,2));
 for iter = 1:Nmodel
-  
   % Make training and testing data
   % balance training data
   I1 = find(y==1 & I);
@@ -43,6 +42,9 @@ for iter = 1:Nmodel
   
   % Feature selection
   feats(iter,:) = IndFeat(Xtr,ytr);
+  if sum(feats(iter,:)<=2)==size(feats,2)
+    feats(iter,:) = 3;
+  end
   f2consider = find(feats(iter,:) > 2);
   
   % Fit Naive Bayes model
