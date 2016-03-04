@@ -168,6 +168,7 @@ if ~skipflag
       nletters = sum(cell2mat(cellfun(@(x) sum(x),a,'uniformoutput',0)));
       [~,I] = max(nLETTERS + nletters);
       Gaus_import{ci,replicates}.textdata = Gaus_import{ci,replicates}.textdata(:,I);
+      
     end
   end  
   
@@ -221,14 +222,16 @@ if ~skipflag
     % i) Find names of proteins with a single Gaussian in each replicate
     %summerised_protein_number_G1 = cell(Nreplicates,1);
     for rr= 1:Nreplicates
-      Ngauss = size(Summary_gausian_infomration{ci,rr},1);
+      %Ngauss = size(Summary_gausian_infomration{ci,rr},1);
       
-      Inotsingle = find(Summary_gausian_infomration{ci,rr}.data(:,2) ~= 1) + 1;
+      %Inotsingle = find(Summary_gausian_infomration{ci,rr}.data(:,2) ~= 1) + 1;
+      Isingle = find(Summary_gausian_infomration{ci,rr}.data(:,1) == 1) + 1;
       %summerised_protein_number_G1{rr} = Summary_gausian_infomration{ci,rr}.textdata(Isingle+1,1);
       %summerised_protein_number_G1{rr} = cellfun(@str2num,summerised_protein_number_G1{rr});
       %summerised_names_G1{ei,rr} = Summary_gausian_infomration{ci,rr}.textdata(Isingle+1,2);
       summerised_names_G1{ci,rr} = Summary_gausian_infomration{ci,rr}.textdata(:,2);
-      summerised_names_G1{ci,rr}(Inotsingle) = {'-1'};
+      %summerised_names_G1{ci,rr}(Inotsingle) = {'-1'};
+      summerised_names_G1{ci,rr} = summerised_names_G1{ci,rr}(Isingle);
     end
     
     % ii) Find the overlap in single Gaussians b/w replicates
@@ -266,7 +269,7 @@ if ~skipflag
       
       % i) Find the overlapping proteins
       overlap = intersect(summerised_names_G1{ci,align_rep},summerised_names_G1{ci,rep_to_align});
-      overlap([1 2]) = [];
+      %overlap([1 2]) = [];
       
       % ii) Find their centers
       Ia = find(ismember(Gaus_import{ci,align_rep}.textdata(:,1),overlap));
