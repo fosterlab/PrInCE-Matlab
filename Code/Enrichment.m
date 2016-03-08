@@ -5,6 +5,8 @@
 tic
 fprintf('\n    0. Initialize')
 
+minrep = user.minrep; % minimum number of replicates an interaction has to be in
+
 % Define folders, i.e. define where everything lives.
 datadir = [user.maindir 'Data/']; % where data files live
 figdir = [user.maindir 'Figures/Enrichment/']; % where figures live
@@ -69,7 +71,7 @@ for ii = 1:countPrec
   tmp = interactionPairs{ii}(:,1:2);
   uniqueProteins = unique([uniqueProteins; tmp(:)]);
 end
-N = length(uniqueProteins);
+Nprot = length(uniqueProteins);
 
 % Load CORUM interactions
 corumPairs_tmp = importdata(user.corumfile);
@@ -103,7 +105,6 @@ for kk = 1:countPrec
 end
 corumPairs2 = nan(size(corumPairs));
 for ii = 1:length(uniqueProteins)
-  ii
   % corumPairs
   [Ic1,Ic2] = find(ismember(corumPairs,uniqueProteins{ii}));
   for jj = 1:length(Ic1)
@@ -136,172 +137,242 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 
+
+
 % %% 2. Build complexes
+% 
+% %
+% 
+% %
+% % Inputs: N1x2 interaction list, N2x2 CORUM list, list of N unique protein names, Nx1 binary
+% % Outputs: Complex(i).Members, Complex(i).Connections
 % tic
 % fprintf('    2. Build complexes')
 % 
-% % Pre-allocate
-% ComplexList.Members = cell(10000,1);
-% ComplexList.Members{1} = 'FakeString-1';
-% ComplexList.Connections = cell(10000,1);
 % 
+% clear ComplexList
+% for ii = 1:countPrec
+%   % Make NxN interaction matrix
+%   intMatrix = zeros(Nprot,Nprot);
+%   % add nrep
+%   for jj = 1:size(interactionPairs2{ii},1)
+%     x = interactionPairs2{ii}(jj,1:2);
+%     nrep = interactionPairs2{ii}(jj,3);
+%     intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + nrep;
+%     intMatrix(x(2),x(1)) = intMatrix(x(2),x(1)) + nrep;
+%   end
+%   
+%   % add 100*inCorum
+%   I = find(~isnan(corumPairs2(:,1)) & ~isnan(corumPairs2(:,2)));
+%   for jj = 1:length(I)
+%     x = corumPairs2(I(jj),1:2);
+%     intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + 100;
+%     intMatrix(x(2),x(1)) = intMatrix(x(2),x(1)) + 100;
+%   end
+%   
+%   % Reduce intMatrix to just upper-triangular
+%   intMatrix = triu(intMatrix);
+%   
+%   % Binary vector
+%   % Used to keep track of which proteins have already been assigned to a complex
+%   bv = zeros(Nprot,1);
 % 
-% % Algorithm 1: Slow, for-loop
-% for ii = 1:1%count
-%   cmplxcount = 0;
-%   for jj = 1:length(proteinPairs{ii})
-%     protA = proteinPairs{ii}{jj,1};
-%     protB = proteinPairs{ii}{jj,2};
-%     
-%     % Search for protA and protB in the complex members
-%     I = ~cellfun('isempty',ComplexList.Members);
-%     Ia = find(~cellfun('isempty',strfind(ComplexList.Members(I),protA)));
-%     Ib = find(~cellfun('isempty',strfind(ComplexList.Members(I),protB)));
-%     
-%     
-%     % 1.
-%     % If Ia and Ib are not in complexes, make the complex protA-protB
-%     if isempty(Ia) && isempty(Ia)
-%       cmplxcount = cmplxcount+1;
-%       ComplexList.Members{cmplxcount} = strjoin({protA,protB}, ', ');
-%       ComplexList.Connections{cmplxcount} = [0 1; 1 0];
+%   % Start finding complexes
+%   countcmplx = 0;
+%   for jj = 1:Nprot
+%     % check if this protein is already in a complex
+%     if bv(jj)==1
+%       continue;
 %     end
 %     
-%     % 2.
-%     % If only one is in complexes, add the other protein to that complex
-%     if length(Ia)==1 && isempty(Ib)
-%       ComplexList.Members{Ia} = strjoin({ComplexList.Members{Ia},protB}, ', ');
+%     I = find(intMatrix(jj,:)>=minrep | intMatrix(:,jj)'>=minrep);
+%     if ~isempty(I)
+%       % initialize this complex
+%       countcmplx = countcmplx+1;
+%       bv(jj) = 1;
+%       membs = [jj I];
 %       
-%       % what index is protA in the complex?
-%       % count the number of commas before it, add one
-%       I = strfind(ComplexList.Members{Ia}, protA);
-%       Icomma = strmatch(',', ComplexList.Members{Ia});
-%       idx = sum(Icomma < I) +1
+%       % BOOM! Another option is to IGNORE open_branches. Just keep exploring ALL branches, adding
+%       % interactions to the list, and pruning with unique. When the list stops growing, you've
+%       % stopped finding new interactions, and the complex is complete. Ignore the binary vector!
 %       
-%       n = size(ComplexList.Connections{Ia},1);
-%       tmp = zeros(n+1);
-%       tmp(1:n,1:n) = ComplexList.Connections{Ia};
-%       tmp(idx,n+1) = 1;
-%       tmp(n+1,idx) = 1;
-%       ComplexList.Connections{Ia} = tmp;
+%       % start exploring connections
+%       open_branches = membs(bv(membs)==0);
+%       %delta_membs = 1;
+%       while ~isempty(open_branches)
+%       %while delta_membs>0
+%         %nmembs = length(membs);
+%         for kk = 1:length(open_branches)
+%           I2 = find(intMatrix(open_branches(kk),:)>=minrep | intMatrix(:,open_branches(kk))'>=minrep);
+%           membs = [membs I2];
+%         end
+%         membs = unique(membs);
+%         open_branches = membs(bv(membs)==0);
+%         bv(open_branches) = 1;
+%         %delta_membs = length(membs) - nmembs;
+%         %[length(open_branches) delta_membs]
+%         length(open_branches)
+%       end
+%       
+%       ComplexList(ii).Members{countcmplx} = membs;
+%       ComplexList(ii).Connections{countcmplx} = intMatrix(membs,membs);
 %     end
-%     
-%     % 3.
-%     % If both are in one or more complexes, merge the complexes
-%     if length(Ia)>1 || length(Ib)>1
-%       
-%     end
-%     
-%     % 4.
-%     % If both are in the same complex, do nothing
-% 
-%     
+%   end
+%   
+%   % Check that all proteins are in a complex
+%   intcount = 0;
+%   for jj = 1:countcmplx
+%     intcount = intcount+sum(ComplexList(ii).Connections{jj}(:)>=minrep);
+%   end
+%   if intcount~=sum(intMatrix(:)>=minrep)
+%     s1 = ['Number of proteins interacting: ' num2str(sum(intMatrix(:)>1))];
+%     s2 = ['Number of proteins in a complex: ' num2str(intcount)];
+%     disp(s1)
+%     disp(s2)
 %   end
 % end
-% ComplexList.Members = ComplexList.Members(1:cmplxcount);
-% ComplexList.Connections = ComplexList.Connections(1:cmplxcount);
-% 
 % 
 % tt = toc;
-% fprintf('  ...  %.2f seconds\n',tt
+% fprintf('  ...  %.2f seconds\n',tt)
+% 
+% 
+% 
+% %% 3. Build complexes
+% % MCL
+% % Input: normalized interaction matrix, mcl parameters
+% 
+% clear ComplexList
+% for ii = 1:countPrec
+%   % Make NxN interaction matrix
+%   intMatrix = zeros(Nprot,Nprot);
+%   % add nrep
+%   for jj = 1:size(interactionPairs2{ii},1)
+%     x = interactionPairs2{ii}(jj,1:2);
+%     nrep = interactionPairs2{ii}(jj,3);
+%     intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + nrep;
+%     intMatrix(x(2),x(1)) = intMatrix(x(2),x(1)) + nrep;
+%   end
+%   
+%   % add 100*inCorum
+%   I = find(~isnan(corumPairs2(:,1)) & ~isnan(corumPairs2(:,2)));
+%   for jj = 1:length(I)
+%     x = corumPairs2(I(jj),1:2);
+%     intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + 100;
+%     intMatrix(x(2),x(1)) = intMatrix(x(2),x(1)) + 100;
+%   end
+%   
+%   % Reduce intMatrix to binary 
+%   intMatrix = single(intMatrix>=minrep);
+%   
+%   % Normalize intMatrix
+%   %nint = sum(intMatrix)+1;
+%   %intMatrix2 = intMatrix ./ repmat(nint,Nprot,1);
+%   total_unique_proteins_interacting_with = sum(intMatrix,2);
+%   intMatrix2 = zeros(Nprot,Nprot);
+%   for jj = 1:Nprot
+%     if total_unique_proteins_interacting_with(jj)>0
+%       intMatrix2(:,jj)=intMatrix(jj,:)./total_unique_proteins_interacting_with(jj);
+%     end
+%   end
+%   
+%   % MCL varibales
+%   energy = 1;
+%   delta_energy = 1;
+%   emax = 0.001;
+%   p = 2;
+%   minval = 0.000001;
+%   
+%   %Repeat till the variation is less then 10% OR 10 interations have been
+%   %evaluated, Note the limit on interations is due convergence always being
+%   %outcome from MCL
+%   iteration = 0;
+%   %while (energy > emax*1.10 || energy < emax*0.90) || iteration== 10
+%   while delta_energy>0.1 && iteration<10
+%     iteration=iteration+1;
+%     
+%     %Set emax
+%     emax = energy;
+%     
+%     m2 = intMatrix2 .^ p;       % inflation
+%     I = m2 < minval;            % pruning
+%     m2(I) = 0;
+%     dinv = diag(1./sum(m2));    % normalisation
+%     m2 = m2 * dinv;
+%     m2(isnan(m2))=0;            % Remove NaN with zeros
+%     
+%     % calculate residual energy
+%     maxs = max(m2);
+%     sqsums = sum(m2 .^ 2);
+%     energy = max(maxs - sqsums);
+%     delta_energy = abs((energy - emax) ./ emax);
+%     
+%     %write out values
+%     s = ['iter=' num2str(iteration) ', prev_energy=' num2str(emax) ', energy=' num2str(energy) ', Delta_energy=' num2str(delta_energy)];
+%     disp(s)
+%         
+%     %set m2 to mTemp
+%     intMatrix2 = m2;
+%   end
+%   
+%   n1 = sum(intMatrix(:)>0);
+%   n2 = sum(intMatrix2(:)>0);
+%   nremoved = n1 - n2;
+%   fprintf('\nStarted with %d interactions, ended with %d, i.e. removed %d\n\n', n1, n2, nremoved)
+%   
+% end
 
 
 
 %% 2. Build complexes
-% Algorithm: 
-% for each row of the interaction matrix
-%   find interactions that are not in a complex yet
-%   for each of these interactions
-%     note that that interactions is in a complex
-%     again, find indices in that row/colum in IM that are i) non-zero and ii) binary vector = 0
-%     keep doing this until no new indices are found
-%     assign all indices to a complex
-%     make ComplexList.Members = indices, ComplexList.Connections = intMatrix(indices)
+%       i) Make "coded" interaction matrix.
+%      ii) Prune interactions with MCL.
+%     iii) Build complexes with my algorithm.
 %
-% Basically, start at first protein and explore all interactions. When no new interactions are
-% found, call that a complex. Move on to the next protein not in a complex.
-%
-% One trick used here: interaction matrix values are number of replicates + 100*inCorum. This will
+% One trick used here: interaction matrix values equal number of replicates + 100*inCorum. This will
 % give a values like 102 (in 2 replicates and Corum) and 3 (in 3 replicates, not corum).
 % This is designed to use a single interaction matrix, since this can be very large for >3000
 % proteins.
-%
-% Inputs: N1x2 interaction list, N2x2 CORUM list, list of N unique protein names, Nx1 binary
-% Outputs: Complex(i).Members, Complex(i).Connections
+% 
+% Note that interactions with a value less than minrep are ignored.
 tic
 fprintf('    2. Build complexes')
 
+% Pre-allocate
+Ninit = nan(countPrec,1);
+Nfinal = nan(countPrec,1);
 
 clear ComplexList
 for ii = 1:countPrec
-  % Make NxN interaction matrix
-  intMatrix = zeros(N,N);
-  % add nrep
+  % i) Make "coded" interaction matrix
+  intMatrix = zeros(Nprot,Nprot);
   for jj = 1:size(interactionPairs2{ii},1)
     x = interactionPairs2{ii}(jj,1:2);
     nrep = interactionPairs2{ii}(jj,3);
-    intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + nrep;
+    intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + nrep;  % add nrep
     intMatrix(x(2),x(1)) = intMatrix(x(2),x(1)) + nrep;
-  end
-  
-  % add 100*inCorum
+  end  
   I = find(~isnan(corumPairs2(:,1)) & ~isnan(corumPairs2(:,2)));
   for jj = 1:length(I)
     x = corumPairs2(I(jj),1:2);
-    intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + 100;
+    intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + 100;  % add 100*inCorum
     intMatrix(x(2),x(1)) = intMatrix(x(2),x(1)) + 100;
   end
   
-  % Reduce intMatrix to just upper-triangular
-  intMatrix = triu(intMatrix);
   
-  % Binary vector
-  % Used to keep track of which proteins have already been assigned to a complex
-  bv = zeros(N,1);
-
-  % Start finding complexes
-  countcmplx = 0;
-  for jj = 1:N
-    % check if this protein is already in a complex
-    if bv(jj)~=0
-      continue;
-    end
-    
-    I = find(intMatrix(jj,:)>1 | intMatrix(:,jj)'>1);
-    if ~isempty(I)
-      % initialize this complex
-      countcmplx = countcmplx+1;
-      bv(jj) = 1;
-      membs = [jj I];
-      
-      % BOOM! Another option is to IGNORE open_branches. Just keep exploring ALL branches, adding
-      % interactions to the list, and pruning with unique. When the list stops growing, you've
-      % stopped finding new interactions, and the complex is complete. Ignore the binary vector!
-      
-      % start exploring connections
-      open_branches = membs(bv(membs)==0);
-      while ~isempty(open_branches)
-        for kk = 1:length(open_branches)
-          I2 = find(intMatrix(open_branches(kk),:)>1 | intMatrix(:,open_branches(kk))'>1);
-          membs = [membs I2];
-        end
-        membs = unique(membs);
-        open_branches = membs(bv(membs)==0);
-        bv(open_branches) = 1;
-        length(open_branches)
-      end
-      
-      ComplexList(ii).Members{countcmplx} = membs;
-      ComplexList(ii).Connections{countcmplx} = intMatrix(membs,membs);
-    end
-  end
+  % ii) Prune interaciton matrix with MCL.
+  % MCL varibales
+  mclparams.minrep = minrep;
+  mclparams.p = 2;
+  mclparams.minval = 0.000001;
+  Ninit(ii) = sum(intMatrix(:)>=minrep);
+  intMatrix = mclpcp(intMatrix,mclparams);
+  Nfinal(ii) = sum(intMatrix(:)>=minrep);
   
-  % Check that all proteins are in a complex
-  membcount = 0;
-  for jj = 1:countcmplx
-    membcount = membcount+length(ComplexList(ii).Members{jj});
-  end
+  
+  % iii) Build complexes with my algorithm.
+  [ComplexList(ii).Members, ComplexList(ii).Connections] = buildcomplex(intMatrix);
 end
+
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
