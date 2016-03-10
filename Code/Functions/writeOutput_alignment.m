@@ -57,13 +57,16 @@ for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
   for rr = 1:Nreplicates
     
-    locations_of_protein_data=zeros(1,1);
+    Irawdata=zeros(1,1);
     %find location of protein to write out
-    for Roc_counter=1:size(Gaus_import{ci,rr}.textdata,1)-1
+    for Roc_counter = 1:size(Gaus_import{ci,rr}.textdata,1)-1
       %find location of protein to write out
-      location_Protein_in_Raw = ind2sub(length(Summary_gausian_infomration{ci,rr}.textdata(:,2)),...
-        strmatch(Gaus_import{ci,rr}.textdata(Roc_counter+1,1),Summary_gausian_infomration{ci,rr}.textdata(:,2),'exact'));
-      locations_of_protein_data(Roc_counter) = location_Protein_in_Raw(1);
+      %location_Protein_in_Raw = ind2sub(length(Summary_gausian_infomration{ci,rr}.textdata(:,2)),...
+      %  strmatch(Gaus_import{ci,rr}.textdata(Roc_counter+1,1),Summary_gausian_infomration{ci,rr}.textdata(:,2),'exact'));
+      %locations_of_protein_data(Roc_counter) = location_Protein_in_Raw(1);
+      protName = Gaus_import{ci,rr}.textdata{Roc_counter+1};
+      I = find(ismember(txt_val{ci},protName));
+      Irawdata(Roc_counter) = I(1);
     end
     
     fid9B_Name = [datadir1 'Adjusted_' Experimental_channel '_Raw_for_ROC_analysis_rep' mat2str(rr) '.csv'];
@@ -72,10 +75,10 @@ for ci = 1:length(Experimental_channels)
     fid9B = fopen(fid9B_Name,'at');
     fprintf (fid9B, [Column_header, '\n'],...
       'Protein name', 'Replicate', Column_name{:});  %Write Header
-    for Roc_counter2 = 1:length(locations_of_protein_data)
-      fprintf(fid9B, '%s,', txt_val{ci}{locations_of_protein_data(Roc_counter2),1});
+    for Roc_counter2 = 1:length(Irawdata)
+      fprintf(fid9B, '%s,', txt_val{ci}{Irawdata(Roc_counter2),1});
       fprintf(fid9B,'%6.4f,',rr);
-      fprintf(fid9B,'%6.4f,', adjusted_raw_data{ci}(locations_of_protein_data(Roc_counter2)-1,:));
+      fprintf(fid9B,'%6.4f,', adjusted_raw_data{ci}(Irawdata(Roc_counter2)-1,:));
       fprintf(fid9B,'\n');
     end
     fclose(fid9B);

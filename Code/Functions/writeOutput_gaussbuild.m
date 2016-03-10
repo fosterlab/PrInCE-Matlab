@@ -71,38 +71,38 @@ for ci = 1:Nchannels
           %write out Gaussians for further analysis
           Values_Considered_for_analysis = Values_Considered_for_analysis+1; %Records the number of gaussians which will outputed
           
-          %For Gausians
-          fileName1A = [datadir3 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_OutputGaus.csv'];
-          fid1A = fopen(fileName1A,'at'); % create the output file
-          fprintf (fid1A,'%6.4f,%6.4f,%s,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
-            ri, replicate(ri) , txt_val{ci}{ri+1}, Height, Center, Width, SSE(ci,ri), adjrsquare(ci,ri), round(Size_of_complex/10)*10);
-          fclose(fid1A);
-          
-          %For Chromatograms
-          fileName2A = [datadir1 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_Output_Chromatograms.csv'];
-          fid2A = fopen(fileName2A,'at');
-          fprintf(fid2A,'%6.4f,%6.4f,%s,',ri, replicate(ri), txt_val{ci}{ri+1});
-          fprintf(fid2A,'%6.4g,', cleandata{ci}(ri,:));
-          fprintf(fid2A,'\n');
-          fclose(fid2A);
+%           %For Gausians
+%           fileName1A = [datadir3 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_OutputGaus.csv'];
+%           fid1A = fopen(fileName1A,'at'); % create the output file
+%           fprintf (fid1A,'%6.4f,%6.4f,%s,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
+%             ri, replicate(ri) , txt_val{ci}{ri+1}, Height, Center, Width, SSE(ci,ri), adjrsquare(ci,ri), round(Size_of_complex/10)*10);
+%           fclose(fid1A);
+%           
+%           %For Chromatograms
+%           fileName2A = [datadir1 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_Output_Chromatograms.csv'];
+%           fid2A = fopen(fileName2A,'at');
+%           fprintf(fid2A,'%6.4f,%6.4f,%s,',ri, replicate(ri), txt_val{ci}{ri+1});
+%           fprintf(fid2A,'%6.4g,', cleandata{ci}(ri,:));
+%           fprintf(fid2A,'\n');
+%           fclose(fid2A);
         elseif Height<0.5 || Width<1 || Center<=1 || Center>=Nfractions || isnan(cleandata{ci}(ri,round(Center+5)))
           %write out Gaussians excluded from further analysis
           Values_Not_Considered_for_analysis=Values_Not_Considered_for_analysis+1; %Records the number of guassian which will outputed
           
-          %For Gausians
-          fileName1B = [datadir4 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_OutputGaus_filtered_out.csv'];
-          fid2A = fopen(fileName1B,'at'); % create the output file
-          fprintf (fid2A,'%6.4f,%6.4f,%s,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
-            ri, nan ,txt_val{ci}{ri+1}, Height, Center, Width, SSE, adjrsquare, (round(Size_of_complex/10)*10));
-          fclose(fid2A);
-          
-          %For Chromatograms
-          fileName2B = [datadir2 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_Output_Chromatograms_filtered_out.csv'];
-          fid2B = fopen(fileName2B,'at');
-          fprintf(fid2B,'%6.4f,%6.4f,%s,',ri, replicate(ri), txt_val{ci}{ri+1});
-          fprintf(fid2B,'%6.4g,', cleandata{ci}(ri,:));
-          fprintf(fid2B,'\n');
-          fclose(fid2B);
+%           %For Gausians
+%           fileName1B = [datadir4 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_OutputGaus_filtered_out.csv'];
+%           fid2A = fopen(fileName1B,'at'); % create the output file
+%           fprintf (fid2A,'%6.4f,%6.4f,%s,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
+%             ri, nan ,txt_val{ci}{ri+1}, Height, Center, Width, SSE, adjrsquare, (round(Size_of_complex/10)*10));
+%           fclose(fid2A);
+%           
+%           %For Chromatograms
+%           fileName2B = [datadir2 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_Output_Chromatograms_filtered_out.csv'];
+%           fid2B = fopen(fileName2B,'at');
+%           fprintf(fid2B,'%6.4f,%6.4f,%s,',ri, replicate(ri), txt_val{ci}{ri+1});
+%           fprintf(fid2B,'%6.4g,', cleandata{ci}(ri,:));
+%           fprintf(fid2B,'\n');
+%           fclose(fid2B);
         end
       end
       Gaussians_used_in_analysis_counter(ci,ri) = Values_Considered_for_analysis;
@@ -167,7 +167,7 @@ for ci = 1:Nchannels
     fprintf(fid4, '%s,%s,%s,%s,%s\n', num2str(ri),...
       txt_val{ci}{ri+1},...  % Protein_names
       num2str(No_Gaus(ri)),...
-      num2str(Gaussians_used_in_analysis_counter(ci,ri)),...
+      num2str(length(Coef{ci,ri})/3),...
       num2str(Gaussians_excluded_from_analysis_counter(ci,ri)));
   end
   fclose(fid4);
@@ -286,7 +286,7 @@ for ci = 1:Nchannels
         fprintf(fid_processing, '%s,%s,%s,%s,%s\n', num2str(ri),...
           txt_val{ci}{ri+1},...  % Protein_names
           num2str(No_Gaus(ri)),...
-          num2str(Gaussians_used_in_analysis_counter(ci,ri)),...
+          num2str(length(Coef{ci,ri})/3),...
           num2str(Gaussians_excluded_from_analysis_counter(ci,ri)));
       end
     end
