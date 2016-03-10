@@ -152,13 +152,14 @@ if ~skipflag
   %         columns: Height,Center,Width,SSE,adjrsquare,Complex Size
   %   Summary_gausian_infomration: nx6, where n is the unique protein number (1-3217)
   Gaus_import = cell(Nchannels, Nreplicates);
-  Summary_gausian_infomration = cell(Nchannels, Nreplicates);
+  %Summary_gausian_infomration = cell(Nchannels, Nreplicates);
   letters = 'abcdefghijklmnopqrstuvwxyz';
   LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  Nfit = cell(Nchannels,Nreplicates);
   for ci = 1:Nchannels
     for replicates= 1:Nreplicates
       Gaus_import{ci,replicates} = importdata(GaussInputFile{ci,replicates});
-      Summary_gausian_infomration{ci,replicates} = importdata(GassSumInputFile{ci,replicates});
+      %Summary_gausian_infomration{ci,replicates} = importdata(GassSumInputFile{ci,replicates});
       
       % Ensure Gaus_import.textdata is a single column of protein names
       % simple rule: protein names are the column with the most letters
@@ -168,6 +169,14 @@ if ~skipflag
       nletters = sum(cell2mat(cellfun(@(x) sum(x),a,'uniformoutput',0)));
       [~,I] = max(nLETTERS + nletters);
       Gaus_import{ci,replicates}.textdata = Gaus_import{ci,replicates}.textdata(:,I);
+      
+      % Count how many Gaussians were fit to each protein name
+      % Needed to identify which proteins have a single Gaussian fit
+      Nfit{ci,replicates} = size(Gaus_import{ci,replicates}.textdata,1);
+      for ii = 1:size(Gaus_import{ci,replicates}.textdata,1)
+        protName = Gaus_import{ci,replicates}.textdata{ii};
+        Nfit{ci,replicates}(ii) = sum(ismember(Gaus_import{ci,replicates}.textdata,protName));
+      end
       
     end
   end  
@@ -225,13 +234,20 @@ if ~skipflag
       %Ngauss = size(Summary_gausian_infomration{ci,rr},1);
       
       %Inotsingle = find(Summary_gausian_infomration{ci,rr}.data(:,2) ~= 1) + 1;
-      Isingle = find(Summary_gausian_infomration{ci,rr}.data(:,1) == 1) + 1;
+      Isingle = find(Nfit{ci,rr} == 1 & ~cellfun('isempty',Gaus_import{ci,rr}.textdata)');
       %summerised_protein_number_G1{rr} = Summary_gausian_infomration{ci,rr}.textdata(Isingle+1,1);
       %summerised_protein_number_G1{rr} = cellfun(@str2num,summerised_protein_number_G1{rr});
       %summerised_names_G1{ei,rr} = Summary_gausian_infomration{ci,rr}.textdata(Isingle+1,2);
-      summerised_names_G1{ci,rr} = Summary_gausian_infomration{ci,rr}.textdata(:,2);
+      %summerised_names_G1{ci,rr} = Summary_gausian_infomration{ci,rr}.textdata(:,2);
       %summerised_names_G1{ci,rr}(Inotsingle) = {'-1'};
-      summerised_names_G1{ci,rr} = summerised_names_G1{ci,rr}(Isingle);
+      %summerised_names_G1{ci,rr} = summerised_names_G1{ci,rr}(Isingle);
+      summerised_names_G1{ci,rr} = Gaus_import{ci,rr}.textdata(Isingle,1);
+      
+      % Using the same syntax as section 3, confirm that these occur exactly once in replicate.
+      overlap = find(ismember(Gaus_import{ci,rr}.textdata(:,1),summerised_names_G1{ci,rr}));
+      if length(overlap) ~= length(summerised_names_G1{ci,rr})
+        error('Alignment: Problem finding proteins with a single Gaussian fit')
+      end
     end
     
     % ii) Find the overlap in single Gaussians b/w replicates
@@ -245,6 +261,7 @@ if ~skipflag
     Nintersect = sum(Nintersect); % collapse to one dimension
     
     [~,replicate_to_align_against(ci)] = max(Nintersect); % ding ding ding!
+    
   end
   
   tt = toc;
