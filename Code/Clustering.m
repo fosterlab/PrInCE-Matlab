@@ -9,6 +9,8 @@ diary([user.maindir 'logfile.txt'])
 
 
 %% 0. Initialize
+tic
+fprintf('\n    0. Initialize')
 
 %Define Colours to use
 myC= [30/255 144/255 255/255
@@ -33,19 +35,29 @@ colour_to_use=[0.254 0.411 0.882 %Colour: Royal Blue
 %Define fraction number
 fraction_number=[2 user.Nfraction];
 
-fn = [user.maindir 'Data/ROC/CombinedResults/'];
-dd = dir([fn 'Final_Interactions_list_*_precision*']);
-Interaction_file_names = cell(length(dd),1);
-for di = 1:length(dd)
-  Interaction_file_names{di} = [fn dd(di).name];
+
+InteractionIn = cell(length(user.desiredPrecision),1);
+countPrec = 0;
+for ii = 1:length(user.desiredPrecision)
+  s1 = ['Final_Interactions_list_' num2str(user.desiredPrecision(ii)*100) '_precision.csv'];
+  s = [user.maindir 'Data/ROC/CombinedResults/' s1];
+  
+  if ~exist(s,'file')
+    fprintf('\n    Error: Enrichment: Following interaction file not found:')
+    fprintf('\n        %s\n',s1)
+  else
+    countPrec = countPrec+1;
+    InteractionIn{countPrec} = s;
+  end
 end
-% Interaction_file_names= {'Final_Interactions_list_70_precision.csv',....
-%   'Final_Interactions_list_60_precision.csv',....
-%   'Final_Interactions_list_50_precision.csv'};
+if countPrec == 0
+  fprintf('\n    Error: Enrichment: No interaction files found!')
+end
+InteractionIn = InteractionIn(1:countPrec);
 
 % Make directories
-datadir = [maindir 'Data/Clustering/']; % where data files live
-figdir1 = [maindir 'Figures/Clustering/']; % where figures live
+datadir = [user.maindir 'Data/Clustering/']; % where data files live
+figdir1 = [user.maindir 'Figures/Clustering/']; % where figures live
 %tmpdir = '/Users/Mercy/Academics/Foster/Jenny_PCPSILAC/PCPSILAC_Analysis/Data/Alignment/';
 % Make folders if necessary
 if ~exist(datadir, 'dir'); mkdir(datadir); end
@@ -54,12 +66,18 @@ if ~exist(datadir, 'dir'); mkdir(datadir); end
 Interaction_pc_values=user.desiredPrecision;
 
 
-%% Import master Gaussian list
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
+
+
+
+%% 1. Read input data
+tic
+fprintf('\n    1. Read input data')
+
 filename = [user.maindir 'Data/Comparison/Master_guassian_list.csv'];
 fileID = fopen(filename,'r');
 dataArray = textscan(fileID, '%s%s%f%s%f%f%f%f%f%f%f%f%[^\n\r]', 'Delimiter', ',', 'EmptyValue' ,NaN,'HeaderLines' ,1, 'ReturnOnError', false);
-
-%% Close the text file.
 fclose(fileID);
 
 Master_Gaussian.Proteinname = dataArray{:, 1};
@@ -77,145 +95,141 @@ Master_Gaussian.ComplexSizeofbestgaussian = dataArray{:, 12};
 
 number_unique_guassian=length(Master_Gaussian.Proteinname);
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% read in annotation data, note as this is so large need to use the headers
-% to find out what columns you would like to import
-
-%% Read in peptide results
-Annotation_file=[user.maindir 'Data/mainAnnot.homo_sapiens.txt'];
-inFile=fopen(Annotation_file);
-headerLine=fgetl(inFile);
-
-%Read in header
-tempCellArray=textscan(headerLine,'%s','DELIMITER','\t','BUFSIZE',100000);
-
-%look for Calibrated retention time column
-%Convert header to upper case, this is to ensure matching for caps
-fileCols=upper(tempCellArray{1,1});
-columnNames = upper({'UNIPROT','GOMF NAME','GOBP NAME','CORUM'});
-
-%look up if position of column file
-idx = ismember(fileCols,columnNames);
-
-%Determine which columns to read in, if no the correct column assign %*s
-format='';
-for ci=1:length(fileCols)
-  if idx(ci)==0
-    format=strcat(format,'%*s ');
-  elseif idx(ci)==1
-    format=strcat(format,'%s ');
+if 0
+  % Read in annotation file (peptide results?)
+  % NB this is large, use the headers to find out which columns to import
+  inFile=fopen(user.annotationfile);
+  headerLine=fgetl(inFile);
+  
+  %Read in header
+  tempCellArray=textscan(headerLine,'%s','DELIMITER','\t');
+  
+  %look for Calibrated retention time column
+  %Convert header to upper case, this is to ensure matching for caps
+  fileCols=upper(tempCellArray{1,1});
+  columnNames = upper({'UNIPROT','GOMF NAME','GOBP NAME','CORUM'});
+  
+  %look up if position of column file
+  idx = ismember(fileCols,columnNames);
+  
+  %Determine which columns to read in, if no the correct column assign %*s
+  format='';
+  for ci=1:length(fileCols)
+    if idx(ci)==0
+      format=strcat(format,'%*s ');
+    elseif idx(ci)==1
+      format=strcat(format,'%s ');
+    end;
   end;
-end;
-
-% read rest of matched_features file containing columns of interest
-Annotation_column_content=textscan(inFile,format,'DELIMITER','\t','BUFSIZE',1000000);
-
-%Unpack vaules
-Uniprot_annotations=Annotation_column_content{1,1};
-GOMF_annotations=Annotation_column_content{1,2};
-GOBP_annotations=Annotation_column_content{1,3};
-CORUM_annotations=Annotation_column_content{1,4};
-
-%Remove Annotation_column_content to clear up memory
-clearvars Annotation_column_content;
-
-Uniprot_annotations_unpacked=regexp(Uniprot_annotations(2:end), ';','split');
-for unpack_counter1=1:length(Uniprot_annotations_unpacked)
-  %Reset variable
-  Temp=cell(0,0);
-  %Write out to temp variable
-  Temp_var=Uniprot_annotations_unpacked{unpack_counter1};
-  %determine length
-  Lenght_temp=length(Temp_var);
-  for unpack_counter2=1:Lenght_temp
-    Uniprot_annotations_unpacked(unpack_counter1,unpack_counter2)=Temp_var(unpack_counter2);
+  
+  % read rest of matched_features file containing columns of interest
+  Annotation_column_content=textscan(inFile,format,'DELIMITER','\t');
+  
+  %Unpack vaules
+  Uniprot_annotations=Annotation_column_content{1,1};
+  GOMF_annotations=Annotation_column_content{1,2};
+  GOBP_annotations=Annotation_column_content{1,3};
+  CORUM_annotations=Annotation_column_content{1,4};
+  
+  %Remove Annotation_column_content to clear up memory
+  clearvars Annotation_column_content;
+  
+  Uniprot_annotations_unpacked=regexp(Uniprot_annotations(2:end), ';','split');
+  for unpack_counter1=1:length(Uniprot_annotations_unpacked)
+    %Reset variable
+    Temp=cell(0,0);
+    %Write out to temp variable
+    Temp_var=Uniprot_annotations_unpacked{unpack_counter1};
+    %determine length
+    Lenght_temp=length(Temp_var);
+    for unpack_counter2=1:Lenght_temp
+      Uniprot_annotations_unpacked(unpack_counter1,unpack_counter2)=Temp_var(unpack_counter2);
+    end
   end
+  
+  %Replace empty cell with NaN
+  Uniprot_annotations_unpacked(cellfun(@isempty, Uniprot_annotations_unpacked))={'NaN'};
+  
+  %Create varible
+  Master_Gaussian.Corum_terms=cell(number_unique_guassian,1);
+  Master_Gaussian.GOBP_terms=cell(number_unique_guassian,1);
+  Master_Gaussian.GOMF_terms=cell(number_unique_guassian,1);
+  
+  %Create smaller list based on all observed proteins
+  for protein_counter=1:number_unique_guassian
+    %look up times an interaction observed
+    [col row]=ind2sub(size(Uniprot_annotations_unpacked), strmatch(Master_Gaussian.Proteinname{protein_counter}, Uniprot_annotations_unpacked, 'exact'));
+    
+    %Copy 'GOMF NAME','GOBP NAME','CORUM'
+    
+    %Write out GOMF annotation
+    if ~isempty(GOMF_annotations(col))
+      Master_Gaussian.GOMF_terms(protein_counter)=GOMF_annotations(col);
+    else
+      Master_Gaussian.GOMF_terms(protein_counter)={''};
+    end
+    
+    %Write out GOBP annotation
+    if ~isempty(GOBP_annotations(col))
+      Master_Gaussian.GOBP_terms(protein_counter)=GOBP_annotations(col);
+    else
+      Master_Gaussian.GOBP_terms(protein_counter)={''};
+    end
+    
+    %Write out CORUM annotation
+    if ~isempty(CORUM_annotations(col))
+      Master_Gaussian.Corum_terms(protein_counter,1)=CORUM_annotations(col);
+    else
+      Master_Gaussian.Corum_terms(protein_counter,1)={''};
+    end
+    
+  end
+  
+  
+  %Unpack GO/CORUM terms
+  Master_Gaussian.Unpacked_GOMF_terms_unpacked=cell(0,0);
+  Master_Gaussian.Unpacked_GOBP_terms_unpacked=cell(0,0);
+  Master_Gaussian.Unpacked_CORUM_terms_unpacked=cell(0,0);
+  
+  for unique_complex_counter=1:number_unique_guassian
+    
+    %Unpack GOMF
+    Unpacked_terms1=regexp(Master_Gaussian.GOMF_terms(unique_complex_counter),';','split');
+    Unpacked_terms=Unpacked_terms1{:};
+    
+    for temp_count=1:length(Unpacked_terms)
+      Master_Gaussian.Unpacked_GOMF_terms_unpacked(unique_complex_counter,temp_count)=Unpacked_terms(temp_count);
+    end
+    
+    %Unpack GOBP
+    Unpacked_terms1=regexp(Master_Gaussian.GOBP_terms(unique_complex_counter),';','split');
+    Unpacked_terms=Unpacked_terms1{:};
+    
+    for temp_count=1:length(Unpacked_terms)
+      Master_Gaussian.Unpacked_GOBP_terms_unpacked(unique_complex_counter,temp_count)=Unpacked_terms(temp_count);
+    end
+    
+    %Unpack CORUM
+    Unpacked_terms1=regexp(Master_Gaussian.Corum_terms(unique_complex_counter),';','split');
+    Unpacked_terms=Unpacked_terms1{:};
+    
+    for temp_count=1:length(Unpacked_terms)
+      Master_Gaussian.Unpacked_CORUM_terms_unpacked(unique_complex_counter,temp_count)=Unpacked_terms(temp_count);
+    end
+  end
+  
+  %Replace empty cell with NaN
+  Master_Gaussian.Unpacked_GOMF_terms_unpacked(cellfun(@isempty,  Master_Gaussian.Unpacked_GOMF_terms_unpacked))={'NaN'};
+  Master_Gaussian.Unpacked_GOBP_terms_unpacked(cellfun(@isempty, Master_Gaussian.Unpacked_GOBP_terms_unpacked))={'NaN'};
+  Master_Gaussian.Unpacked_CORUM_terms_unpacked(cellfun(@isempty, Master_Gaussian.Unpacked_CORUM_terms_unpacked))={'NaN'};
+  
 end
 
-%Replace empty cell with NaN
-Uniprot_annotations_unpacked(cellfun(@isempty, Uniprot_annotations_unpacked))={'NaN'};
-
-%Create varible
-Master_Gaussian.Corum_terms=cell(number_unique_guassian,1);
-Master_Gaussian.GOBP_terms=cell(number_unique_guassian,1);
-Master_Gaussian.GOMF_terms=cell(number_unique_guassian,1);
-
-%Create smaller list based on all observed proteins
-for protein_counter=1:number_unique_guassian
-  %look up times an interaction observed
-  [col row]=ind2sub(size(Uniprot_annotations_unpacked), strmatch(Master_Gaussian.Proteinname{protein_counter}, Uniprot_annotations_unpacked, 'exact'));
-  
-  %Copy 'GOMF NAME','GOBP NAME','CORUM'
-  
-  %Write out GOMF annotation
-  if ~isempty(GOMF_annotations(col))
-    Master_Gaussian.GOMF_terms(protein_counter)=GOMF_annotations(col);
-  else
-    Master_Gaussian.GOMF_terms(protein_counter)={''};
-  end
-  
-  %Write out GOBP annotation
-  if ~isempty(GOBP_annotations(col))
-    Master_Gaussian.GOBP_terms(protein_counter)=GOBP_annotations(col);
-  else
-    Master_Gaussian.GOBP_terms(protein_counter)={''};
-  end
-  
-  %Write out CORUM annotation
-  if ~isempty(CORUM_annotations(col))
-    Master_Gaussian.Corum_terms(protein_counter,1)=CORUM_annotations(col);
-  else
-    Master_Gaussian.Corum_terms(protein_counter,1)={''};
-  end
-  
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%Unpack GO/CORUM terms
-Master_Gaussian.Unpacked_GOMF_terms_unpacked=cell(0,0);
-Master_Gaussian.Unpacked_GOBP_terms_unpacked=cell(0,0);
-Master_Gaussian.Unpacked_CORUM_terms_unpacked=cell(0,0);
-
-for unique_complex_counter=1:number_unique_guassian
-  
-  %Unpack GOMF
-  Unpacked_terms1=regexp(Master_Gaussian.GOMF_terms(unique_complex_counter),';','split');
-  Unpacked_terms=Unpacked_terms1{:};
-  
-  for temp_count=1:length(Unpacked_terms)
-    Master_Gaussian.Unpacked_GOMF_terms_unpacked(unique_complex_counter,temp_count)=Unpacked_terms(temp_count);
-  end
-  
-  %Unpack GOBP
-  Unpacked_terms1=regexp(Master_Gaussian.GOBP_terms(unique_complex_counter),';','split');
-  Unpacked_terms=Unpacked_terms1{:};
-  
-  for temp_count=1:length(Unpacked_terms)
-    Master_Gaussian.Unpacked_GOBP_terms_unpacked(unique_complex_counter,temp_count)=Unpacked_terms(temp_count);
-  end
-  
-  %Unpack CORUM
-  Unpacked_terms1=regexp(Master_Gaussian.Corum_terms(unique_complex_counter),';','split');
-  Unpacked_terms=Unpacked_terms1{:};
-  
-  for temp_count=1:length(Unpacked_terms)
-    Master_Gaussian.Unpacked_CORUM_terms_unpacked(unique_complex_counter,temp_count)=Unpacked_terms(temp_count);
-  end
-end
-
-%Replace empty cell with NaN
-Master_Gaussian.Unpacked_GOMF_terms_unpacked(cellfun(@isempty,  Master_Gaussian.Unpacked_GOMF_terms_unpacked))={'NaN'};
-Master_Gaussian.Unpacked_GOBP_terms_unpacked(cellfun(@isempty, Master_Gaussian.Unpacked_GOBP_terms_unpacked))={'NaN'};
-Master_Gaussian.Unpacked_CORUM_terms_unpacked(cellfun(@isempty, Master_Gaussian.Unpacked_CORUM_terms_unpacked))={'NaN'};
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-for Global_counter=1:length(Interaction_file_names)
+%%
+for Global_counter = 1:length(InteractionIn)
   
   %% Import interaction list
-  fileID_A = fopen(Interaction_file_names{Global_counter},'r');
+  fileID_A = fopen(InteractionIn{Global_counter},'r');
   Import_Interaction_70pc_1 = textscan(fileID_A, '%s%s%s%s%s%s%s%s%s%s%s%s%[^\n\r]', 'Delimiter', ',', 'HeaderLines' ,1, 'ReturnOnError', false);
   fclose(fileID_A);
   
@@ -262,8 +276,8 @@ for Global_counter=1:length(Interaction_file_names)
   
   Can_not_find_counter=1;
   
-  for unique_Gaus_counter=1:number_unique_guassian
-    
+  for unique_Gaus_counter = 1:number_unique_guassian
+    unique_Gaus_counter
     %Test is center of protein is between fraction 2 and 50
     
     if (Master_Gaussian.Centerofbestgaussian(unique_Gaus_counter)<50 && Master_Gaussian.Centerofbestgaussian(unique_Gaus_counter)>2)
@@ -323,30 +337,32 @@ for Global_counter=1:length(Interaction_file_names)
     end
   end
   
+  %%
+  
   %Normalize interaction matrix
   total_unique_proteins_interacting_with=sum(Interaction_matrix');
   
-  Normalized_Interaction_matrix=zeros(number_unique_guassian,number_unique_guassian);
+  mTemp=zeros(number_unique_guassian,number_unique_guassian);
   %divide
   for unique_Gaus_counter=1:number_unique_guassian
     if total_unique_proteins_interacting_with(unique_Gaus_counter)>0
-      Normalized_Interaction_matrix(:,unique_Gaus_counter)=Interaction_matrix(unique_Gaus_counter,:)./total_unique_proteins_interacting_with(unique_Gaus_counter);
+      mTemp(:,unique_Gaus_counter)=Interaction_matrix(unique_Gaus_counter,:)./total_unique_proteins_interacting_with(unique_Gaus_counter);
     end
   end
   
   %Save Normalized Matrix for MCL analysis
   Output_name=strcat(datadir,'Normalized_interaction_matrix_pc',num2str(Interaction_pc_values(Global_counter)),'.csv');
-  csvwrite(Output_name,Normalized_Interaction_matrix);
+  csvwrite(Output_name,mTemp);
   
   %attempt mcl
-  mTemp=Normalized_Interaction_matrix;
   
   %Set varibales
   energy = 1;
   emax = 0.001;
   
   p = 2;
-  minval = 0.000001;
+  %minval = 0.000001;
+  minval = 0.1;
   
   %set
   iteration=1;

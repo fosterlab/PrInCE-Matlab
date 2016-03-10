@@ -136,7 +136,7 @@ end
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
-myMemCount
+
 
 %% 3. Fit 1-5 Gaussians on each cleaned chromatogram
 t1=tic;

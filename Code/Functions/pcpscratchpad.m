@@ -452,7 +452,7 @@ for si = 1:length(scores)
       scoreRange(I) = ds;
       precRange(I) = prec;
       recRange(I) = rec;
-       fprRange(I) = fpr;
+      fprRange(I) = fpr;
       tprRange(I) = tpr;
       
       % Calculate how close to desiredPrecision(di) you got
@@ -516,4 +516,127 @@ title(['N = ' num2str(size(scoreMatrix,2)) ' models'])
 axis([0 1 0 1])
 grid on
 colordef white
+
+
+
+%% Compare importdata for different input files
+
+% Alignment
+% _Combined_OutputGaus_rep
+f1 = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis/Data/GaussBuild/MvsL_Combined_OutputGaus_rep1.csv';
+f2 = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/GaussBuild/MvsL_Combined_OutputGaus_rep1.csv';
+f3 = '/Users/Mercy/Academics/Foster/Jenny_PCPSILAC/PCPSILAC_Analysis/Data/GaussBuild/MvsL_Combined_OutputGaus_rep1.csv';
+% _Summary_Gausians_for_individual_proteins_rep
+f4 = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis/Data/GaussBuild/MvsL_Summary_Gausians_for_individual_proteins_rep1.csv';
+f5 = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/GaussBuild/MvsL_Summary_Gausians_for_individual_proteins_rep1.csv';
+f6 = '/Users/Mercy/Academics/Foster/Jenny_PCPSILAC/PCPSILAC_Analysis/Data/GaussBuild/MvsL_Summary_Gausians_for_individual_proteins_rep1.csv';
+
+d1 = importdata(f1);
+d2 = importdata(f2);
+d3 = importdata(f3);
+d4 = importdata(f4);
+d5 = importdata(f5);
+d6 = importdata(f6);
+
+
+
+%% Import and explore Craig's data
+
+fn = '/Users/Mercy/Downloads/proteinGroups.txt';
+
+% % importdata
+% data1 = importdata(fn);
+% 
+% 
+% % textscan
+% fid = fopen(fn);
+% C = textscan(fid, '%s','delimiter', '\n');
+% fclose(fid);
+% data2 = cell(size(C{1}));
+% for ii = 1:size(data1,1)
+%   data1{ii} = strsplit(C{1}{ii},'\t');
+% end
+% fclose(fid);
+% 
+% 
+% % readtable
+% T = readtable(fn);
+
+% fgetl
+fid = fopen(fn);
+data = cell(10000,200);
+cc = 0;
+  line = fgetl(fid);
+while line~=-1
+  cc = cc+1;
+  tabs = find(ismember(line,'	'));
+  data{cc,1} = line(1:tabs(1)-1);
+  for ii = 1:length(tabs)-1
+    data{cc,ii+1} = line(tabs(ii)+1: tabs(ii+1)-1);
+  end
+  data{cc,ii+1} = line(tabs(end):end);
+  line = fgetl(fid);
+end
+data = data(1:cc,:);
+fclose(fid);
+N = size(data,1)-1;
+
+% find columns with
+%   H/L
+%   M/L
+tmp = data(1,1:140);
+h1 = find(ismember(tmp,{'Ratio H/L'}));
+h2 = find(ismember(tmp,{'Ratio H/L 1'}));
+h3 = find(ismember(tmp,{'Ratio H/L 2'}));
+m1 = find(ismember(tmp,{'Ratio M/L'}));
+m2 = find(ismember(tmp,{'Ratio M/L 1'}));
+m3 = find(ismember(tmp,{'Ratio M/L 2'}));
+
+mvsl = zeros(size(data,1),3);
+hvsl = zeros(size(data,1),3);
+for ii = 2:N
+  mvsl(ii,1) = str2num(data{ii,m1});
+  mvsl(ii,2) = str2num(data{ii,m2});
+  mvsl(ii,3) = str2num(data{ii,m3});
+  hvsl(ii,1) = str2num(data{ii,h1});
+  hvsl(ii,2) = str2num(data{ii,h2});
+  hvsl(ii,3) = str2num(data{ii,h3});
+end
+
+
+pp1 = zeros(N-1,1);
+pp2 = zeros(N-1,1);
+rat = zeros(N-1,1);
+for ii = 1:N-1
+  pp1(ii) = ttest3(log10(mvsl(ii+1,:)),log10(hvsl(ii+1,:)));
+  pp2(ii) = ttest3(mvsl(ii+1,:),hvsl(ii+1,:));
+  rat(ii) = mean(mvsl(ii,:))/mean(hvsl(ii,:));
+end
+
+
+
+%% Solve Alignment bug
+% Summary_gausian_infomration is not doing it's job. It should be saying how many Gaussians were fit
+% for each protein name. That's it.
+
+% Alignment
+
+ci = 1;
+rep = 1;
+ng = Summary_gausian_infomration{ci,rep}.data(:,1); % # of gaussians fit
+listofnames = Gaus_import{ci,align_rep}.textdata(:,1);
+Isingle = find(ng==1);
+
+for ii = 1:length(Isingle)
+  i = Isingle(ii) + 1;
+  protName = Summary_gausian_infomration{ci,rep}.textdata{i,2};
+  
+  ng2(ii) = sum(ismember(listofnames,protName));
+end
+
+
+figure,hold on
+plot(ng2 - ng(Isingle)')
+
+
 
