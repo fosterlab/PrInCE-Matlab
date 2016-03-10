@@ -205,6 +205,7 @@ for ci = 1:Nchannels
   %   ylabel('alignment replicate')
   
   Image_name=[figdir1 'Scatter_allreps_' Experimental_channels{ci} '.png'];
+  set(gcf,'paperunits','inches','paperposition',[0.1 0.1 6 2+2*Nreplicates])
   saveas(gcf, Image_name, 'png');
 end
 
