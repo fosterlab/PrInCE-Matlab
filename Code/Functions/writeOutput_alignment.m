@@ -59,12 +59,12 @@ for ci = 1:length(Experimental_channels)
     
     Irawdata=zeros(1,1);
     %find location of protein to write out
-    for Roc_counter = 1:size(Gaus_import{ci,rr}.textdata,1)-1
+    for Roc_counter = 1:size(Gaus_import{ci,rr}.textdata,1)
       %find location of protein to write out
       %location_Protein_in_Raw = ind2sub(length(Summary_gausian_infomration{ci,rr}.textdata(:,2)),...
       %  strmatch(Gaus_import{ci,rr}.textdata(Roc_counter+1,1),Summary_gausian_infomration{ci,rr}.textdata(:,2),'exact'));
       %locations_of_protein_data(Roc_counter) = location_Protein_in_Raw(1);
-      protName = Gaus_import{ci,rr}.textdata{Roc_counter+1};
+      protName = Gaus_import{ci,rr}.textdata{Roc_counter};
       I = find(ismember(txt_val{ci},protName));
       Irawdata(Roc_counter) = I(1);
     end
@@ -107,7 +107,7 @@ for ci = 1:length(Experimental_channels)
     fprintf (fid7,'%s,%s,%s,%s,%s,%s,%s\n',...
       'Protein name', 'Height', 'Center','Width','SSE','adjrsquare', 'Complex Size');  %Write Header
     for ri = 1:size(Adjusted_Gaus_import{ci,rr}.data,1)
-      fprintf(fid7, '%s,', Adjusted_Gaus_import{ci,rr}.textdata{ri+1,1});
+      fprintf(fid7, '%s,', Adjusted_Gaus_import{ci,rr}.textdata{ri,1});
       fprintf(fid7,'%6.4f,', Adjusted_Gaus_import{ci,rr}.data(ri,:));
       fprintf(fid7,'\n');
     end
@@ -134,7 +134,7 @@ for ci = 1:length(Experimental_channels)
       %fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.data{combined_gaus_writeout+1,1}));
       %fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.data{combined_gaus_writeout+1,2}));
       %fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.data{combined_gaus_writeout+1,3}));
-      fprintf(fid10, '%s,', Adjusted_Gaus_import{ci,rr}.textdata{combined_gaus_writeout+1,1});
+      fprintf(fid10, '%s,', Adjusted_Gaus_import{ci,rr}.textdata{combined_gaus_writeout,1});
       fprintf(fid10,'%6.4f,', Adjusted_Gaus_import{ci,rr}.data(combined_gaus_writeout,:));
       fprintf(fid10,'\n');
     end

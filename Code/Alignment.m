@@ -169,6 +169,10 @@ if ~skipflag
       nletters = sum(cell2mat(cellfun(@(x) sum(x),a,'uniformoutput',0)));
       [~,I] = max(nLETTERS + nletters);
       Gaus_import{ci,replicates}.textdata = Gaus_import{ci,replicates}.textdata(:,I);
+      if size(Gaus_import{ci,replicates}.textdata,1) == size(Gaus_import{ci,replicates}.data,1)+1
+        Gaus_import{ci,replicates}.header = Gaus_import{ci,replicates}.textdata{1};
+        Gaus_import{ci,replicates}.textdata = Gaus_import{ci,replicates}.textdata(2:end);
+      end
       
       % Count how many Gaussians were fit to each protein name
       % Needed to identify which proteins have a single Gaussian fit
@@ -233,14 +237,7 @@ if ~skipflag
     for rr= 1:Nreplicates
       %Ngauss = size(Summary_gausian_infomration{ci,rr},1);
       
-      %Inotsingle = find(Summary_gausian_infomration{ci,rr}.data(:,2) ~= 1) + 1;
       Isingle = find(Nfit{ci,rr} == 1 & ~cellfun('isempty',Gaus_import{ci,rr}.textdata)');
-      %summerised_protein_number_G1{rr} = Summary_gausian_infomration{ci,rr}.textdata(Isingle+1,1);
-      %summerised_protein_number_G1{rr} = cellfun(@str2num,summerised_protein_number_G1{rr});
-      %summerised_names_G1{ei,rr} = Summary_gausian_infomration{ci,rr}.textdata(Isingle+1,2);
-      %summerised_names_G1{ci,rr} = Summary_gausian_infomration{ci,rr}.textdata(:,2);
-      %summerised_names_G1{ci,rr}(Inotsingle) = {'-1'};
-      %summerised_names_G1{ci,rr} = summerised_names_G1{ci,rr}(Isingle);
       summerised_names_G1{ci,rr} = Gaus_import{ci,rr}.textdata(Isingle,1);
       
       % Using the same syntax as section 3, confirm that these occur exactly once in replicate.
@@ -291,8 +288,8 @@ if ~skipflag
       % ii) Find their centers
       Ia = find(ismember(Gaus_import{ci,align_rep}.textdata(:,1),overlap));
       Ib = find(ismember(Gaus_import{ci,rep_to_align}.textdata(:,1),overlap));
-      Ca = Gaus_import{ci,align_rep}.data(Ia-1,2); % align to this replicate, x
-      Cb = Gaus_import{ci,rep_to_align}.data(Ib-1,2);% align this replicate, y
+      Ca = Gaus_import{ci,align_rep}.data(Ia,2); % align to this replicate, x
+      Cb = Gaus_import{ci,rep_to_align}.data(Ib,2);% align this replicate, y
       
       % iii) Fit a line
       I = abs(Ca - Cb)<User_alignment_window1;
@@ -384,16 +381,16 @@ if ~skipflag
         G1 = zeros(user.Nfraction+10,length(overlap));
         G2 = zeros(user.Nfraction+10,length(overlap));
         for ri = 1:length(overlap)
-          c1 = Gaus_import{ci,rr1}.data(Ia(ri)-1,1:3);
-          c2 = Gaus_import{ci,rr2}.data(Ib(ri)-1,1:3);
+          c1 = Gaus_import{ci,rr1}.data(Ia(ri),1:3);
+          c2 = Gaus_import{ci,rr2}.data(Ib(ri),1:3);
           G1(:,ri) = c1(1)*exp( -(x-(c1(2)+5)).^2 /c1(3).^2 /2);
           G2(:,ri) = c2(1)*exp( -(x-(c2(2)+5)).^2 /c2(3).^2 /2);
         end
         
         % ii3) Calculate statistics
-        Delta_center{ci,rr1,rr2} = abs(Gaus_import{ci,rr1}.data(Ia-1,2) - Gaus_import{ci,rr2}.data(Ib-1,2));
-        Delta_height{ci,rr1,rr2} = abs(Gaus_import{ci,rr1}.data(Ia-1,1) - Gaus_import{ci,rr2}.data(Ib-1,1));
-        Delta_width{ci,rr1,rr2} = abs(Gaus_import{ci,rr1}.data(Ia-1,3) - Gaus_import{ci,rr2}.data(Ib-1,3));
+        Delta_center{ci,rr1,rr2} = abs(Gaus_import{ci,rr1}.data(Ia,2) - Gaus_import{ci,rr2}.data(Ib,2));
+        Delta_height{ci,rr1,rr2} = abs(Gaus_import{ci,rr1}.data(Ia,1) - Gaus_import{ci,rr2}.data(Ib,1));
+        Delta_width{ci,rr1,rr2} = abs(Gaus_import{ci,rr1}.data(Ia,3) - Gaus_import{ci,rr2}.data(Ib,3));
         EuDis{ci,rr1,rr2} = sqrt(sum((G1 - G2) .^ 2));
         
       end
@@ -406,13 +403,6 @@ if ~skipflag
   
   
   %% 6. Write output
-  %    fid9_Name = strcat('Adjusted_',Experimental_channel,'_Raw_data_maxquant_rep',mat2str(alignment_counter),'.csv');
-  %    fid9B_Name = strcat('Adjusted_',Experimental_channel,'_Raw_for_ROC_analysis_rep',mat2str(alignment_counter),'.csv');
-  %    fid9B_Name = strcat('Adjusted_HvsM_Raw_data_maxquant_rep',mat2str(alignment_counter),'.csv');
-  %    fid6_Name = strcat('Adjusted_Chromatograms_vobose_rep',mat2str(alignment_counter),'_','.csv');
-  %    fid7_Name = strcat('Adjusted_Combined_OutputGaus_rep',mat2str(alignment_counter),'.csv');
-  %  fid10_Name = strcat('Adjusted_',Experimental_channel,'_Combined_OutputGaus.csv');
-  %  fid11_Name = strcat('Adjusted_',Experimental_channel,'_Raw_data_maxquant.csv');
   tic
   fprintf('    6. Write output')
   

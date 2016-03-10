@@ -171,8 +171,8 @@ for ci = 1:Nchannels
     overlap([1 2]) = [];
     Ia = find(ismember(Gaus_import{ci,ri}.textdata(:,1),overlap));
     Ib = find(ismember(Gaus_import{ci,RR}.textdata(:,1),overlap));
-    x = Gaus_import{ci,ri}.data(Ia-1,2);
-    y = Gaus_import{ci,RR}.data(Ib-1,2);
+    x = Gaus_import{ci,ri}.data(Ia,2);
+    y = Gaus_import{ci,RR}.data(Ib,2);
     scatter(x,y,20,abs(x-y),'filled')
     xlabel(['replicate ' num2str(ri)])
     ylabel('alignment replicate')
