@@ -29,12 +29,20 @@ score = nan(size(X,1),Nmodel);
 feats = nan(Nmodel,size(X,2));
 for iter = 1:Nmodel
   % Make training and testing data
+  
   % balance training data
-  I1 = find(y==1 & I);
-  I1 = I1(randsample(length(I1),round(trainingLength/2)));
-  I0 = find(y==-1);
-  I0 = I0(randsample(length(I0),round(trainingLength/2)));
-  Itrain = ismember(1:length(y),[I1;I0]);
+%   I1 = find(y==1 & I);
+%   I1 = I1(randsample(length(I1),round(trainingLength/2)));
+%   I0 = find(y==-1);
+%   I0 = I0(randsample(length(I0),round(trainingLength/2)));
+%   Itrain = ismember(1:length(y),[I1;I0]);
+  
+  % non-balanced training data
+  Iall = find(I);
+  Iall = Iall(randsample(length(Iall),trainingLength));
+  Itrain = ismember(1:length(y),Iall);
+  sum(y(Iall)==1)
+  
   Ipred = ~Itrain;
   Xtr = X(Itrain,:);
   ytr = y(Itrain);
@@ -52,10 +60,5 @@ for iter = 1:Nmodel
   [~,scoretmp] = predict(nab,Xnew(:,f2consider));
   
   score(Ipred,iter) = scoretmp(:,2);
-  
-  a = score(Ipred,iter);
-  if sum(isnan(a(:)))>0
-    9;
-  end
 end
 

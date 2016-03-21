@@ -24,18 +24,25 @@ for ii = 1:Nd
 end
 
 
-iterMax = 15;
+iterMax = 2;
 score = nan(size(X,1),iterMax);
 for iter = 1:iterMax
   iter
   % Make training and testing data
   nn = 1000; % length of training data
+  
   % balance training data
-  I1 = find(y==1 & I);
-  I1 = I1(randsample(length(I1),nn/2));
-  I0 = find(y==-1);
-  I0 = I0(randsample(length(I0),nn/2));
-  Itrain = ismember(1:length(y),[I1;I0]);
+%   I1 = find(y==1 & I);
+%   I1 = I1(randsample(length(I1),nn/2));
+%   I0 = find(y==-1);
+%   I0 = I0(randsample(length(I0),nn/2));
+%   Itrain = ismember(1:length(y),[I1;I0]);
+  
+  % non-balanced training data
+  Iall = find(I);
+  Iall = Iall(randsample(length(Iall),nn));
+  Itrain = ismember(1:length(y),Iall);
+  
   Ipred = ~Itrain;
   Xtr = X(Itrain,:);
   ytr = y(Itrain);
