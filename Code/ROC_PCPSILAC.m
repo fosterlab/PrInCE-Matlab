@@ -359,8 +359,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   
-  mySound
-  pause
+ 
   
   %% 3. Make Protein structure
   % This summarizes the proteins in our sample
@@ -556,10 +555,9 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   fprintf('  ...  %.2f seconds\n',tt)
   
   
-  
   %% 5. Calculate score, the likelihood that a protein pair is interacting
   tic
-  fprintf('        5. Score each interaciton via Naive Bayes classifier')
+  fprintf('        5. Score each interaction via Naive Bayes classifier')
   % score approx_eq the likelihood that a protein pair is interacting
   
   % Predict interactions through Euc
@@ -570,14 +568,15 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   %scoreMatrix = 1 - Dist.R2;
   
   % Predict interactions with a classifier
-  %scoreMatrix = scoresvm(Dist,possibleInts,TP_Matrix);
+  %scoreMatrix_svm = scoresvm(Dist,possibleInts,TP_Matrix);
+  %scoreMatrix_svm = nanmedian(scoreMatrix_svm,2);
   %scoreMatrix = nanmean(scoreMatrix,2);
   %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
   scoreMatrix = scorenb(Dist,possibleInts,TP_Matrix);
   scoreMatrix = nanmedian(scoreMatrix,2);
   %scoreMatrix = nanmean(scoreMatrix,2);
   %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
-  
+
   sf = [datadir2 'score_rep' num2str(replicate_counter) '.mat'];
   save(sf,'scoreMatrix','TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms')
   clear scoreMatrix TP_Matrix possibleInts Protein inverse_self Chromatograms
@@ -662,6 +661,7 @@ clear allScores2 allScores TP_Matrix I1 I2
 
 
 % 6b. Calculate the score threshold that gives the desired precision
+% Using a clever algorithm to speed up performance.
 % Algorithm: Calculate precision as a function of score very coarsely. Identify at what score
 % value precision crosses the desired level. Zoom in on that score value. Iterate.
 nn = 25;
@@ -897,7 +897,7 @@ for pri = 1:length(desiredPrecision)
     %find which replicate the interactions were seen in
     diffC = abs(cellfun(@minus,binary_interaction_list(location_interaction_pairs,10),...
       binary_interaction_list(location_interaction_pairs,11)));
-    position_within_two = find(diffC<100);
+    position_within_two = find(diffC<2);
     
     %Check if multiple centers are withing two fractions of each other
     if ~nnz(position_within_two)==0
@@ -1168,7 +1168,7 @@ for pri = 1:length(desiredPrecision)
   %Crete list of scores, note ensure strjoin function is avalible
   interaction_final.scores_formated=cell(Total_unique_interactions,1);
   for format_loop=1:Total_unique_interactions
-    tmp = interaction_final.score(format_loop,:);
+    tmp = -log(1-interaction_final.score(format_loop,:));
     tmp(isnan(tmp)) = [];
     length_Replicates=length(tmp);
     %Test if the array is longer then one entry
@@ -1183,11 +1183,11 @@ for pri = 1:length(desiredPrecision)
     end
   end
   
-  for ii = 1:Total_unique_interactions
-    tmp = interaction_final.score(ii,:);
-    tmp = tmp(~isnan(tmp));
-    interaction_final.scores_formated{ii} = strjoin(cellstr(num2str(tmp(:)))',' ; ');
-  end
+%   for ii = 1:Total_unique_interactions
+%     tmp = interaction_final.score(ii,:);
+%     tmp = tmp(~isnan(tmp));
+%     interaction_final.scores_formated{ii} = strjoin(cellstr(num2str(tmp(:)))',' ; ');
+%   end
   
   
   %create figure of precision replicates over replicates
