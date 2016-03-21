@@ -1,6 +1,6 @@
 
 %% Initialize.
-% Most of this is hacky. Fix.
+% These are hacky fixes.
 
 precision_write_out_counter = pri;
 Precision_values = desiredPrecision * 100;

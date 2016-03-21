@@ -59,18 +59,20 @@ for ci = 1:length(Experimental_channels)
     
     Irawdata=zeros(1,1);
     %find location of protein to write out
-    for Roc_counter = 1:size(Gaus_import{ci,rr}.textdata,1)
+    for ii = 1:size(Gaus_import{ci,rr}.textdata,1)
       %find location of protein to write out
       %location_Protein_in_Raw = ind2sub(length(Summary_gausian_infomration{ci,rr}.textdata(:,2)),...
       %  strmatch(Gaus_import{ci,rr}.textdata(Roc_counter+1,1),Summary_gausian_infomration{ci,rr}.textdata(:,2),'exact'));
       %locations_of_protein_data(Roc_counter) = location_Protein_in_Raw(1);
-      protName = Gaus_import{ci,rr}.textdata{Roc_counter};
-      I = find(ismember(txt_val{ci},protName));
-      Irawdata(Roc_counter) = I(1);
+      protName = Gaus_import{ci,rr}.textdata{ii};
+      I = find(ismember(txt_val{ci}(2:end),protName) & replicates==rr);
+      Irawdata(ii) = I(1);
     end
     
     fid9B_Name = [datadir1 'Adjusted_' Experimental_channel '_Raw_for_ROC_analysis_rep' mat2str(rr) '.csv'];
     Column_header=repmat('%s,', 1, ((lenght_new_fraction)+2));
+    
+    tmp1 = zeros(length(Irawdata),size(adjusted_raw_data{ci},2));
     
     fid9B = fopen(fid9B_Name,'at');
     fprintf (fid9B, [Column_header, '\n'],...
@@ -78,10 +80,14 @@ for ci = 1:length(Experimental_channels)
     for Roc_counter2 = 1:length(Irawdata)
       fprintf(fid9B, '%s,', txt_val{ci}{Irawdata(Roc_counter2),1});
       fprintf(fid9B,'%6.4f,',rr);
-      fprintf(fid9B,'%6.4f,', adjusted_raw_data{ci}(Irawdata(Roc_counter2)-1,:));
+      fprintf(fid9B,'%6.4f,', adjusted_raw_data{ci}(Irawdata(Roc_counter2),:));
       fprintf(fid9B,'\n');
+      
+      tmp1(Roc_counter2,:) = adjusted_raw_data{ci}(Irawdata(Roc_counter2),:);
     end
     fclose(fid9B);
+    
+    figure,imagesc(tmp1)
   end
 end
 

@@ -15,7 +15,8 @@ spl = 0;
 
 % Load in New interactions
 %fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Final_Interactions_list_70_precisionb.csv';
-fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Final_Interactions_list_47_precisionb.csv';
+%fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Final_Interactions_list_47_precisionb.csv';
+fn = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis/Data/ROC/CombinedResults/Final_Interactions_list_47_precision.csv';
 dataNew.data = zeros(20000,9);
 dataNew.text = cell(20000,3);
 j = 0;
@@ -39,7 +40,8 @@ end
 dataNew.data = dataNew.data(1:j,:);
 dataNew.text = dataNew.text(1:j,:);
 % Load in Old interactions
-fn = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Combined results/Final_Interactions_list_70_precision.csv';
+%fn = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Combined results/Final_Interactions_list_70_precision.csv';
+fn = '/Users/Mercy/Downloads/higer precision tissue data/Combined results/Final_Interactions_list_80_precision.csv';
 dataOld.data = zeros(20000,8);
 dataOld.text = cell(20000,3);
 j = 0;
@@ -63,7 +65,7 @@ dataOld.data = dataOld.data(1:j,:);
 dataOld.text = dataOld.text(1:j,:);
 
 
-%% How many interactions are duplicated?
+%% Remove duplicate interactions (just keep protein-protein pairs)
 
 dupOld = zeros(size(dataOld.text,1),1);
 for ii = 1:size(dataOld.text,1)

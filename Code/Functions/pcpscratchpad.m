@@ -546,8 +546,8 @@ fn = '/Users/Mercy/Downloads/proteinGroups.txt';
 
 % % importdata
 % data1 = importdata(fn);
-% 
-% 
+%
+%
 % % textscan
 % fid = fopen(fn);
 % C = textscan(fid, '%s','delimiter', '\n');
@@ -557,8 +557,8 @@ fn = '/Users/Mercy/Downloads/proteinGroups.txt';
 %   data1{ii} = strsplit(C{1}{ii},'\t');
 % end
 % fclose(fid);
-% 
-% 
+%
+%
 % % readtable
 % T = readtable(fn);
 
@@ -566,7 +566,7 @@ fn = '/Users/Mercy/Downloads/proteinGroups.txt';
 fid = fopen(fn);
 data = cell(10000,200);
 cc = 0;
-  line = fgetl(fid);
+line = fgetl(fid);
 while line~=-1
   cc = cc+1;
   tabs = find(ismember(line,'	'));
@@ -614,6 +614,15 @@ for ii = 1:N-1
 end
 
 
+% Volcano plot
+figure,hold on
+scatter(log2(rat),-log10(pp1))
+I = abs(log2(rat))>1 & pp1<.01;
+scatter(log2(rat(I)),-log10(pp1(I)),'r','filled')
+xlabel('Log2 fold change, M/H')
+ylabel('-log10 ttest pvalue')
+
+
 
 %% Solve Alignment bug
 % Summary_gausian_infomration is not doing it's job. It should be saying how many Gaussians were fit
@@ -638,5 +647,139 @@ end
 figure,hold on
 plot(ng2 - ng(Isingle)')
 
+
+
+%% Illustrate the problem with using Precision for unbalanced data
+
+x = linspace(0,3,101);
+sig = 0.2;
+mu1 = 1.5;
+mu2 = 1.7;
+Nrange = [10^3 10^4 10^6];
+tts = {'Balanced' 'Unbalanced' 'Really unbalanced!'};
+
+for jj = 1:3
+  % case 2: unbalanced data
+  N1 = Nrange(jj);
+  N2 = 1000;
+  data1 = normrnd(mu1,sig,[N1 1]);
+  data2 = normrnd(mu2,sig,[N2 1]);
+  h1 = hist(data1,x); % neg
+  h2 = hist(data2,x); % pos
+  figure
+  subplot(2,1,1),hold on
+  p0 = patch([0 x x(end)],[0 h1 0],'r');
+  p1 = patch([0 x x(end)],[0 h2 0],'g');
+  p0.FaceAlpha = 0.4;
+  p1.FaceAlpha = 0.4;
+  grid on
+  Prec = nan(size(x));
+  Rec = nan(size(x));
+  FPR = nan(size(x));
+  TPR = nan(size(x));
+  for ii = 2:length(x)
+    TP = sum(data2>x(ii));
+    FP = sum(data1>x(ii));
+    TN = sum(data1<x(ii));
+    FN = sum(data2<x(ii));
+    
+    FPR(ii) = FP/(FP+TN);
+    TPR(ii) = TP/(TP+FN);
+    
+    Prec(ii) = TP/(TP+FP);
+    Rec(ii) = TP/(TP+FN);
+  end
+  title(tts{jj})
+  if jj == 1;ax = axis;end
+  axis(ax)
+  ylabel('Counts')
+  subplot(2,2,3),hold on
+  plot(Rec,Prec)
+  axis([0 1 0 1])
+  xlabel('Recall')
+  ylabel('Precision')
+  title('P-R curve')
+  subplot(2,2,4),hold on
+  plot(FPR,TPR)
+  axis([0 1 0 1])
+  xlabel('FPR')
+  ylabel('TPR')
+  title('ROC curve')
+end
+
+
+%% Figure out why Nick achieved high precision with the tissue data, but I don't
+
+% This takes a while!!
+
+y1 = TP_Matrix==1 & possibleInts;
+y0 = TP_Matrix==0 & possibleInts;
+
+cols = {'b' 'c' 'm' 'k'};
+
+% 1. Is it due to the way I calculate score??
+% Do I get low precision with Dist.Euc? Dist.R2? scoreMatrix?
+figure,hold on%,subplot(1,2,1),hold on,subplot(1,2,2), hold on
+hold on
+for ii = 1:3
+  ii
+  if ii==1
+    tmp = Dist.Euc;
+    x = linspace(0, log10(max(tmp(:))),101).^10;
+  elseif ii ==2
+    tmp = Dist.R2;
+    x = linspace(0, max(tmp(:)),101);
+  elseif ii ==3
+    tmp = 1 - scoreMatrix_nb;
+    x = linspace(0, 1,201).^10;
+  elseif ii ==4
+    tmp = 1 - scoreMatrix_svm;
+    x = linspace(min(tmp), max(tmp),201);
+  end
+  FPR = nan(size(x));
+  TPR = nan(size(x));
+  Rec = nan(size(x));
+  Prec = nan(size(x));
+  for xi = 1:length(x)
+    xx = x(xi);
+    
+    TP = sum(y1(:) & tmp(:)<xx);
+    FP = sum(y0(:) & tmp(:)<xx);
+    TN = sum(y0(:) & tmp(:)>xx);
+    FN = sum(y1(:) & tmp(:)>xx);
+    
+    FPR(xi) = FP/(FP+TN);
+    TPR(xi) = TP/(TP+FN);
+    
+    Prec(xi) = TP/(TP+FP);
+    Rec(xi) = TP/(TP+FN);
+  end
+  stairs(Rec,Prec,'color',cols{ii})
+  pause(.0001)
+end
+%subplot(1,2,1)
+xlabel('Recall','fontsize',12)
+ylabel('Precision','fontsize',12),set(gca,'fontsize',12)
+title('PR Curve - Training on nonbalanced data','fontsize',14)
+legend('Feature 1','Feature 2','Naive Bayes','SVM','location','northeast')
+
+
+I = randsample(find(~isnan(scoreMatrix_svm) & ~isnan(scoreMatrix_nb)),length(1:500:length(scoreMatrix_svm)));
+rocout = roc([Dist.R2(I) TP_Matrix(I)==1 & possibleInts(I)]);
+rocout2 = roc([1-scoreMatrix_nb(I) TP_Matrix(I)==1 & possibleInts(I)]);
+rocout3 = roc([1-scoreMatrix_svm(I) TP_Matrix(I)==1 & possibleInts(I)]);
+rocout4 = roc([Dist.Euc(I) TP_Matrix(I)==1 & possibleInts(I)]);
+
+figure,hold on
+plot(rocout4.xr,rocout4.yr,'b')
+plot(rocout.xr,rocout.yr,'c')
+plot(rocout2.xr,rocout2.yr,'m')
+plot(rocout3.xr,rocout3.yr,'k')
+xlabel('FPR','fontsize',12)
+ylabel('TPR','fontsize',12)
+set(gca,'fontsize',12)
+title('ROC Curve','fontsize',14)
+legend('Feature 1','Feature 2','Naive Bayes','SVM','location','southeast')
+plot([0 1],[0 1],':r')
 
 
