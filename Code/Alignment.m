@@ -150,9 +150,7 @@ if ~skipflag
   % Import Gauss fits for each replicate
   %   Gaus_import: mx6, where m is the number of proteins with a fitted Gaussian
   %         columns: Height,Center,Width,SSE,adjrsquare,Complex Size
-  %   Summary_gausian_infomration: nx6, where n is the unique protein number (1-3217)
   Gaus_import = cell(Nchannels, Nreplicates);
-  %Summary_gausian_infomration = cell(Nchannels, Nreplicates);
   letters = 'abcdefghijklmnopqrstuvwxyz';
   LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   Nfit = cell(Nchannels,Nreplicates);
