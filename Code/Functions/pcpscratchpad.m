@@ -783,3 +783,83 @@ legend('Feature 1','Feature 2','Naive Bayes','SVM','location','southeast')
 plot([0 1],[0 1],':r')
 
 
+
+
+%% Toy model to understand complex enrichment analysis
+% Two groups of genes, all have labels. One of the labels is "of interest".
+% Parameters:
+%   N1 - size of complex
+%   N2 - size of population
+%   f  - fraction of labels that are the label of interest
+%   b  - bias in for the complex, i.e. the effect size
+
+
+% CONCLUSIONS:
+% 1. Rare labels, e.g. occurring a few times, are by themselves better. Although how that plays out
+%   with increased number of comparisons is not clear.
+% 2. Bigger population is better.
+% 3. If we're looking for enrichment increase of 50%-100% higher, complexes of size 2 are almost 
+%   impossible to find enrichment. Complexes of size <5 are problematic. >5 is alright.
+
+
+% contingency table:
+%             label?
+%             Y   N
+%             _____
+% complex? Y |a   b
+%          N |c   d
+
+% hard-coded parameters
+N2 = 10^6;
+f = 5/1000;
+
+for N2 = [10^2 10^4 10^7]
+  figure
+  subploti = 0;
+  for f = [1/1000 10/1000 100/1000]
+    subploti = subploti+1;
+    
+    % explored parameters
+    N1range = 2:50;
+    brange = linspace(0,1,51);
+    
+    pval = nan(length(N1range),length(frange));
+    for ni = 1:length(N1range)
+      for bi = 1:length(brange)
+        N1 = N1range(ni);
+        b = brange(bi);
+        
+        f2 = f;
+        f1 = f + b;
+        f1 = max([0 f1]);
+        f1 = min([1 f1]);
+        
+        a = ceil(N1 * f1);
+        b = ceil(N2 * f2);
+        c = ceil(N1 * (1-f1));
+        d = ceil(N2 * (1-f2));
+        T = [a b;c d];
+        
+        [~,pval(ni,bi)] = fishertest(T);
+        
+        Ncomparisons(ni,bi) = ((25000/f/1000) * 1500/N1);
+      end
+    end
+    
+    %fakepvaluecutoff = 1e-6;
+    %pval(pval>fakepvaluecutoff) = 1;
+    
+    pval(pval > 0.05./Ncomparisons) = 1;
+    
+    subplot(3,1,subploti)
+    imagesc(brange,N1range,log10(pval))
+    caxis([-100 0])
+    colorbar
+    xlabel('complex bias')
+    ylabel('complex size')
+    axis xy
+    title(['Pop. size: ' num2str(N2) ', Abundance of interesting label: 1-out-of-' round(num2str(1/f))])
+    
+    pause(.0001)
+  end
+end

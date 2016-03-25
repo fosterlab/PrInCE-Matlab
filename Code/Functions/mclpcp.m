@@ -42,6 +42,7 @@ Nprot = size(M,1);
 % Find and store non-zero entries of M
 idx = find(M~=0);
 vals = M(idx);
+Icorum = M>99;
 
 % Reduce M to binary
 M = single(M>=minrep);
@@ -71,6 +72,7 @@ while delta_energy>0.1 && iteration<10
   emax = energy;
   
   m2 = M2 .^ p;       % inflation
+  m2(Icorum) = 1;             % MY HACK! Corum interactions are always 1
   I = m2 < minval;            % pruning
   m2(I) = 0;
   dinv = diag(1./sum(m2));    % normalisation
