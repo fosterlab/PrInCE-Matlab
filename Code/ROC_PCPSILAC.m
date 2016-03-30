@@ -101,8 +101,10 @@ if user.nickflag==1
     HvsL_filename_gaus_rep1,HvsL_filename_gaus_rep2,HvsL_filename_gaus_rep3};
   
 else
+  dd = dir([datadir 'Alignment/Adjusted*Raw_for_ROC_analysis*rep*csv']);
+  
   % Define Raw SILAC ratios data. Dynamically find filenames
-  if user.skipalignment==1
+  if user.skipalignment==1 || isempty(dd)
     % If Alignment was skipped, use raw data + Gauss_Build output
     
     dd = dir([datadir 'GaussBuild/*_Raw_data_maxquant_rep*.csv']);
@@ -158,7 +160,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 %%
 %%%%% Replicate counter starts
-for replicate_counter = 1:number_of_replicates*number_of_channels
+for replicate_counter = 2:number_of_replicates*number_of_channels
   
   s = ['\n        Replicate ' num2str(replicate_counter)];
   fprintf(s)
@@ -359,7 +361,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   
- 
+  mySound,pause
   
   %% 3. Make Protein structure
   % This summarizes the proteins in our sample
@@ -568,11 +570,11 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   %scoreMatrix = 1 - Dist.R2;
   
   % Predict interactions with a classifier
-  %scoreMatrix_svm = scoresvm(Dist,possibleInts,TP_Matrix);
-  %scoreMatrix_svm = nanmedian(scoreMatrix_svm,2);
+  %[scoreMatrix, feats] = scoresvm(Dist,possibleInts,TP_Matrix);
+  %scoreMatrix = nanmedian(scoreMatrix,2);
   %scoreMatrix = nanmean(scoreMatrix,2);
   %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
-  scoreMatrix = scorenb(Dist,possibleInts,TP_Matrix); mySound, pause
+  scoreMatrix = scorenb(Dist,possibleInts,TP_Matrix);
   scoreMatrix = nanmedian(scoreMatrix,2);
   %scoreMatrix = nanmean(scoreMatrix,2);
   %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
@@ -601,7 +603,7 @@ clear Dist Int_matrix
 tic
 fprintf('    6. Find the score cutoff across all replicates')
 
-% Concatenate scores across replicates.
+% 6a. Concatenate scores across replicates.
 % The following code converts Protein1 and Protein2 to unique (hopefully!) numeric values.
 % This greatly reduces the memory used, as otherwise allScores is ~2.5GB.
 % NB: It's possible that two protein names will be mapped to the same numeric value.
@@ -654,8 +656,8 @@ for ii = 1:length(I2)
   allScores2(I2(ii),countV(I2(ii))+1) = allScores(ii,5);
 end
 class = allScores2(:,1);
-score = max(allScores2(:,2:end),[],2);      % i) max score
-%score = nanmean(allScores2(:,2:end),2);    % ii) mean score
+%score = max(allScores2(:,2:end),[],2);      % i) max score
+score = nanmean(allScores2(:,2:end),2);    % ii) mean score
 %score = nanmedian(allScores2(:,2:end),2);  % iii) median score
 clear allScores2 allScores TP_Matrix I1 I2
 
@@ -745,7 +747,7 @@ fprRange = fprRange(I);
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
-
+mySound,pause
 
 
 %% 7. Find and concatenate interactions at desired precision'
