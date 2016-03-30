@@ -33,6 +33,7 @@ catch
     error('cleanuser: Failed to make Corum_pairwise.csv. Aborting!')
   end
 end
+user_new.corumpairwisefile = fn_corumpair;
 
 % ensure that user.silacratios is a cell, not a string. this is a problem when Nchannels=1.
 if ischar(user.silacratios)

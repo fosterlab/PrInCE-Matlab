@@ -173,7 +173,7 @@ for replicate_counter = 2:number_of_replicates*number_of_channels
   [~, Protein_IDs] = xlsread(user.majorproteingroupsfile);
   
   % Corum binary interactions
-  fid=fopen(user.corumfile, 'rt');    %Input corum data base.
+  fid=fopen(user.corumpairwisefile, 'rt');    %Input corum data base.
   Corum_Import= textscan(fid,'%s\t', 'Delimiter',',');
   fclose(fid);
   No=length(Corum_Import{1})/2;

@@ -73,7 +73,7 @@ end
 Nprot = length(uniqueProteins);
 
 % Load CORUM interactions
-corumPairs_tmp = importdata(user.corumfile);
+corumPairs_tmp = importdata(user.corumpairwisefile);
 corumPairs_tmp = unique(corumPairs_tmp);
 
 % Check that corumPairs is an mx1 cell
