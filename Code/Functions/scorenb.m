@@ -8,7 +8,6 @@ y = labels(:);
 y(y>0) = 1;
 y(y~=1) = -1;
 X = [Dist.R2(:) Dist.Euc(:) Dist.Center(:) Dist.Ngauss(:) Dist.CoApex(:) Dist.AUC(:)];% Dist.RawOverlap(:) Dist.R2raw(:)];
-%X = [Dist.R2(:) Dist.Euc(:) Dist.CoApex(:) Dist.Ngauss(:) Dist.AUC(:)];
 Nd = size(X,2);
 
 % Soft whiten data
@@ -41,7 +40,6 @@ for iter = 1:Nmodel
   Iall = find(I);
   Iall = Iall(randsample(length(Iall),trainingLength));
   Itrain = ismember(1:length(y),Iall);
-  sum(y(Iall)==1)
   
   Ipred = ~Itrain;
   Xtr = X(Itrain,:);
