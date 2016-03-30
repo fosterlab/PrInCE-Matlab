@@ -1,4 +1,4 @@
-function score = scoresvm(Dist,possibleInts,TP_Matrix)
+function [score, feats] = scoresvm(Dist,possibleInts,TP_Matrix)
 % Use an SVM classifier to predict protein interactions.
 
 % Get data
@@ -7,10 +7,7 @@ labels = TP_Matrix(:);
 y = labels(:);
 y(y>0) = 1;
 y(y~=1) = -1;
-data1 = Dist.R2(:); % 1 - R^2
-data2 = Dist.Euc(:);
-data3 = Dist.Center(:);
-X = [data1 data2 data3];
+X = [Dist.R2(:) Dist.Euc(:) Dist.Center(:) Dist.Ngauss(:) Dist.CoApex(:) Dist.AUC(:)];% Dist.RawOverlap(:) Dist.R2raw(:)];
 Nd = size(X,2);
 
 % Soft whiten data
@@ -23,13 +20,14 @@ for ii = 1:Nd
   X(:,ii) = (X(:,ii) - wmu(ii)) / 2 / (wstd(ii) + eps);
 end
 
+Nlabel1 = sum(y==1);
+trainingLength = min([1000 round(Nlabel1 * 0.8)]);
 
-iterMax = 2;
+iterMax = 15;
 score = nan(size(X,1),iterMax);
+feats = nan(iterMax,size(X,2));
 for iter = 1:iterMax
-  iter
   % Make training and testing data
-  nn = 1000; % length of training data
   
   % balance training data
 %   I1 = find(y==1 & I);
@@ -40,7 +38,7 @@ for iter = 1:iterMax
   
   % non-balanced training data
   Iall = find(I);
-  Iall = Iall(randsample(length(Iall),nn));
+  Iall = Iall(randsample(length(Iall),trainingLength));
   Itrain = ismember(1:length(y),Iall);
   
   Ipred = ~Itrain;
@@ -48,9 +46,16 @@ for iter = 1:iterMax
   ytr = y(Itrain);
   Xnew = X(Ipred,:);
   
+  % Feature selection
+  feats(iter,:) = IndFeat(Xtr,ytr);
+  if sum(feats(iter,:)<=2)==size(feats,2)
+    feats(iter,:) = 3;
+  end
+  f2consider = find(feats(iter,:) > 2);
+  
   % Fit svm model
-  svm = fitcsvm(Xtr,ytr,'Standardize',true);
-  [~,scoretmp] = predict(svm,Xnew);
+  svm = fitcsvm(Xtr(:,f2consider),ytr,'Standardize',true);
+  [~,scoretmp] = predict(svm,Xnew(:,f2consider));
   
   score(Ipred,iter) = scoretmp(:,2);
 end
