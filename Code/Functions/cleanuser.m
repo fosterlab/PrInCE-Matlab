@@ -18,10 +18,21 @@ end
 % user.MQfiles
 % user.calfile
 % user.majorproteingroupsfile
-% user.corumfile
 % user.mastergaussian
 % user.fastafile
 % user.omimfile
+% user.corumfile
+fn_corumpair = [user.maindir '/Data/Corum_pairwise.csv'];
+try 
+  ls(fn_corumpair)
+catch
+  disp('cleanuser: Making Corum_pairwise.csv.')
+  try
+    corum2pairwise(user)
+  catch
+    error('cleanuser: Failed to make Corum_pairwise.csv. Aborting!')
+  end
+end
 
 % ensure that user.silacratios is a cell, not a string. this is a problem when Nchannels=1.
 if ischar(user.silacratios)
@@ -29,6 +40,8 @@ if ischar(user.silacratios)
 end
 
 % ensure that fractions are between 0 and 1, not 0% and 100%
+
+
 
 
 %% Add user.maindir/Code and user.maindr/Code/Functions to path
