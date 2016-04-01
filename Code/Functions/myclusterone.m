@@ -1,4 +1,4 @@
-function [Members, Connections] = myclusterone(M)
+function [Members, Connections] = myclusterone(M,params)
 
 %MYCLUSTERONE Creates a list of protein complexes using the
 %    ClusterONE algorithm (Nepusz 2012).
@@ -35,6 +35,16 @@ function [Members, Connections] = myclusterone(M)
 % doi:10.1038/nmeth.1938 
 
 
+% parameters
+if nargin<2
+  density_threshold = 2;
+  pp = 0;
+else
+  density_threshold = params.density_threshold;
+  pp = params.p;
+end
+
+
 % Sanity checks
 if size(M,1)~=size(M,2)
   error('myclusterone: Interaction matrix must be square')
@@ -43,10 +53,6 @@ if sum(M(:)<0) >= 1
   error('myclusterone: Interaction matrix must contain only non-negative entries')
 end
 
-
-% parameters
-density_threshold = 2;
-pp = 0;
   
 
 Nprot = size(M,1);
@@ -62,7 +68,7 @@ Members = cell(1000,1);
 Connections = cell(1000,1);
 cmplxcount = 0;
 while sum(inacomplex)<Nprot
-  
+
   % Choose protein with most number of connections as starting seed, V0
   Nconnections = sum(M>0,2);
   Nconnections(inacomplex==1) = -1;
@@ -117,13 +123,21 @@ while sum(inacomplex)<Nprot
     grow = ~isequal(V,V0);
   end
   
-  cmplxcount = cmplxcount+1
+  cmplxcount = cmplxcount+1;
   Members{cmplxcount} = V;
   
   inacomplex(V) = 1;
 end
 Members = Members(1:cmplxcount);
-
+% Remove complexes of length 1 and 2 
+% These can't be merged using the threshold score of 0.8 and they slow things down.
+for ii = 1:size(Members)
+  if length( Members{ii})<3
+    Members{ii} = [];
+  end
+end
+Members = Members(~cellfun('isempty',Members));
+cmplxcount = length(Members);
 
 % 2. Merge complexes
 % Calculate every complex-pairwise overlap score

@@ -49,7 +49,8 @@ for ii = 1:cc
         
         % Organism can be 'Mammalia', which includes 'mouse', 'rat', and 'human'
         if strcmpi(organism{ii},'mammalia') && ...
-            (strcmpi(user.organism,'mouse') || strcmpi(user.organism,'rat') || strcmpi(user.organism,'human'))
+            (strcmpi(user.organism,'mouse') || strcmpi(user.organism,'rat') || ...
+            strcmpi(user.organism,'human') || strcmpi(user.organism,'pig'))
         else
           continue
         end

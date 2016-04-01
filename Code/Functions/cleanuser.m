@@ -7,7 +7,7 @@ function user_new = cleanuser(user)
 
 user_new = user;
 
-%% Check that user is formatted correctly
+%% Check that files exist
 
 % check that user.maindir ends in a forward slash
 if user.maindir(end) ~= '/'
@@ -22,6 +22,8 @@ end
 % user.fastafile
 % user.omimfile
 % user.corumfile
+
+% user.corumpairwisefile
 fn_corumpair = [user.maindir '/Data/Corum_pairwise.csv'];
 try 
   ls(fn_corumpair)
@@ -34,6 +36,19 @@ catch
   end
 end
 user_new.corumpairwisefile = fn_corumpair;
+
+% user.corumcomplexfile
+fn_corumcomplex = [user.maindir '/Data/Corum_complex.csv'];
+try
+  corumextractcomplex(user)
+catch
+  error('cleanuser: Failed to make Corum_complex.csv. Aborting!')
+end
+user_new.corumcomplexfile = fn_corumcomplex;
+
+
+
+%% Check that user is formatted correctly
 
 % ensure that user.silacratios is a cell, not a string. this is a problem when Nchannels=1.
 if ischar(user.silacratios)
