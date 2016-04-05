@@ -1,4 +1,4 @@
-function [Members, Connections] = myclusterone(M,params)
+function [Members, Connections] = myclusterone(M, pp, density_threshold)
 
 %MYCLUSTERONE Creates a list of protein complexes using the
 %    ClusterONE algorithm (Nepusz 2012).
@@ -39,9 +39,6 @@ function [Members, Connections] = myclusterone(M,params)
 if nargin<2
   density_threshold = 2;
   pp = 0;
-else
-  density_threshold = params.density_threshold;
-  pp = params.p;
 end
 
 

@@ -1,4 +1,8 @@
 
+% To fix:
+% * You remake the interaction matrix a number of times. Since there you want to build an identical
+% one each time, and since there are a few parameters, it's better to make a simple function for
+% this. Then you know you're making it the same each time!
 
 
 %% 0. Initialize
@@ -12,7 +16,7 @@ datadir = [user.maindir 'Data/']; % where data files live
 figdir = [user.maindir 'Figures/Enrichment/']; % where figures live
 % Make folders if necessary
 if ~exist(datadir, 'dir'); mkdir(datadir); end
-if ~exist([datadir '/Enrichment/'], 'dir'); mkdir([datadir '/Enrichment/']); end
+if ~exist([datadir '/Complexes/'], 'dir'); mkdir([datadir '/Complexes/']); end
 if ~exist(figdir, 'dir'); mkdir(figdir); end
 
 InteractionIn = cell(length(user.desiredPrecision),1);
@@ -209,12 +213,12 @@ fprintf('  ...  %.2f seconds\n',tt)
 %   i) p, the uncertainty parameter in clusterONE
 %   ii) density_threshold, how loose can a complex be? (penalizes large complexes in practice)
 tic
-fprintf('    2. Build complexes')
+fprintf('    2. Build complexes, exploration')
 
 pRange = [0 1 10 100 1000 10000 100000];
 densRange = linspace(0,5,6);
 
-clear ComplexList
+best_params = zeros(countPrec, 2);
 for ii = 1:1%countPrec
   
   % i) Make interaction matrix
@@ -233,14 +237,12 @@ for ii = 1:1%countPrec
   nc = nan(length(pRange),length(densRange));
   Members = cell(length(pRange),length(densRange));
   for jj = 1:length(pRange)
-    params.p = pRange(jj);
     for kk = 1:length(densRange)
-      params.density_threshold = densRange(kk);
       
       disp([num2str(jj) ', ' num2str(kk)])
       
       % iii) make complexes
-      Members{jj,kk} = myclusterone(intMatrix,params);
+      Members{jj,kk} = myclusterone(intMatrix, pRange(jj), densRange(kk));
       nc(jj,kk) = length(Members{jj,kk});
       
       % iva) calculate Matching Ratio
@@ -253,6 +255,152 @@ for ii = 1:1%countPrec
   end
   
   % v) choose parameters
+  [~,I] = max(ga(:));
+  [I1, I2] = ind2sub(size(ga),I);
+  best_params(ii,:) = [pRange(I1) densRange(I2)];
+end
+
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
+
+
+
+%% 3. Optimize complex-building parameters, fine grid search.
+% Same as section 2, but with a finer pRange and densRange.
+
+tic
+fprintf('    3. Build complexes, intensification')
+
+
+best_params2 = zeros(countPrec, 2);
+for ii = 1:1%countPrec
+  
+  I1 = find(pRange == best_params(ii,1));
+  I2 = find(densRange == best_params(ii,2));
+  if I1==1
+    pRange2 = linspace(pRange(1),pRange(2),4);
+  elseif I1==length(pRange)
+    pRange2 = linspace(pRange(end-1),pRange(end),4);
+  else
+    pRange2 = linspace(pRange(I1-1),pRange(I1+1),8);
+  end
+  if I2==1
+    densRange2 = linspace(densRange(1),densRange(2),2);
+  elseif I2==length(densRange)
+    densRange2 = linspace(densRange(end-1),densRange(end),2);
+  else
+    densRange2 = linspace(densRange(I1-1),densRange(I1+1),4);
+  end
+
+  
+  % i) Make interaction matrix
+  intMatrix = zeros(Nprot_pred,Nprot_pred);
+  for jj = 1:size(interactionPairs2{ii},1)
+    x = interactionPairs2{ii}(jj,1:2);
+    nrep = interactionPairs2{ii}(jj,3);
+    intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + nrep;  % add nrep
+    intMatrix(x(2),x(1)) = intMatrix(x(2),x(1)) + nrep;
+  end
+  intMatrix(intMatrix<minrep) = 0;
+  
+  % ii) Explore parameters
+  %mr = nan(length(pRange),length(densRange));
+  ga = nan(length(pRange),length(densRange));
+  nc = nan(length(pRange),length(densRange));
+  Members = cell(length(pRange),length(densRange));
+  for jj = 1:length(pRange)
+    for kk = 1:length(densRange)
+      
+      disp([num2str(jj) ', ' num2str(kk)])
+      
+      % iii) make complexes
+      Members{jj,kk} = myclusterone(intMatrix, pRange(jj), densRange(kk));
+      nc(jj,kk) = length(Members{jj,kk});
+      
+      % iva) calculate Matching Ratio
+      % mr(jj,kk) = matchingratio(Members{jj,kk},corumComplex2);
+      
+      % ivb) calculate Geometric Accuracy
+      ga(jj,kk) = geomacc(Members{jj,kk},corumComplex2);
+      
+    end
+  end
+  
+  % v) choose parameters
+  [~,I] = max(ga(:));
+  [I1, I2] = ind2sub(size(ga),I);
+  best_params(ii,:) = [pRange(I1) densRange(I2)];
+end
+
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
+
+
+
+%% 4. Build final complex list
+
+tic
+fprintf('    4. Build final complex list')
+
+Ncomplex = zeros(countPrec,1);
+for ii = 1:countPrec
+  % i) Make interaction matrix
+  intMatrix = zeros(Nprot_pred,Nprot_pred);
+  for jj = 1:size(interactionPairs2{ii},1)
+    x = interactionPairs2{ii}(jj,1:2);
+    nrep = interactionPairs2{ii}(jj,3);
+    intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + nrep;  % add nrep
+    intMatrix(x(2),x(1)) = intMatrix(x(2),x(1)) + nrep;
+  end
+  intMatrix(intMatrix<minrep) = 0;
+  
+  [ComplexList(ii).Members, ComplexList(ii).Connections] = myclusterone(intMatrix, best_params(ii,1), best_params(ii,2));
+  Ncomplex(ii) = length(ComplexList(ii).Members);
+end
+
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
+
+
+
+%% 5. Match each predicted complex to a CORUM complex
+% for each predicted complex
+%   calculate the overlap with each CORUM complex
+%   report the CORUM complex with the highest overlap
+
+tic
+fprintf('    5. Match each complex to a CORUM complex')
+
+corumMatches = cell(countPrec,1);
+for ii = 1:countPrec
+  
+  % 5 columns: predicted complex number (Members), corum complex number (corumComplex2),
+  %            match rank (e.g. best, 2nd best), N overlap, overlap ratio (N_overlap/size_of_corum)
+  corumMatches{ii} = zeros(Ncomplex(ii)*5, 2);
+  cc = 0;
+  
+  overlap = zeros(Ncomplex(ii),length(corumComplex2));
+  for jj = 1:Ncomplex(ii)
+    for kk = 1:length(corumComplex2)
+      overlap(jj,kk) = length(intersect(ComplexList(ii).Members{jj},corumComplex2{kk})) / length(corumComplex2{kk});
+    end
+    
+    Nover = sort(unique(overlap(jj,:)), 'descend');
+    Nover = Nover(Nover>0);
+    for mm = 1:min(2,length(Nover))
+      matches = find(overlap(jj,:) == Nover(mm));
+      for nn = 1:length(matches)
+        cc = cc+1;
+        corumMatches{ii}(cc,1) = jj;
+        corumMatches{ii}(cc,2) = matches(nn);
+        corumMatches{ii}(cc,3) = mm;
+        corumMatches{ii}(cc,4) = length(intersect(ComplexList(ii).Members{jj},corumComplex2{matches(nn)}));
+        corumMatches{ii}(cc,5) = overlap(jj,matches(nn));
+      end
+    end
+  end
+  corumMatches{ii} = corumMatches{ii}(1:cc,:);
+  
 end
 
 
@@ -260,15 +408,14 @@ tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
-%% 3. Optimize complex-building parameters, local hill-climbing
+%% x. Write output
 
-for ii = 1:1%countPrec
+tic
+fprintf('    5. Match each complex to a CORUM complex')
 
-  
-end
+writeOutput_complexes
+
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
-%% 4. Build final complex list
-
-[ComplexList(ii).Members, ComplexList(ii).Connections] = myclusterone(intMatrix2);
-Ncomplex(ii) = length(ComplexList(ii).Members);
