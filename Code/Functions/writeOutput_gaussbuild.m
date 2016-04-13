@@ -29,7 +29,12 @@
 
 %% 0. Initialize
 
-SEC_fit=polyfit(SEC_size_alignment(1,:),SEC_size_alignment(2,:),1);
+try
+  SEC_fit=polyfit(SEC_size_alignment(1,:),SEC_size_alignment(2,:),1);
+catch
+  disp('Gauss_Build: writeOutput: SEC fitting failed. Size of Complex will be zero.')
+  SEC_fit = [0 0];
+end
 
 Nchannels = size(Coef,1);
 Nproteins = size(Coef,2);
@@ -308,7 +313,7 @@ for ci = 1:Nchannels
     Process_Replicate_raw_data1= [datadir user.silacratios{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv'];
     
     fid_processing3= fopen(Process_Replicate_raw_data1,'wt'); % create the output file with the header infromation
-    fprintf(fid_processing3,'%s, ', txt_val{ci}{1,1:Nfractions+2}); %header for OutputGaus output
+    fprintf(fid_processing3,'%s, ', txt_val{ci}{1,1:end}); %header for OutputGaus output
     fprintf(fid_processing3,'\n');
     
     for kk = 1:Ngauss(ci)

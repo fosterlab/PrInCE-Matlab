@@ -97,7 +97,7 @@ for ii = 1:Nchannels
   
   % if rawdata & txt_val are the same length, assume they both have headers, remove rawdata header
   if size(rawdata{ii},1)==size(txt_val{ii},1)
-    rawdata{ii} = rawdata{ii}(2:end,1);
+    rawdata{ii} = rawdata{ii}(2:end,:);
   end
   
   % Remove first column of rawdata as the replicate
