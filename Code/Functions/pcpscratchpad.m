@@ -785,81 +785,215 @@ plot([0 1],[0 1],':r')
 
 
 
-%% Toy model to understand complex enrichment analysis
-% Two groups of genes, all have labels. One of the labels is "of interest".
+%% Understand enrichment analysis
+% Complex vs rest-of-the-proteins.
 % Parameters:
-%   N1 - size of complex
-%   N2 - size of population
-%   f  - fraction of labels that are the label of interest
-%   b  - bias in for the complex, i.e. the effect size
-
+%   N = total proteins, e.g. 1000
+%   Nc = complex size, e.g. 10
+%   Nl = how many times the label occurs
+%   Nlc = number of labels in this complex
+%
+% contingency table:
+%                label?
+%             Y        N
+%             _________________
+% complex? Y |Nlc      Nc-Nlc
+%          N |Nl-Nlc   N-Nc-Nlc
 
 % CONCLUSIONS:
-% 1. Rare labels, e.g. occurring a few times, are by themselves better. Although how that plays out
-%   with increased number of comparisons is not clear.
-% 2. Bigger population is better.
-% 3. If we're looking for enrichment increase of 50%-100% higher, complexes of size 2 are almost 
-%   impossible to find enrichment. Complexes of size <5 are problematic. >5 is alright.
-
-
-% contingency table:
-%             label?
-%             Y   N
-%             _____
-% complex? Y |a   b
-%          N |c   d
+% 1. The minimum size for a complex is 3.
+% 2. Medium size complexes are the best, i.e. 3<Nc<50.
+% 3. Labels need to occur at least 3 times.
+% 4. As long as labels occur >3 times and complexes aren't big, total number of labels doesnt' matter.
+% 5. For rare labels (Nl<5), complexes can't be to big (Nc<75).
 
 % hard-coded parameters
-N2 = 10^6;
-f = 5/1000;
+N = 1000;
 
-for N2 = [10^2 10^4 10^7]
-  figure
-  subploti = 0;
-  for f = [1/1000 10/1000 100/1000]
-    subploti = subploti+1;
+% explored parameters
+Nc_range = [2:5 10 15 20 25 35 50 75 100];
+Nl_range = 1:2:21;
+Nlc_range = 1:2:21;
+
+figure
+for ii = 1:length(Nc_range)
+  subplot(3,4,ii)
+  Nc = Nc_range(ii);
+  pval = ones(length(Nl_range), length(Nlc_range)) * 1.5;
+  pthreshold = ones(length(Nl_range), length(Nlc_range));
+  for jj = 1:length(Nl_range)
+    Nl = Nl_range(jj);
+    for kk = 1:length(Nlc_range)
+      Nlc = Nlc_range(kk);
+      if Nlc>Nc || Nlc>Nl; continue; end
+      
+      T = [Nlc Nc-Nlc; Nl-Nlc N-Nc-Nlc];
+      [~,pval(jj,kk)] = fishertest(T);
+      
+      Ncomp = 75 * 500 / Nl;
+      pthreshold(jj,kk) = 0.05 / Ncomp;
+      
+    end
+  end
+  
+  pval(pval>pthreshold & pval<=1) = 1;
     
-    % explored parameters
-    N1range = 2:50;
-    brange = linspace(0,1,51);
+  imagesc(Nlc_range,Nl_range,pval),caxis([0 1.5])
+  axis xy
+  xlabel('labels in complex')
+  ylabel('total labels')
+  title(num2str(Nc))
+end
+
+
+
+%% Understand enrichment analysis 2
+% Question: For a given complex size and number of label occurrences, in order to be "enriched",
+% what is the minimum fraction of protein members that need to have the label?
+
+%Nc_range = [2:5 10 15 20 25 35 50 75 100];
+%Nl_range = 1:2:21;
+Nc_range = 1:2:100;
+Nl_range = 1:25;
+
+pth = 1e-7;
+
+for N = [100 500 1000 5000 10000 100000];
+
+fraction = nan(length(Nc_range),length(Nl_range));
+for ii = 1:length(Nc_range)
+  Nc = Nc_range(ii);
+  for jj = 1:length(Nl_range)
+    Nl = Nl_range(jj);
     
-    pval = nan(length(N1range),length(frange));
-    for ni = 1:length(N1range)
-      for bi = 1:length(brange)
-        N1 = N1range(ni);
-        b = brange(bi);
-        
-        f2 = f;
-        f1 = f + b;
-        f1 = max([0 f1]);
-        f1 = min([1 f1]);
-        
-        a = ceil(N1 * f1);
-        b = ceil(N2 * f2);
-        c = ceil(N1 * (1-f1));
-        d = ceil(N2 * (1-f2));
-        T = [a b;c d];
-        
-        [~,pval(ni,bi)] = fishertest(T);
-        
-        Ncomparisons(ni,bi) = ((25000/f/1000) * 1500/N1);
+    Nlc = 0;
+    pval = 1;
+    while pval>pth
+      Nlc = Nlc+1;
+      if Nlc>Nc || Nlc>Nl || Nc+Nlc>N
+        fraction(ii,jj) = 1.5;
+        break
       end
+      T = [Nlc Nc-Nlc; Nl-Nlc N-Nc-Nlc];
+      [~,pval] = fishertest(T);
+      fraction(ii,jj) = Nlc/Nc;
     end
     
-    %fakepvaluecutoff = 1e-6;
-    %pval(pval>fakepvaluecutoff) = 1;
-    
-    pval(pval > 0.05./Ncomparisons) = 1;
-    
-    subplot(3,1,subploti)
-    imagesc(brange,N1range,log10(pval))
-    caxis([-100 0])
-    colorbar
-    xlabel('complex bias')
-    ylabel('complex size')
-    axis xy
-    title(['Pop. size: ' num2str(N2) ', Abundance of interesting label: 1-out-of-' round(num2str(1/f))])
-    
-    pause(.0001)
   end
+end
+
+figure
+imagesc(fraction)
+caxis([0 1.5])
+axis xy
+set(gca,'xtick',1:length(Nl_range),'xticklabel',num2cell(Nl_range),...
+  'ytick',1:length(Nc_range),'yticklabel',num2cell(Nc_range))
+colorbar
+xlabel('How many times does the label occur?')
+ylabel('Size of complex')
+title(['What fraction of the complex needs to have the label? N=' num2str(N)])
+
+end
+
+
+%% Play around with geometric accuracy
+% CONCLUSIONs:
+% - GA is a good measure.
+% - It's not penalized by novel predictions, either whole complexes or complex members.
+% - Sn is the ratio reference-proteins-in-the-predicted : total-reference-proteins.
+% - PPV is the ratio predicted-proteins-in-the-reference : total-predicted-proteins.
+
+
+clear ref1 pred1 ref2 pred2 ref3 pred3
+
+% what if predicted complexes have NOVEL members?
+clear a b c d
+a{1} = 1:3;
+b{1} = 1:4;
+c{1} = 1:100;
+ga1a = geomacc(a,a); % no novel members
+ga1b = geomacc(b,a); % 1 novel
+ga1c = geomacc(c,a); % lots novel
+[ga1a ga1b ga1c]
+disp('--> G.A. is UNAFFECTED for novel members in predicted complexes.')
+
+% what if references have an unmatched complex?
+clear a b c d
+a{1} = 1:3;
+b{1} = 1:3; b{2} = 4:6;
+c{1} = 1:3; c{2} = 4:6; c{3} = 7:100;
+ga2a = geomacc(a,a); % no unmatched complexes
+ga2b = geomacc(a,b); % 1 unmatched
+ga2c = geomacc(a,c); % lots unmatched
+[ga2a ga2b ga2c]
+disp('--> G.A. is PENALIZED by unmatched reference complexes.')
+
+% what if predicted have an unmatched complex?
+clear a b c d
+a{1} = 1:3;
+b{1} = 1:3; b{2} = 4:6;
+c{1} = 1:3; c{2} = 4:6; c{3} = 7; c{4} = 8; c{5} = 9:10; c{6} = 11:15;
+ga3a = geomacc(a,a); % no unmatched complexes
+ga3b = geomacc(b,a); % 1 unmatched
+ga3c = geomacc(c,a); % lots unmatched
+[ga3a ga3b ga3c]
+disp('--> G.A. is UNAFFECTED by unmatched predicted complexes.')
+
+% what if predicted&complex size increases?
+clear a b c d
+a{1} = 1:3;
+b{1} = 1:4;
+c{1} = 1:100;
+ga4a = geomacc(a,a); % size=3
+ga4b = geomacc(b,b); % size=4
+ga4c = geomacc(c,c); % size=100
+[ga4a ga4b ga4c]
+disp('--> G.A. is UNAFFECTED by larger complex sizes.')
+
+
+%% Look at chromatograms for the proteins Nick selected for microscopy
+%
+% IQGAP1 - cdc42
+% STK4/MST1 - DLP1
+% WD(l)rp47 - PTS1r
+%
+% P46940 - P60953  ?>  47% precision, 11093 / 14226 interactions
+% Q13043 - O00429  ?>  Q13043 not found
+% O94967 - P50542  ?>  both found, but not interacting
+
+rawdata = cell(2,1);
+txt_val = cell(2,1);
+for ii = 1:2
+  [rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
+  
+  % Remove first column as the replicate
+  replicate = rawdata{ii}(:,1);
+  rawdata{ii} = rawdata{ii}(:,2:end);
+  
+  
+  
+%   I1a = find(ismember(txt_val{ii}(:,1),'P46940')) - 1;
+%   I1b = find(ismember(txt_val{ii}(:,1),'P60953')) - 1;
+%   I2a = find(ismember(txt_val{ii}(:,1),'Q13043')) - 1;
+%   I2b = find(ismember(txt_val{ii}(:,1),'O00429')) - 1;
+%   I3a = find(ismember(txt_val{ii}(:,1),'O94967')) - 1;
+%   I3b = find(ismember(txt_val{ii}(:,1),'P50542')) - 1;
+  I1a = strmatch('P46940', txt_val{ii}(:,1)) - 1;
+  I1b = strmatch('P60953', txt_val{ii}(:,1)) - 1;
+  I2a = strmatch('Q13043', txt_val{ii}(:,1)) - 1;
+  I2b = strmatch('O00429', txt_val{ii}(:,1)) - 1;
+  I3a = strmatch('O94967', txt_val{ii}(:,1)) - 1;
+  I3b = strmatch('P50542', txt_val{ii}(:,1)) - 1;
+  
+  figure
+  subplot(2,2,1),hold on
+  plot(rawdata{ii}(I1a,:)','g')
+  plot(rawdata{ii}(I1b,:)','r')
+  subplot(2,2,2),hold on
+  plot(rawdata{ii}(I2a,:)','g')
+  plot(rawdata{ii}(I2b,:)','r')
+  subplot(2,2,3),hold on
+  plot(rawdata{ii}(I3a,:)','g')
+  plot(rawdata{ii}(I3b,:)','r')
+  
 end
