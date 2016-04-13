@@ -1,6 +1,3 @@
-%% 13. Make figures
-fprintf('    12. Make figures')
-
 
 %Figure showing changes in response to treatment
 
@@ -918,9 +915,10 @@ end
 
 
 %%
-if user.fastcomparison == 0
+%if user.fastcomparison == 0
+if 0
   
-  for Gaussian_counter1= 4:length(Unique_protein_names)
+  for Gaussian_counter1= 1:length(Unique_protein_names)
     % Determine if Gaussians should be plotted
     
     %Count the number of gaussians detected
@@ -1072,7 +1070,7 @@ if user.fastcomparison == 0
       List_of_pdf_counter=List_of_pdf_counter+1;
       saveas(f9, Save_name_plot);
       %print('-dpdf', '-r600', Save_name_plot);
-      pause
+      
       close 'all';
     end
     
