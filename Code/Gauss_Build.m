@@ -77,16 +77,43 @@ fprintf('\n    1. Read input data')
 rawdata = cell(size(experimental_channels));
 txt_val = cell(size(experimental_channels));
 for ii = 1:Nchannels
-  [rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
+  %[rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
+  tmp = importdata(user.MQfiles{ii});
   
-  % Remove first column as the replicate
-  replicate = rawdata{ii}(:,1);
-  rawdata{ii} = rawdata{ii}(:,2:end);
+  % remove 'sheet1' fields
+  if isfield(tmp,'Sheet1')
+    tmp = tmp.Sheet1;
+  end
+  fn = fieldnames(tmp);
+  for jj = 1:length(fn)
+    tmp1 = tmp.(fn{jj});
+    if isfield(tmp1,'Sheet1')
+      tmp.(fn{jj}) = tmp.(fn{jj}).Sheet1;
+    end
+  end
+  
+  rawdata{ii} = tmp.data;
+  txt_val{ii} = tmp.textdata;
+  
+  % if rawdata & txt_val are the same length, assume they both have headers, remove rawdata header
+  if size(rawdata{ii},1)==size(txt_val{ii},1)
+    rawdata{ii} = rawdata{ii}(2:end,1);
+  end
+  
+  % Remove first column of rawdata as the replicate
+  if sum(mod(rawdata{ii}(:,1),1)~=0)>0
+    disp('Warning: Gauss_Build: Replicate column in chromatogram tables is badly formatted.')
+    disp('Warning: Gauss_Build: Assuming all chromatograms are from a single replicate...')
+    replicate = ones(size(rawdata{ii},1),1);
+  else
+    replicate = rawdata{ii}(:,1);
+    rawdata{ii} = rawdata{ii}(:,2:end);
+  end
   
   % turn txt_val into a list of protein names
   %txt_val{ii} = txt_val{ii}(:,1);
 end
-SEC_size_alignment = xlsread(user.calfile);
+%SEC_size_alignment = xlsread(user.calfile);
 
 
 % How many proteins and fractions are there?
