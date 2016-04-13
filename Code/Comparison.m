@@ -185,6 +185,25 @@ if ~skipflag
       txt_val{ii} = tmp.textdata;
     end
     
+    % Confirm that the 'Replicate' column is the first column in num_val
+    if ismember('replicate',lower(txt_val{ii}(1,:))); % is 'Replicate' in txt_val header?
+      I = find(ismember(lower(txt_val{ii}(1,:)),'replicate'));
+      replicate_cell = txt_val{ii}(:,I);
+      replicate_vector = nan(size(replicate_cell));
+      for jj = 1:length(replicate_cell)
+        rep = str2num(replicate_cell{jj});
+        if ~isempty(rep)
+          replicate_vector(jj) = rep;
+        end
+      end
+      
+      if length(replicate_vector) == size(num_val{ii},1)
+        num_val{ii} = [replicate_vector num_val{ii}];
+      elseif length(replicate_vector) == size(num_val{ii},1)+1
+        num_val{ii} = [replicate_vector(2:end) num_val{ii}];
+      end
+    end
+    
     % Remove header from txt_val if necessary
     if size(txt_val{ii},1) == size(num_val{ii},1)+1
       txt_val{ii} = txt_val{ii}(2:end,:);
@@ -201,7 +220,9 @@ if ~skipflag
     Nproteins = length(num_val{1});
     Nfraction = size(num_val{1},2);
     Nfraction = Nfraction-1;
-    replicate_num = length(unique(num_val{1}(:,1)));
+    a = num_val{1}(:,1);
+    a(isnan(a)) = [];
+    replicate_num = length(unique(a));
     
     % Clean chromatograms
     % YOU'RE ADDING 3 NANS TO THE END. MAKE SURE THIS IS CORRECT!!!!!!!!!!!!!!!!!!!!!!
@@ -268,7 +289,7 @@ if ~skipflag
   end
   
   %expected amount of proteins, note 1 is the height
-  Standard_area=Nfraction*1*(1/Diltuion_factor_master_mix);
+  %Standard_area=Nfraction*1*(1/Diltuion_factor_master_mix);
   
   %Copy data to be used for plotting
   %num_val_MvsL_for_figures = num_val_MvsL;
