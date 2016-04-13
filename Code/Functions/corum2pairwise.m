@@ -95,8 +95,7 @@ pairwiselist = pairwiselist(1:cxi,:);
 fn = [user.maindir '/Data/Corum_pairwise.csv'];
 fid = fopen(fn,'w');
 for ii = 1:size(pairwiselist,1)
-  tmp = pairwiselist{ii,:};
-  fprintf(fid,'%s,%s\n',tmp{1},tmp{2});
+  fprintf(fid,'%s,%s\n',pairwiselist{ii,1},pairwiselist{ii,2});
 end
 fclose(fid);
 
