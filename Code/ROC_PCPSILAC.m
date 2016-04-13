@@ -160,7 +160,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 %%
 %%%%% Replicate counter starts
-for replicate_counter = 2:number_of_replicates*number_of_channels
+for replicate_counter = 1:number_of_replicates*number_of_channels
   
   s = ['\n        Replicate ' num2str(replicate_counter)];
   fprintf(s)
@@ -170,7 +170,7 @@ for replicate_counter = 2:number_of_replicates*number_of_channels
   s = '\n        1. Read input data';
   fprintf(s)
   
-  [~, Protein_IDs] = xlsread(user.majorproteingroupsfile);
+  Protein_IDs = readproteingroupsfile(user);
   
   % Corum binary interactions
   fid=fopen(user.corumpairwisefile, 'rt');    %Input corum data base.
@@ -197,9 +197,14 @@ for replicate_counter = 2:number_of_replicates*number_of_channels
   % Raw SILAC ratios
   tmp = importdata(ChromatogramIn{replicate_counter});
   if isfield(tmp.data,'Sheet1')
-    Chromatograms_raw = tmp.data.Sheet1(:,2:end);
+    Chromatograms_raw = tmp.data.Sheet1;
   else
-    Chromatograms_raw = tmp.data(:,2:end);
+    Chromatograms_raw = tmp.data;
+  end
+  % if the first column is Replicate, remove it
+  tmp = length(unique(Chromatograms_raw(:,1)));
+  if tmp < user.Nreplicate*2+1 % i.e. the column has unique elements in the ballpark of user.Nreplicate
+    Chromatograms_raw = Chromatograms_raw(:,2:end);
   end
   
   %   %Gaus data data for analysis of center analysis
@@ -277,12 +282,22 @@ for replicate_counter = 2:number_of_replicates*number_of_channels
   C_raw = cell2mat(Gaus_import(2:end,3));
   W_raw = cell2mat(Gaus_import(2:end,4));
   
+  % The data is nan-padded. Find where the real data starts and stops.
+  nanmax = size(Chromatograms_raw,1);
+  tmp = find(sum(isnan(Chromatograms_raw))==size(Chromatograms_raw,1));
+  if isempty(tmp)
+    tmp = -1;
+  end
+  frac1 = max([1 tmp(find(tmp<user.Nfraction/2,1,'last'))]); % start of real data
+  frac2 = min([size(Chromatograms_raw,2) tmp(find(tmp>user.Nfraction/2,1,'first'))]); % end of real data
+  
   % Replace NaN values with 0.05
   Chromatograms = Chromatograms_raw;
   Chromatograms(isnan(Chromatograms))= 0.05;
   
-  % remove gaussian with centers below five
-  Ibad = C_raw<5;
+  % remove gaussian with centers below frac1
+  %Ibad = C_raw<frac1;
+  Ibad = zeros(size(C_raw));
   H = H_raw(~Ibad);
   C = C_raw(~Ibad);
   W = W_raw(~Ibad);
@@ -361,7 +376,7 @@ for replicate_counter = 2:number_of_replicates*number_of_channels
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   
-  mySound,pause
+  
   
   %% 3. Make Protein structure
   % This summarizes the proteins in our sample
@@ -578,7 +593,7 @@ for replicate_counter = 2:number_of_replicates*number_of_channels
   scoreMatrix = nanmedian(scoreMatrix,2);
   %scoreMatrix = nanmean(scoreMatrix,2);
   %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
-
+  
   sf = [datadir2 'score_rep' num2str(replicate_counter) '.mat'];
   save(sf,'scoreMatrix','TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms')
   clear scoreMatrix TP_Matrix possibleInts Protein inverse_self Chromatograms
@@ -747,7 +762,7 @@ fprRange = fprRange(I);
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
-mySound,pause
+
 
 
 %% 7. Find and concatenate interactions at desired precision'
