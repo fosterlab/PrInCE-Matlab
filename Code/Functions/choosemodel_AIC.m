@@ -1,4 +1,4 @@
-function [model,ics] = choosemodel_AIC(cleanchrom,x,aicstring)
+function [model,ics] = choosemodel_AIC(cleanchrom,x,aicstring,Ngaussmax)
 
 % Selects the number of Gaussians that best fits a single chromatogram.
 %
@@ -40,6 +40,10 @@ if nargin<3
   aicstring = 'AICc';
 end
 
+if nargin<4
+  Ngaussmax = 5;
+end
+
 [n1,n2] = size(cleanchrom);
 if n1~=1 && n2~=1 || (n1==1 && n2==1)
   error('Chromatogram must be a 1-dimensional vector.')
@@ -64,17 +68,24 @@ ft{4} = fittype('gauss4');
 ft{5} = fittype('gauss5');
 
 % Define fit options
-fo{1} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,3)*.1,'MaxIter',400,'Display','off');
-fo{2} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,6)*.1,'MaxIter',400,'Display','off');
-fo{3} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,9)*.1,'MaxIter',400,'Display','off');
-fo{4} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,12)*.1,'MaxIter',400,'Display','off');
-fo{5} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',zeros(1,15)*.1,'MaxIter',400,'Display','off');
+LB = [0.1 0 1]; % H, C, W
+UB = [inf length(cleanchrom)+10 inf]; % H, C, W
+fo{1} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',repmat(LB,1,1),...
+  'Upper',repmat(UB,1,1),'MaxIter',400,'Display','off');
+fo{2} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',repmat(LB,1,2),...
+  'Upper',repmat(UB,1,1),'MaxIter',400,'Display','off');
+fo{3} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',repmat(LB,1,3),...
+  'Upper',repmat(UB,1,1),'MaxIter',400,'Display','off');
+fo{4} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',repmat(LB,1,4),...
+  'Upper',repmat(UB,1,1),'MaxIter',400,'Display','off');
+fo{5} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',repmat(LB,1,5),...
+  'Upper',repmat(UB,1,1),'MaxIter',400,'Display','off');
 
 I = cleanchrom>0;
 msse = nan(5,1);
 curveFit = cell(5,1);
 R2 = nan(5,1);
-for ii=1:5
+for ii=1:Ngaussmax
   iter = 0;
   fitAgain = 1;
   while fitAgain
@@ -102,10 +113,10 @@ end
 
 %N = length(cleanchrom);
 N = sum(cleanchrom>0);
-AIC = zeros(5,1);
-AICc = zeros(5,1);
-BIC = zeros(5,1);
-for ii=1:5
+AIC = ones(5,1) * 10^9;
+AICc = ones(5,1) * 10^9;
+BIC = ones(5,1) * 10^9;
+for ii=1:Ngaussmax
   k = length(coeffvalues(curveFit{ii}));
   AIC(ii) = N*log(msse(ii)/N) + 2*k + 2*k;
   AICc(ii) = N*log(msse(ii)/N) + 2*k + 2*k*(k+1)/(N-k-1) + 2*k;
@@ -114,7 +125,7 @@ end
 
 % Throw out any models where the number of non-imputed data points, i.e. the real data, is less than
 % the number of parameters.
-Ngood = sum(cleanchrom>0);
+Ngood = sum(cleanchrom>0.01);
 maxModelSize = floor(Ngood/3);
 AIC(maxModelSize:end) = inf;
 AICc(maxModelSize:end) = inf;

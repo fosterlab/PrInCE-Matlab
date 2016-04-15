@@ -45,18 +45,18 @@ codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
 datadir0 = [maindir 'Data/']; % where data files live
 datadir = [maindir 'Data/GaussBuild/']; % where data files live
-datadir1 = [maindir 'Data/GaussBuild/Output_Chromatograms/'];
-datadir2 = [maindir 'Data/GaussBuild/Output_Chromatograms_filtered_out/'];
-datadir3 = [maindir 'Data/GaussBuild/OutputGaus/'];
-datadir4 = [maindir 'Data/GaussBuild/OutputGaus_filtered_out/'];
+%datadir1 = [maindir 'Data/GaussBuild/Output_Chromatograms/'];
+%datadir2 = [maindir 'Data/GaussBuild/Output_Chromatograms_filtered_out/'];
+%datadir3 = [maindir 'Data/GaussBuild/OutputGaus/'];
+%datadir4 = [maindir 'Data/GaussBuild/OutputGaus_filtered_out/'];
 figdir = [maindir 'Figures/']; % where figures live
 % Make folders if necessary
 if ~exist(datadir0, 'dir'); mkdir(datadir0); end
 if ~exist(datadir, 'dir'); mkdir(datadir); end
-if ~exist(datadir1, 'dir'); mkdir(datadir1); end
-if ~exist(datadir2, 'dir'); mkdir(datadir2); end
-if ~exist(datadir3, 'dir'); mkdir(datadir3); end
-if ~exist(datadir4, 'dir'); mkdir(datadir4); end
+%if ~exist(datadir1, 'dir'); mkdir(datadir1); end
+%if ~exist(datadir2, 'dir'); mkdir(datadir2); end
+%if ~exist(datadir3, 'dir'); mkdir(datadir3); end
+%if ~exist(datadir4, 'dir'); mkdir(datadir4); end
 if ~exist(figdir, 'dir'); mkdir(figdir); end
 if ~exist([figdir '/GaussBuild'], 'dir'); mkdir([figdir '/GaussBuild']); end
 
@@ -149,14 +149,11 @@ for ci = 1:Nchannels % loop over channels
   for ri = 1:Nproteins % loop over proteins
     
     raw_chromatogram = rawdata{ci}(ri,1:Nfractions);
-    [clean_chromatogram, x1, x2] = cleanChromatogram(raw_chromatogram);
+    clean_chromatogram = cleanChromatogram2(raw_chromatogram);
     
     % store clean_chromatogram in cleandata
     cleandata{ci}(ri,:) = clean_chromatogram;
     
-    % store housekeeping variables
-    tmp1{ci}(ri,:) = x1;
-    tmp2{ci}(ri,:) = x2;
   end
 end
 
@@ -179,10 +176,13 @@ Try_Fit = zeros(size(Coef));
 gausscount = 0;
 t2=tic;
 for ci = 1:Nchannels % loop over channels
+  cleandata_nonbc = cleandata{ci};
+  rawdata_nonbc = rawdata{ci};
+  txt_val_nonbc = txt_val{1};
   parfor ri = 1:Nproteins % loop over proteins
     
     % get a single clean chromatogram
-    clean_chromatogram = cleandata{ci}(ri,:);
+    clean_chromatogram = cleandata_nonbc(ri,:);
     
     % don't fit Gaussians if there are less than 5 good data points in the chromatogram
     if sum(clean_chromatogram > 0.05)<5
@@ -190,21 +190,36 @@ for ci = 1:Nchannels % loop over channels
     end
     Try_Fit(ci,ri)=1;
     
+    % Throw out any models where the number of non-imputed data points, i.e. the real data, is less than
+    % the number of parameters.
+    Ngaussmax = floor(sum(rawdata_nonbc(ri,1:Nfractions)>0.01)/3);
+    
     % fit 5 models and chose the best one
     %model = choosemodel_holdout(clean_chromatogram,MaxIter);
     try
-      model = choosemodel_AIC(clean_chromatogram,Xclean,'AICc');
-      fprintf(['\n    fit protein number ' num2str(ri) ' (' txt_val{1}{ri+1} ') with ' num2str(model.Ngauss) ' Gaussians'])
-      tt = toc(t2);
-      fprintf('  ...  %.2f seconds\n',tt)
-      %[Coef{ci,ri},SSE(ci,ri),adjrsquare(ci,ri),fit_flag(ci,ri)] = fitgaussmodel(clean_chromatogram,model);
+      model = choosemodel_AIC(clean_chromatogram,Xclean,'AICc',Ngaussmax);
       Coef{ci,ri} = model.coeffs;
       SSE(ci,ri) = model.SSE;
       adjrsquare(ci,ri) = model.adjrsquare;
+      
+      % if bad fit, try again
+      maxIter = 2;
+      iter = 0;
+      while adjrsquare(ci,ri)<0.85 && iter<=maxIter
+        iter = iter+1;
+        fprintf(['\n    re-fitting ' txt_val_nonbc{ri+1} '...'])
+        model = choosemodel_AIC(clean_chromatogram,Xclean,'AICc',Ngaussmax);
+        Coef{ci,ri} = model.coeffs;
+        SSE(ci,ri) = model.SSE;
+        adjrsquare(ci,ri) = model.adjrsquare;
+      end
+      
+      fprintf(['\n    fit ' txt_val_nonbc{ri+1} ' with ' num2str(model.Ngauss) ' Gaussians, R^2=' num2str(round(adjrsquare(ci,ri)*100)/100)])
+      
     catch
       Try_Fit(ci,ri)=0;
     end
-    
+        
   end
 end
 

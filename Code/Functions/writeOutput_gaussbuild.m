@@ -119,7 +119,7 @@ end
 
 %% *_Summary_Gausians_identifed.csv
 %disp('        Writing *_Summary_Gausians_identifed.csv...')
-
+if 0
 for ci = 1:Nchannels
   fn = strcat([datadir user.silacratios{ci} '_Summary_Gausians_identifed.csv']);
   
@@ -138,25 +138,25 @@ for ci = 1:Nchannels
     sum(No_Gaus==3 & Try_Fit(ci,:)==1), sum(No_Gaus==4 & Try_Fit(ci,:)==1), sum(No_Gaus==5& Try_Fit(ci,:)==1), sum(Try_Fit(1,:)));
   fclose(fid3);
 end
-
+end
 
 
 %% Proteins_not_fitted_to_gaussian_*.csv
 %disp('        Writing Proteins_not_fitted_to_gaussian_*.csv...')
-
-for ci = 1:Nchannels
-  fn = strcat([datadir 'Proteins_not_fitted_to_gaussian_' user.silacratios{ci} '.csv']);
-  fid5 = fopen(fn,'w');
-  for ri = 1:Nproteins
-    if length(Coef{ci,ri})<3 && Try_Fit(ci,ri)==1
-      fprintf(fid5,'%6.4f,%s,%6.4f,', replicate(ri),txt_val{ci}{(ri+1)},replicate(ri));
-      fprintf(fid5,'%6.4g,', rawdata{ci}(ri,:));
-      fprintf(fid5,'\n');
+if 0
+  for ci = 1:Nchannels
+    fn = strcat([datadir 'Proteins_not_fitted_to_gaussian_' user.silacratios{ci} '.csv']);
+    fid5 = fopen(fn,'w');
+    for ri = 1:Nproteins
+      if length(Coef{ci,ri})<3 && Try_Fit(ci,ri)==1
+        fprintf(fid5,'%6.4f,%s,%6.4f,', replicate(ri),txt_val{ci}{(ri+1)},replicate(ri));
+        fprintf(fid5,'%6.4g,', rawdata{ci}(ri,:));
+        fprintf(fid5,'\n');
+      end
     end
+    fclose(fid5);
   end
-  fclose(fid5);
 end
-
 
 
 %% *_Summary_Gausians_for_individual_proteins.csv
@@ -165,14 +165,14 @@ end
 for ci = 1:Nchannels
   fn = strcat([datadir user.silacratios{ci} '_Summary_Gausians_for_individual_proteins.csv']);
   fid4 = fopen(fn,'w');
-  fprintf (fid4,'%s,%s,%s,%s,%s\n',...
-    'Protein_number', 'Gene_name', 'Number_of_Gausians_detected','Number_of_Gausians_within_defined_boundaries','Number_of_Gausians_filtered');               %Write Header
+  fprintf (fid4,'%s,%s,%s,\n',...
+    'Protein_number', 'Gene_name', 'Number_of_Gausians_detected');               %Write Header
   for ri=1:Nproteins
-    fprintf(fid4, '%s,%s,%s,%s,%s\n', num2str(ri),...
+    fprintf(fid4, '%s,%s,%s,\n', num2str(ri),...
       txt_val{ci}{ri+1},...  % Protein_names
-      num2str(No_Gaus(ri)),...
-      num2str(length(Coef{ci,ri})/3),...
-      num2str(Gaussians_excluded_from_analysis_counter(ci,ri)));
+      num2str(No_Gaus(ri)));
+      %num2str(length(Coef{ci,ri})/3),...
+      %num2str(Gaussians_excluded_from_analysis_counter(ci,ri)));
   end
   fclose(fid4);
 end
@@ -211,22 +211,22 @@ end
 
 %% *_Combined_Chromatograms.csv
 %disp('        Writing MvsL_Combined_Chromatograms.csv...')
-
-for ci = 1:Nchannels
-  fn = strcat([datadir user.silacratios{ci} '_Combined_Chromatograms.csv']);
-  Combined_OutputGaus_length = size(protgausI{ci},1);
-  
-  fid_combined_Chromatogram = fopen(fn,'w');
-  for kk = 1:Combined_OutputGaus_length
-    ri = protgausI{ci}(kk,1);
-    fprintf(fid_combined_Chromatogram,'%6.4f,%6.4f,%6.4f,',kk,ri,replicate(ri)); %Write out the index information
-    fprintf(fid_combined_Chromatogram,'%s,',txt_val{ci}{ri+1}); %Write out protein name
-    fprintf(fid_combined_Chromatogram,'%6.4g,',cleandata{ci}(ri,5:end)); %Chromatogram information
-    fprintf(fid_combined_Chromatogram,'\n');
+if 0
+  for ci = 1:Nchannels
+    fn = strcat([datadir user.silacratios{ci} '_Combined_Chromatograms.csv']);
+    Combined_OutputGaus_length = size(protgausI{ci},1);
+    
+    fid_combined_Chromatogram = fopen(fn,'w');
+    for kk = 1:Combined_OutputGaus_length
+      ri = protgausI{ci}(kk,1);
+      fprintf(fid_combined_Chromatogram,'%6.4f,%6.4f,%6.4f,',kk,ri,replicate(ri)); %Write out the index information
+      fprintf(fid_combined_Chromatogram,'%s,',txt_val{ci}{ri+1}); %Write out protein name
+      fprintf(fid_combined_Chromatogram,'%6.4g,',cleandata{ci}(ri,5:end)); %Chromatogram information
+      fprintf(fid_combined_Chromatogram,'\n');
+    end
+    fclose(fid_combined_Chromatogram);
   end
-  fclose(fid_combined_Chromatogram);
 end
-
 
 
 %% *_Combined_OutputGaus_rep*.csv
@@ -320,7 +320,7 @@ for ci = 1:Nchannels
       ri = protgausI{ci}(kk,1);
       if replicate(ri) == divider_counter1
         fprintf(fid_processing3,'%s, %6.4f,', txt_val{ci}{ri+1}, replicate(ri));
-        fprintf(fid_processing3,'%6.4g,',rawdata{ci}(ri,2:end)); %Chromatogram information
+        fprintf(fid_processing3,'%6.4g,',rawdata{ci}(ri,:)); %Chromatogram information
         fprintf(fid_processing3,'\n');
       end
     end
