@@ -595,8 +595,8 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
   
   sf = [datadir2 'score_rep' num2str(replicate_counter) '.mat'];
-  save(sf,'scoreMatrix','TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms')
-  clear scoreMatrix TP_Matrix possibleInts Protein inverse_self Chromatograms
+  save(sf,'scoreMatrix','TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms','Dist')
+  clear scoreMatrix TP_Matrix possibleInts Protein inverse_self Chromatograms Dist
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
@@ -607,7 +607,7 @@ end
 
 
 % do a bit of housekeeping
-clear Dist Int_matrix
+clear Int_matrix
 
 
 
@@ -854,11 +854,14 @@ for pri = 1:length(desiredPrecision)
           else
             interaction_count=1+interaction_count;
             binary_interaction_list{interaction_count,1} = strcat(Int1,'-',Int2); % Interactions
-            binary_interaction_list{interaction_count,2} = 0; % Delta_EucDist
             %binary_interaction_list{interaction_count,2} = norm(Chromatograms(vii,:)-Chromatograms(viii,:)); % Delta_EucDist
-            binary_interaction_list{interaction_count,3} = abs(Protein.Center(vii)-Protein.Center(viii)); % Delta_Center
-            binary_interaction_list{interaction_count,4} = abs(Protein.Height(vii)-Protein.Height(viii)); % Delta_Height
-            binary_interaction_list{interaction_count,5} = abs(Protein.Width(vii)-Protein.Width(viii)); % Delta_Width
+            %binary_interaction_list{interaction_count,3} = abs(Protein.Center(vii)-Protein.Center(viii)); % Delta_Center
+            %binary_interaction_list{interaction_count,4} = abs(Protein.Height(vii)-Protein.Height(viii)); % Delta_Height
+            %binary_interaction_list{interaction_count,5} = abs(Protein.Width(vii)-Protein.Width(viii)); % Delta_Width
+            binary_interaction_list{interaction_count,2} = Dist.Euc(vii,viii); % Euc
+            binary_interaction_list{interaction_count,3} = Dist.Center(vii,viii); % Co-apex
+            binary_interaction_list{interaction_count,4} = Dist.R2(vii,viii); % R^2
+            binary_interaction_list{interaction_count,5} = 0; % empty for now
             binary_interaction_list{interaction_count,6} = possibleInts(vii,viii); % Both_proteins_Corum
             binary_interaction_list{interaction_count,7} = TP_Matrix(vii,viii); % Interaction_in_Corum
             binary_interaction_list{interaction_count,8} = Protein.Isoform{vii}; % Protein_interactions1
@@ -900,9 +903,9 @@ for pri = 1:length(desiredPrecision)
   interaction_final.proteinB=cell(0,0);
   interaction_final.CenterA=cell(0,0);
   interaction_final.CenterB=cell(0,0);
-  interaction_final.DeltaHeight=cell(0,0);
+  %interaction_final.DeltaHeight=cell(0,0);
   interaction_final.DeltaCenter=cell(0,0);
-  interaction_final.DeltaWidth=cell(0,0);
+  interaction_final.R2=cell(0,0);
   interaction_final.DeltaEucDist=cell(0,0);
   interaction_final.proteinInCorum=cell(0,0);
   interaction_final.interactionInCorum=cell(0,0);
@@ -937,9 +940,9 @@ for pri = 1:length(desiredPrecision)
         interaction_final.proteinB(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),9);
         interaction_final.CenterA(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),10);
         interaction_final.CenterB(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),11);
-        interaction_final.DeltaHeight(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),4);
+        %interaction_final.DeltaHeight(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),4);
         interaction_final.DeltaCenter(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),3);
-        interaction_final.DeltaWidth(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),5);
+        interaction_final.R2(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),4);
         interaction_final.DeltaEucDist(Unique_interaction_counter,row) = binary_interaction_list(location_interaction_pairs(position_within_two(row)),2);
         interaction_final.score(Unique_interaction_counter,row) = binary_interaction_list{location_interaction_pairs(position_within_two(row)),13};
         
@@ -962,9 +965,9 @@ for pri = 1:length(desiredPrecision)
       interaction_final.proteinB(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),9);
       interaction_final.CenterA(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),10);
       interaction_final.CenterB(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),11);
-      interaction_final.DeltaHeight(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),4);
+      %interaction_final.DeltaHeight(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),4);
       interaction_final.DeltaCenter(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),3);
-      interaction_final.DeltaWidth(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),5);
+      interaction_final.R2(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),4);
       interaction_final.DeltaEucDist(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),2);
       interaction_final.proteinInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),6);
       interaction_final.interactionInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),7);
@@ -1133,39 +1136,39 @@ for pri = 1:length(desiredPrecision)
     end
   end
   
-  %Crete list of DeltaHeight, note ensure strjoin function is avalible
-  interaction_final.DeltaHeight_formated=cell(Total_unique_interactions,1);
+%   %Crete list of DeltaHeight, note ensure strjoin function is avalible
+%   interaction_final.DeltaHeight_formated=cell(Total_unique_interactions,1);
+%   
+%   for format_loop=1:Total_unique_interactions
+%     DeltaHeight_2bformated1=interaction_final.DeltaHeight(format_loop,:);
+%     DeltaHeight_2bformated1(cellfun('isempty',DeltaHeight_2bformated1)) = [];
+%     length_DeltaHeight=length(DeltaHeight_2bformated1);
+%     
+%     %Test if the array is longer then one entry
+%     if length_DeltaHeight<2
+%       interaction_final.DeltaHeight_formated(format_loop)=DeltaHeight_2bformated1(1);
+%     elseif length_DeltaHeight>=2
+%       for jj= 1:length(DeltaHeight_2bformated1)
+%         DeltaHeight_2bformated1{jj} = num2str(DeltaHeight_2bformated1{jj});
+%       end
+%       interaction_final.DeltaHeight_formated(format_loop)= {strjoin(DeltaHeight_2bformated1,' ; ')};
+%     end
+%   end
   
+  %Crete list of R^2, note ensure strjoin function is avalible
+  interaction_final.R2_formated=cell(Total_unique_interactions,1);
   for format_loop=1:Total_unique_interactions
-    DeltaHeight_2bformated1=interaction_final.DeltaHeight(format_loop,:);
-    DeltaHeight_2bformated1(cellfun('isempty',DeltaHeight_2bformated1)) = [];
-    length_DeltaHeight=length(DeltaHeight_2bformated1);
-    
+    R2_2bformated1=interaction_final.R2(format_loop,:);
+    R2_2bformated1(cellfun('isempty',R2_2bformated1)) = [];
+    length_R2=length(R2_2bformated1);
     %Test if the array is longer then one entry
-    if length_DeltaHeight<2
-      interaction_final.DeltaHeight_formated(format_loop)=DeltaHeight_2bformated1(1);
-    elseif length_DeltaHeight>=2
-      for jj= 1:length(DeltaHeight_2bformated1)
-        DeltaHeight_2bformated1{jj} = num2str(DeltaHeight_2bformated1{jj});
+    if length_R2<2
+      interaction_final.R2_formated(format_loop)=R2_2bformated1(1);
+    elseif length_R2>=2
+      for jj= 1:length(R2_2bformated1)
+        R2_2bformated1{jj} = num2str(R2_2bformated1{jj});
       end
-      interaction_final.DeltaHeight_formated(format_loop)= {strjoin(DeltaHeight_2bformated1,' ; ')};
-    end
-  end
-  
-  %Crete list of Deltawidth, note ensure strjoin function is avalible
-  interaction_final.Deltawidth_formated=cell(Total_unique_interactions,1);
-  for format_loop=1:Total_unique_interactions
-    Deltawidth_2bformated1=interaction_final.DeltaWidth(format_loop,:);
-    Deltawidth_2bformated1(cellfun('isempty',Deltawidth_2bformated1)) = [];
-    length_Deltawidth=length(Deltawidth_2bformated1);
-    %Test if the array is longer then one entry
-    if length_Deltawidth<2
-      interaction_final.Deltawidth_formated(format_loop)=Deltawidth_2bformated1(1);
-    elseif length_Deltawidth>=2
-      for jj= 1:length(Deltawidth_2bformated1)
-        Deltawidth_2bformated1{jj} = num2str(Deltawidth_2bformated1{jj});
-      end
-      interaction_final.Deltawidth_formated(format_loop)= {strjoin(Deltawidth_2bformated1,' ; ')};
+      interaction_final.R2_formated(format_loop)= {strjoin(R2_2bformated1,' ; ')};
     end
   end
   
@@ -1293,9 +1296,9 @@ for pri = 1:length(desiredPrecision)
     treatment_specific.centerA_formated=cell(0,0);
     treatment_specific.centerB_formated=cell(0,0);
     treatment_specific.Replicates_formated=cell(0,0);
-    treatment_specific.DeltaHeight_formated=cell(0,0);
+    %treatment_specific.DeltaHeight_formated=cell(0,0);
     treatment_specific.DeltaCenter_formated=cell(0,0);
-    treatment_specific.Deltawidth_formated=cell(0,0);
+    treatment_specific.R2_formated=cell(0,0);
     treatment_specific.DeltaEuc_formated=cell(0,0);
     treatment_specific.proteinInCorum=cell(0,0);
     treatment_specific.interactionInCorum=cell(0,0);
@@ -1310,9 +1313,9 @@ for pri = 1:length(desiredPrecision)
         treatment_specific.centerA_formated(treatment_row_counter,1)=interaction_final.centerA_formated(treatment_counter,1);
         treatment_specific.centerB_formated(treatment_row_counter,1)=interaction_final.centerB_formated(treatment_counter,1);
         treatment_specific.Replicates_formated(treatment_row_counter,1)=interaction_final.Replicates_formated(treatment_counter,1);
-        treatment_specific.DeltaHeight_formated(treatment_row_counter,1)=interaction_final.DeltaHeight_formated(treatment_counter,1);
+        %treatment_specific.DeltaHeight_formated(treatment_row_counter,1)=interaction_final.DeltaHeight_formated(treatment_counter,1);
         treatment_specific.DeltaCenter_formated(treatment_row_counter,1)=interaction_final.DeltaCenter_formated(treatment_counter,1);
-        treatment_specific.Deltawidth_formated(treatment_row_counter,1)=interaction_final.Deltawidth_formated(treatment_counter,1);
+        treatment_specific.R2_formated(treatment_row_counter,1)=interaction_final.Deltawidth_formated(treatment_counter,1);
         treatment_specific.DeltaEuc_formated(treatment_row_counter,1)=interaction_final.DeltaEuc_formated(treatment_counter,1);
         treatment_specific.proteinInCorum(treatment_row_counter,1)=interaction_final.proteinInCorum(treatment_counter,1);
         treatment_specific.interactionInCorum(treatment_row_counter,1)=interaction_final.interactionInCorum(treatment_counter,1);
@@ -1331,9 +1334,9 @@ for pri = 1:length(desiredPrecision)
     untreatment_specific.centerA_formated=cell(0,0);
     untreatment_specific.centerB_formated=cell(0,0);
     untreatment_specific.Replicates_formated=cell(0,0);
-    untreatment_specific.DeltaHeight_formated=cell(0,0);
+    %untreatment_specific.DeltaHeight_formated=cell(0,0);
     untreatment_specific.DeltaCenter_formated=cell(0,0);
-    untreatment_specific.Deltawidth_formated=cell(0,0);
+    untreatment_specific.R2_formated=cell(0,0);
     untreatment_specific.DeltaEuc_formated=cell(0,0);
     untreatment_specific.proteinInCorum=cell(0,0);
     untreatment_specific.interactionInCorum=cell(0,0);
@@ -1348,9 +1351,9 @@ for pri = 1:length(desiredPrecision)
         untreatment_specific.centerA_formated(untreatment_row_counter,1)=interaction_final.centerA_formated(treatment_counter,1);
         untreatment_specific.centerB_formated(untreatment_row_counter,1)=interaction_final.centerB_formated(treatment_counter,1);
         untreatment_specific.Replicates_formated(untreatment_row_counter,1)=interaction_final.Replicates_formated(treatment_counter,1);
-        untreatment_specific.DeltaHeight_formated(untreatment_row_counter,1)=interaction_final.DeltaHeight_formated(treatment_counter,1);
+        %untreatment_specific.DeltaHeight_formated(untreatment_row_counter,1)=interaction_final.DeltaHeight_formated(treatment_counter,1);
         untreatment_specific.DeltaCenter_formated(untreatment_row_counter,1)=interaction_final.DeltaCenter_formated(treatment_counter,1);
-        untreatment_specific.Deltawidth_formated(untreatment_row_counter,1)=interaction_final.Deltawidth_formated(treatment_counter,1);
+        untreatment_specific.R2_formated(untreatment_row_counter,1)=interaction_final.R2_formated(treatment_counter,1);
         untreatment_specific.DeltaEuc_formated(untreatment_row_counter,1)=interaction_final.DeltaEuc_formated(treatment_counter,1);
         untreatment_specific.proteinInCorum(untreatment_row_counter,1)=interaction_final.proteinInCorum(treatment_counter,1);
         untreatment_specific.interactionInCorum(untreatment_row_counter,1)=interaction_final.interactionInCorum(treatment_counter,1);
