@@ -767,6 +767,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 %% 7. Find and concatenate interactions at desired precision'
 
+firstFlag = 1;
 for pri = 1:length(desiredPrecision)
   tic
   s = ['        7. Find and concatenate interactions at precision = ' num2str(desiredPrecision(pri)) '\n'];
@@ -1372,14 +1373,15 @@ for pri = 1:length(desiredPrecision)
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   
+  tic
+  fprintf('        12. Make figures')
+  makeFigures_ROC
+  tt = toc;
+  fprintf('  ...  %.2f seconds\n',tt)
+  
+  firstFlag = 0;
 end
 
-
-tic
-fprintf('        12. Make figures')
-makeFigures_ROC
-tt = toc;
-fprintf('  ...  %.2f seconds\n',tt)
 
 
 diary('off')

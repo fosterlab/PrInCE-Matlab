@@ -28,7 +28,11 @@ for k=1:3
 end
 legend('Proteins in corum (FP)', 'Interaction in corum (TP)',  'Proteins/Interactions not in corum');
 I2use = ceil(size(Precision_array,2)/2);
-ylim([0,max(sum(Precision_array(:,I2use)))*1.2]);
+y2 = max(sum(Precision_array(:,I2use)))*1.2;
+if y2==0
+  y2 = (Interaction_in_corum_not_detected(1,1)+Precision_array(1,2)+Interaction_not_in_corum(1,1))*1.1;
+end
+ylim([0,y2]);
 title('Interactions observed across isotoplogue channels (Zoom)','FontSize', 12);
 ylabel('Number of interactions','FontSize', 8);
 xlabel('isotoplogue channels','FontSize', 8);
@@ -41,7 +45,7 @@ saveas(gcf, Final_Interaction_figure);
 
 %% Final precision-recall, ROC curves
 
-if firstFlag==1
+if firstFlag ==1
   figure,hold on
   plot(recRange,precRange)
   xlabel('Recall','fontsize',12)
@@ -75,64 +79,67 @@ end
 
 %% Histogram of score for class=0, class=1
 
-x = linspace(min(score),max(score),length(class)/50);
-h1 = hist(score(class==1),x);
-h0 = hist(score(class==0),x);
-
-figure,hold on
-p0 = patch([0 x x(end)],[0 h0 0],'r');
-p1 = patch([0 x x(end)],[0 h1 0],'g');
-ax = axis;
-for ii = 1:length(desiredPrecision)
-  plot([1 1].*xcutoff(ii),[ax(3) ax(4)],'--r')
-  h = text(xcutoff(ii)-diff(ax(1:2))*.02,ax(3)+diff(ax(3:4))*.75,...
-    ['precision = ' num2str(round(desiredPrecision(ii)*100)) '%']);
-  set(h, 'rotation', 90)
+if firstFlag ==1
+  
+  x = linspace(min(score),max(score),length(class)/50);
+  h1 = hist(score(class==1),x);
+  h0 = hist(score(class==0),x);
+  
+  figure,hold on
+  p0 = patch([0 x x(end)],[0 h0 0],'r');
+  p1 = patch([0 x x(end)],[0 h1 0],'g');
+  ax = axis;
+  for ii = 1:length(desiredPrecision)
+    plot([1 1].*xcutoff(ii),[ax(3) ax(4)],'--r')
+    h = text(xcutoff(ii)-diff(ax(1:2))*.02,ax(3)+diff(ax(3:4))*.75,...
+      ['precision = ' num2str(round(desiredPrecision(ii)*100)) '%']);
+    set(h, 'rotation', 90)
+  end
+  axis(ax)
+  p0.FaceAlpha = 0.4;
+  p1.FaceAlpha = 0.4;
+  grid on
+  hl = legend('Known non-interaction','Known interaction','location','northwest');
+  set(hl,'fontsize',12)
+  xlabel('Interaction score','fontsize',12)
+  ylabel('Count, number of interactions','fontsize',12)
+  title('Histogram of interaction scores for protein pairs in CORUM','fontsize',12)
+  
+  % Save figure
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+  sf=[figdir1 'ScoreHistogram'];
+  saveas(gcf, sf, 'png');
 end
-axis(ax)
-p0.FaceAlpha = 0.4;
-p1.FaceAlpha = 0.4;
-grid on
-hl = legend('Known non-interaction','Known interaction','location','northwest');
-set(hl,'fontsize',12)
-xlabel('Interaction score','fontsize',12)
-ylabel('Count, number of interactions','fontsize',12)
-title('Histogram of interaction scores for protein pairs in CORUM','fontsize',12) 
-
-% Save figure
-set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir1 'ScoreHistogram'];
-saveas(gcf, sf, 'png');
-
 
 
 %% Normalized histogram of score for class=0, class=1
-
-x = linspace(min(score),max(score),length(class)/50);
-h1 = hist(score(class==1),x);
-h0 = hist(score(class==0),x);
-
-figure,hold on
-p0 = patch([0 x x(end)],[0 h0/sum(h0) 0],'r');
-p1 = patch([0 x x(end)],[0 h1/sum(h1) 0],'g');
-ax = axis;
-for ii = 1:length(desiredPrecision)
-  plot([1 1].*xcutoff(ii),[ax(3) ax(4)],'--r')
-  h = text(xcutoff(ii)-diff(ax(1:2))*.02,ax(3)+diff(ax(3:4))*.75,...
-    ['precision = ' num2str(round(desiredPrecision(ii)*100)) '%']);
-  set(h, 'rotation', 90)
+if firstFlag ==1
+  x = linspace(min(score),max(score),length(class)/50);
+  h1 = hist(score(class==1),x);
+  h0 = hist(score(class==0),x);
+  
+  figure,hold on
+  p0 = patch([0 x x(end)],[0 h0/sum(h0) 0],'r');
+  p1 = patch([0 x x(end)],[0 h1/sum(h1) 0],'g');
+  ax = axis;
+  for ii = 1:length(desiredPrecision)
+    plot([1 1].*xcutoff(ii),[ax(3) ax(4)],'--r')
+    h = text(xcutoff(ii)-diff(ax(1:2))*.02,ax(3)+diff(ax(3:4))*.75,...
+      ['precision = ' num2str(round(desiredPrecision(ii)*100)) '%']);
+    set(h, 'rotation', 90)
+  end
+  axis(ax)
+  p0.FaceAlpha = 0.4;
+  p1.FaceAlpha = 0.4;
+  grid on
+  hl = legend('Known non-interaction','Known interaction','location','northwest');
+  set(hl,'fontsize',12)
+  xlabel('Interaction score','fontsize',12)
+  ylabel('Count, number of interactions, normalized','fontsize',12)
+  title('Histogram of interaction scores for protein pairs in CORUM','fontsize',12)
+  
+  % Save figure
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+  sf=[figdir1 'ScoreHistogram_normalized'];
+  saveas(gcf, sf, 'png');
 end
-axis(ax)
-p0.FaceAlpha = 0.4;
-p1.FaceAlpha = 0.4;
-grid on
-hl = legend('Known non-interaction','Known interaction','location','northwest');
-set(hl,'fontsize',12)
-xlabel('Interaction score','fontsize',12)
-ylabel('Count, number of interactions, normalized','fontsize',12)
-title('Histogram of interaction scores for protein pairs in CORUM','fontsize',12) 
-
-% Save figure
-set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir1 'ScoreHistogram_normalized'];
-saveas(gcf, sf, 'png');
