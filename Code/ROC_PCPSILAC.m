@@ -248,7 +248,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   end
   tmp1 = tmp1(:,1:6);
   Gaus_import = [tmp2 num2cell( cat(1,zeros(1,size(tmp1,2)),tmp1) )];
-  % Gaus_import(:,1): Protein name 
+  % Gaus_import(:,1): Protein name
   % Gaus_import(:,2): Height
   % Gaus_import(:,3): Center
   % Gaus_import(:,4): Width
@@ -967,9 +967,12 @@ for pri = 1:length(desiredPrecision)
       interaction_final.DeltaEucDist(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),2);
       interaction_final.proteinInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),6);
       interaction_final.interactionInCorum(Unique_interaction_counter,1) = binary_interaction_list(location_interaction_pairs(1),7);
-      interaction_final.score(Unique_interaction_counter,row) = binary_interaction_list{location_interaction_pairs(1),13};
+      interaction_final.score(Unique_interaction_counter,1) = binary_interaction_list{location_interaction_pairs(1),13};
     end
   end
+  
+  % Calculate the average score for each pairwise interaction
+  interaction_final.score = nanmean(interaction_final.score,2);
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
@@ -1185,7 +1188,7 @@ for pri = 1:length(desiredPrecision)
   %Crete list of scores, note ensure strjoin function is avalible
   interaction_final.scores_formated=cell(Total_unique_interactions,1);
   for format_loop=1:Total_unique_interactions
-    tmp = -log(1-interaction_final.score(format_loop,:));
+    tmp = interaction_final.score(format_loop);
     tmp(isnan(tmp)) = [];
     length_Replicates=length(tmp);
     %Test if the array is longer then one entry
@@ -1200,11 +1203,23 @@ for pri = 1:length(desiredPrecision)
     end
   end
   
-%   for ii = 1:Total_unique_interactions
-%     tmp = interaction_final.score(ii,:);
-%     tmp = tmp(~isnan(tmp));
-%     interaction_final.scores_formated{ii} = strjoin(cellstr(num2str(tmp(:)))',' ; ');
-%   end
+  % Create scoreRank, scorePrctile
+  [~, ~, rankDescend] = unique(interaction_final.score);
+  interaction_final.scoreRank = (1-rankDescend) + max(rankDescend);
+  interaction_final.scorePrctile = interaction_final.scoreRank/length(interaction_final.scoreRank);
+  
+  
+  % Create precision-dropout
+  interaction_final.precisionDropout = nan(Total_unique_interactions,1);
+  for ii = 1:Total_unique_interactions
+    cutoff = interaction_final.score(ii);
+    I = interaction_final.score > cutoff;
+    protInCor = cell2mat(interaction_final.proteinInCorum(I));
+    intInCor = cell2mat(interaction_final.interactionInCorum(I));
+    TP = sum(protInCor==1 & intInCor==1);
+    FP = sum(protInCor==1 & intInCor==0);
+    interaction_final.precisionDropout(ii) = TP / (TP+FP);
+  end
   
   
   %create figure of precision replicates over replicates
@@ -1357,13 +1372,14 @@ for pri = 1:length(desiredPrecision)
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   
-  tic
-  fprintf('        12. Make figures')
-  makeFigures_ROC
-  tt = toc;
-  fprintf('  ...  %.2f seconds\n',tt)
-  
 end
+
+
+tic
+fprintf('        12. Make figures')
+makeFigures_ROC
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
 diary('off')

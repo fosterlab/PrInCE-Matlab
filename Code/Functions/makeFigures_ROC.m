@@ -41,35 +41,36 @@ saveas(gcf, Final_Interaction_figure);
 
 %% Final precision-recall, ROC curves
 
-figure,hold on
-plot(recRange,precRange)
-xlabel('Recall','fontsize',12)
-ylabel('Precision','fontsize',12)
-for ii = 1:length(desiredPrecision)
-  plot([0 1],[1 1].*desiredPrecision(ii),'--r')
-  plot([1 1].*calcrec(ii),[0 desiredPrecision(ii)],'--k')
-  text(.8,desiredPrecision(ii)+.02,['precision = ' num2str(round(desiredPrecision(ii)*100)) '%'])
+if firstFlag==1
+  figure,hold on
+  plot(recRange,precRange)
+  xlabel('Recall','fontsize',12)
+  ylabel('Precision','fontsize',12)
+  for ii = 1:length(desiredPrecision)
+    plot([0 1],[1 1].*desiredPrecision(ii),'--r')
+    plot([1 1].*calcrec(ii),[0 desiredPrecision(ii)],'--k')
+    text(.8,desiredPrecision(ii)+.02,['precision = ' num2str(round(desiredPrecision(ii)*100)) '%'])
+  end
+  axis([0 1 0 1])
+  
+  % Save figure
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+  sf=[figdir1 'Final_PrecisionRecall'];
+  saveas(gcf, sf, 'png');
+  
+  
+  figure,hold on
+  plot(fprRange,tprRange)
+  plot([0 1],[0 1],'--r')
+  xlabel('False positive rate, FP/(FP+TN)','fontsize',12)
+  ylabel('True positive rate, TP/(TP+FN)','fontsize',12)
+  axis([0 1 0 1])
+  
+  % Save figure
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+  sf=[figdir1 'Final_ROC'];
+  saveas(gcf, sf, 'png');
 end
-axis([0 1 0 1])
-
-% Save figure
-set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir1 'Final_PrecisionRecall'];
-saveas(gcf, sf, 'png');
-
-
-figure,hold on
-plot(fprRange,tprRange)
-plot([0 1],[0 1],'--r')
-xlabel('False positive rate, FP/(FP+TN)','fontsize',12)
-ylabel('True positive rate, TP/(TP+FN)','fontsize',12)
-axis([0 1 0 1])
-
-% Save figure
-set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir1 'Final_ROC'];
-saveas(gcf, sf, 'png');
-
 
 
 %% Histogram of score for class=0, class=1
