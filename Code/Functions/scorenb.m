@@ -7,8 +7,15 @@ labels = TP_Matrix(:);
 y = labels(:);
 y(y>0) = 1;
 y(y~=1) = -1;
-X = [Dist.R2(:) Dist.Euc(:) Dist.Center(:) Dist.Ngauss(:) Dist.CoApex(:) Dist.AUC(:)];% Dist.RawOverlap(:) Dist.R2raw(:)];
+X = [Dist.R2(:) Dist.Euc(:) Dist.Center(:) Dist.Ngauss(:) Dist.CoApex(:) Dist.AUC(:) Dist.Rpraw(:) Dist.R2raw(:)];
+% Dist.RawOverlap(:) Dist.R2raw(:)];
 Nd = size(X,2);
+
+% Set NaN's to maxiumum value
+for ii = 1:Nd
+  nanelements = isnan(X(:,ii));
+  X(nanelements,ii) = max(X(~nanelements,ii));
+end
 
 % Soft whiten data
 eps = 2e-16;
@@ -51,7 +58,7 @@ for iter = 1:Nmodel
   if sum(feats(iter,:)<=2)==size(feats,2)
     feats(iter,:) = 3;
   end
-  f2consider = find(feats(iter,:) > 2);
+  f2consider = find(feats(iter,:) > 2)
   
   % Fit Naive Bayes model
   nab = fitcnb(Xtr(:,f2consider),ytr);

@@ -293,7 +293,8 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   
   % Replace NaN values with 0.05
   Chromatograms = Chromatograms_raw;
-  Chromatograms(isnan(Chromatograms))= 0.05;
+  I = find(isnan(Chromatograms));
+  Chromatograms(I)= 0.05 * rand(size(I));
   
   % remove gaussian with centers below frac1
   %Ibad = C_raw<frac1;
@@ -349,6 +350,9 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Dist.Ngauss = squareform(pdist(Ngauss));
   Dist.CoApex = squareform(pdist(CoApex));
   Dist.AUC = squareform(pdist(auc));
+  [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+  Dist.R2raw = 1 - R.^2;
+  Dist.Rpraw = p;
   
   % GRAVEYARD OF RELEGATED DIST MATRICES
   %   Dist.RawOverlap = nan(size(Chromatograms_raw,1),size(Chromatograms_raw,1));
