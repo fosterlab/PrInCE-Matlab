@@ -7,8 +7,11 @@ labels = TP_Matrix(:);
 y = labels(:);
 y(y>0) = 1;
 y(y~=1) = -1;
-X = [Dist.R2(:) Dist.Euc(:) Dist.Center(:) Dist.Ngauss(:) Dist.CoApex(:) Dist.AUC(:) Dist.Rpraw(:) Dist.R2raw(:)];
-% Dist.RawOverlap(:) Dist.R2raw(:)];
+fn = fieldnames(Dist);
+X = nan(length(Dist.(fn{1})(:)),length(fn));
+for ii = 1:length(fn); 
+  X(:,ii) = Dist.(fn{ii})(:);
+end
 Nd = size(X,2);
 
 % Set NaN's to maxiumum value
