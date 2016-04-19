@@ -997,3 +997,56 @@ for ii = 1:2
   plot(rawdata{ii}(I3b,:)','r')
   
 end
+
+
+
+%% Why does precision drop when combining interaction lists?
+% Theory: TP are common between lists (signal), FP are unique (noise).
+%
+% Run testROC_tissue.m to make the data
+
+
+key = rand(1,100);
+
+% Make list A
+Ia = find(dataOld.data(:,5)==1);
+listA = zeros(length(Ia),3);
+for ii = 1:length(Ia)
+  interaction = dataOld.text{Ia(ii),1};
+  listA(ii,1) = sum(double(interaction) .* key(1:length(interaction)));
+  listA(ii,2) = dataOld.data(Ia(ii),1);
+  listA(ii,3) = dataOld.data(Ia(ii),2);
+end
+listA = unique(listA,'rows');
+TPa = sum(listA(:,2)==1 & listA(:,3)==1);
+FPa = sum(listA(:,2)==1 & listA(:,3)==0);
+
+% Make list B
+Ib = find(dataOld.data(:,6)==1);
+listB = zeros(length(Ib),3);
+for ii = 1:length(Ib)
+  interaction = dataOld.text{Ib(ii),1};
+  listB(ii,1) = sum(double(interaction) .* key(1:length(interaction)));
+  listB(ii,2) = dataOld.data(Ib(ii),1);
+  listB(ii,3) = dataOld.data(Ib(ii),2);
+end
+listB = unique(listB,'rows');
+TPb = sum(listB(:,2)==1 & listB(:,3)==1);
+FPb = sum(listB(:,2)==1 & listB(:,3)==0);
+
+% Make unique(union(A,B))
+listAB = unique([listA; listB],'rows');
+TPab = sum(listAB(:,2)==1 & listAB(:,3)==1);
+FPab = sum(listAB(:,2)==1 & listAB(:,3)==0);
+
+% Calculate the ratio of FP:TP in A, B and combined list
+ratioA = FPa / TPa;
+ratioB = FPb / TPb;
+ratioAB = FPab / TPab;
+[ratioA ratioB ratioAB]
+
+% Calculate how what fraction of TP and FP were removed
+fracTPremoved = (TPa + TPb - TPab) / (TPa + TPb);
+fracFPremoved = (FPa + FPb - FPab) / (FPa + FPb);
+[fracTPremoved fracFPremoved]
+
