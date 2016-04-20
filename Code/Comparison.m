@@ -32,18 +32,9 @@
 %%%%%%%%%%%%%%% Big changes:
 %
 %
-%%%%%%%%%%%%%%% Questions:
-% 1. What is 'Diltuion_factor_master_mix', i.e. "the percentage of standard mixed into samples".
-%   - reference dilution factor, since the reference can be too strong
-%   - reference is all 50 fractions combined into one sample
-% 2. Where does Adjusted_HvsL_Raw_data_maxquant_modified.xlsx come from?
-%   - This is a duplicate of the csv file (without the _modified tag). The csv file was just saved
-%     as excel table, Nick says because he was playing around with how to read in data. I could
-%     probably just ignore the excel and use the original csv file..?
-% 3. What is 2408? 7443?
-% 4. What's shown in the top Gaussian plot? How are those Gaussian picked?
-% 5. What Gaussians "represent" all the replicates? How are these picked?
-% 6. What happens to a Gaussian that's only in one replicate?
+%%%%%%%%%%%%%%% To do:
+% 1. Why do we need Finalised_Master_Gaussian_list AND Master_Gaussian_list?
+
 
 
 % AUTOMATION
@@ -104,7 +95,7 @@ if ~skipflag
   if ~exist([datadir 'Comparison'], 'dir'); mkdir([datadir 'Comparison']); end
   if ~exist(figdir, 'dir'); mkdir(figdir); end
   if ~exist([figdir 'Comparison'], 'dir'); mkdir([figdir 'Comparison']); end
-  if ~exist([figdir 'Comparison/ProteinGaussianMaps'], 'dir'); mkdir([figdir 'Comparison/ProteinGaussianMaps']); end
+  if ~exist([figdir 'Comparison/IndividualProteins'], 'dir'); mkdir([figdir 'Comparison/IndividualProteins']); end
   
   % Find input files
   ChromatogramIn = cell(Nchannels,1);
@@ -202,6 +193,8 @@ if ~skipflag
       elseif length(replicate_vector) == size(num_val{ii},1)+1
         num_val{ii} = [replicate_vector(2:end) num_val{ii}];
       end
+    else
+      error('Comparison: Chromatogram file is missing the replicate column.')
     end
     
     % Remove header from txt_val if necessary
@@ -276,7 +269,7 @@ if ~skipflag
     
     % Add unique identifiers to the Gaussian lists
     Unique_indentifer=cell(1,1);
-    Unique_indentifer{1,1} = 'Unique_identifier'; % replicate_GaussianNumber_channel_ProteinName
+    Unique_indentifer{1,1} = ''; % replicate_GaussianNumber_channel_ProteinName
     Unique_indentifer{1,2} = 'Replicate_Protein_identifier'; % replicate_ProteinName
     for jj = 2:size(GaussData{ii},1)
       Replicate_number=str2double(GaussData{ii}{jj,3});
@@ -444,12 +437,6 @@ if ~skipflag
       Combined_Gaussians.Channels{gausscount} = strjoin(Experimental_channels(Cbest_multireplicates(ii,:)==1), '+');
       Combined_Gaussians.SSE(gausscount) = GaussSummary(Ibest).SSE(gg,ii);
       Combined_Gaussians.Complex_size(gausscount) = GaussSummary(Ibest).Complex_size(gg,ii);
-      %Combined_Gaussians.Area_of_combined_gaussian(gausscount) = GaussSummary(Ibest)
-      %Combined_Gaussians.Area_of_HvsL_gaussian(gausscount) = GaussSummary(Ibest)
-      %Combined_Gaussians.Area_of_MvsL_gaussian(gausscount) = GaussSummary(Ibest)
-      %Combined_Gaussians.Summed_combined_area(gausscount) = GaussSummary(Ibest)
-      %Combined_Gaussians.Summed_HvsL_area(gausscount) = GaussSummary(Ibest)
-      %Combined_Gaussians.Summed_MvsL_area(gausscount) = GaussSummary(Ibest)
     end
     
     % 4. Return all Gaussians in other channels that have NOT been matched.
@@ -467,12 +454,6 @@ if ~skipflag
         Combined_Gaussians.Channels{gausscount} = strjoin(Experimental_channels(Inotbest(jj)), '+');
         Combined_Gaussians.SSE(gausscount) = GaussSummary(Inotbest(jj)).SSE(gg,g2add(kk));
         Combined_Gaussians.Complex_size(gausscount) = GaussSummary(Inotbest(jj)).Complex_size(gg,g2add(kk));
-        %Combined_Gaussians.Area_of_combined_gaussian(gausscount) = GaussSummary(Ibest)
-        %Combined_Gaussians.Area_of_HvsL_gaussian(gausscount) = GaussSummary(Ibest)
-        %Combined_Gaussians.Area_of_MvsL_gaussian(gausscount) = GaussSummary(Ibest)
-        %Combined_Gaussians.Summed_combined_area(gausscount) = GaussSummary(Ibest)
-        %Combined_Gaussians.Summed_HvsL_area(gausscount) = GaussSummary(Ibest)
-        %Combined_Gaussians.Summed_MvsL_area(gausscount) = GaussSummary(Ibest)
       end
     end
   end
@@ -502,20 +483,27 @@ if ~skipflag
   % for this comparison pair
   % find which of the user.silacratios is the no-treatment, i.e. denominator in the fold change, and
   % which is the treatment, i.e. numerator.
-  SR2use = find(strcmp(user.silacratios,user.comparisonpairs));
-  I1 = strcmp(user.treatmentcondition,(user.silacratios(SR2use))); % treatment, numerator
-  I2 = SR2use(~I1); % no-treatment, denominator
-  I1 = find(I1);
+%   SR2use(1) = find(ismember(user.silacratios,user.comparisonpairs{1}));
+%   SR2use(2) = find(ismember(user.silacratios,user.comparisonpairs{2}));
+%   I1 = ismember(user.silacratios(SR2use),user.treatmentcondition); % treatment, numerator
+%   I2 = SR2use(~I1); % no-treatment, denominator
+%   I1 = find(I1);
+  I1 = find(ismember(user.silacratios,user.comparisonpairs{1})); % treatment, numerator
+  I2 = find(ismember(user.silacratios,user.comparisonpairs{2})); % non-treatment, denominator
   
   Combined_Gaussians.log2_of_gaussians = nan(number_of_proteins,1);
   for gg = 1:number_of_proteins
+    % Record which channels are the denominator/numerator in this fold change
+    Combined_Gaussians.numeratorChannnel{gg} = user.silacratios{I1};
+    Combined_Gaussians.denominatorChannnel{gg} = user.silacratios{I2};
     
     % location of Protein in raw textdata
     Idata = find(strcmp(Combined_Gaussians.Unique_identifier{gg},txt_val{1}(:,1)));
     Center_to_test = round(Combined_Gaussians.Center(gg));
     
     % If Center is out of range, abort
-    if Center_to_test-2+frac1-1<2+1 || Center_to_test+2+frac1-1>Nfraction+1
+    %if Center_to_test-2+frac1-1<1 || Center_to_test+2+frac1-1>Nfraction+1
+    if Center_to_test-2<1 || Center_to_test+2>frac2-frac1+1
       continue;
     end
     
@@ -535,6 +523,8 @@ if ~skipflag
     
     % If data is good, get fold changes between the comparison pair
     Combined_Gaussians.log2_of_gaussians(gg) = log2(nanmean(rawratio(I1,:))/nanmean(rawratio(I2,:)));
+    
+
   end
   Combined_Gaussians.log2_normalised_gaussians = Combined_Gaussians.log2_of_gaussians - nanmean(Combined_Gaussians.log2_of_gaussians);
   
@@ -547,31 +537,6 @@ if ~skipflag
   Combined_Gaussians.Observed_change(~Idec & ~Iinc & ~Ibad) = {'No change'};
   Combined_Gaussians.Observed_change(Ibad) = {'Unquantifiable'};
   
-  
-  % Count how many guassian change in each fraction
-  Hist_array=zeros(Nfraction,3);
-  for ii= 1:number_of_proteins
-    %Define Center of Gaussian
-    Center_of_gaussain= floor(Combined_Gaussians.Center(ii));
-    %Ensure center is greater then zero
-    if  Center_of_gaussain>0
-      
-      if Combined_Gaussians.log2_normalised_gaussians(ii) >=1 && Center_of_gaussain <=fraction_to_plot
-        
-        Hist_array(Center_of_gaussain,1)=Hist_array(Center_of_gaussain,1)+1;
-        Hist_array(Center_of_gaussain,2)=Hist_array(Center_of_gaussain,2)+1;
-      elseif Combined_Gaussians.log2_normalised_gaussians(ii) <=-1 && Center_of_gaussain <=fraction_to_plot
-        
-        Hist_array(Center_of_gaussain,1)=Hist_array(Center_of_gaussain,1)+1;
-        Hist_array(Center_of_gaussain,3)=Hist_array(Center_of_gaussain,3)+1;
-      elseif Combined_Gaussians.log2_normalised_gaussians(ii) >=-1....
-          && Combined_Gaussians.log2_normalised_gaussians(ii) <=1....
-          && Center_of_gaussain <=fraction_to_plot
-        
-        Hist_array(Center_of_gaussain,1)=Hist_array(Center_of_gaussain,1)+1;
-      end
-    end
-  end
   
   
   tt = toc;
@@ -629,6 +594,8 @@ if ~skipflag
     elseif Ndec>0 && Ninc>0
       trendString(gg,:) = {'+/-','Inconsistent across gaussians'};
       Increase_and_decrease_across_gaus=1+Increase_and_decrease_across_gaus;
+    else
+      trendString(gg,:) = {'NaN','Unquantifiable'};
     end
   end
   
@@ -798,10 +765,8 @@ if ~skipflag
   % for this comparison pair
   % find which of the user.silacratios is the no-treatment, i.e. denominator in the fold change, and
   % which is the treatment, i.e. numerator.
-  SR2use = find(strcmp(user.silacratios,user.comparisonpairs));
-  I1 = strcmp(user.treatmentcondition,(user.silacratios(SR2use))); % treatment, numerator
-  I2 = SR2use(~I1); % no-treatment, denominator
-  I1 = find(I1);
+  I1 = find(ismember(user.silacratios,user.comparisonpairs{1})); % treatment, numerator
+  I2 = find(ismember(user.silacratios,user.comparisonpairs{2})); % non-treatment, denominator
   
   foldLabel = cell(length(Unique_protein_names),10);
   foldChange = nan(length(Unique_protein_names),10);

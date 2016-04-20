@@ -159,7 +159,6 @@ tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 %%
-%%%%% Replicate counter starts
 for replicate_counter = 1:number_of_replicates*number_of_channels
   
   s = ['\n        Replicate ' num2str(replicate_counter)];
@@ -344,15 +343,16 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   %   Gaus_import_reshaped(2:end,:) = Gaus_import_reshaped(Ireduce+1,:);
   
   % Calculate distance matrices
+  clear Dist
   Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));
   Dist.Center = squareform(pdist(C,'euclidean'));
   Dist.R2 = 1 - corr(Chromatograms').^2; % one minus R squared
   Dist.Ngauss = squareform(pdist(Ngauss));
   Dist.CoApex = squareform(pdist(CoApex));
   Dist.AUC = squareform(pdist(auc));
-  [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
-  Dist.R2raw = 1 - R.^2;
-  Dist.Rpraw = p;
+  %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+  %Dist.R2raw = 1 - R.^2;
+  %Dist.Rpraw = p;
   
   % GRAVEYARD OF RELEGATED DIST MATRICES
   %   Dist.RawOverlap = nan(size(Chromatograms_raw,1),size(Chromatograms_raw,1));
@@ -846,6 +846,9 @@ for pri = 1:length(desiredPrecision)
     
     
     % 7c. Find "Binary" interactions
+    % CAN YOU IMPROVE THIS?
+    % Find all non-zero entries of U first and loop through these? Why doesn't this work?
+    % ########
     Protein_elution= strcat(num2str(Protein.Center),'*',Protein.Isoform);
     [n,m]=size(Final_interactions);
     U = triu(Final_interactions);    %Take half of matrix therefor unique interactions
@@ -857,6 +860,9 @@ for pri = 1:length(desiredPrecision)
           if strcmp(Int1, Int2)
           else
             interaction_count=1+interaction_count;
+            if mod(interaction_count,10000)==0;
+              fprintf(['                Detected ' num2str(interaction_count) ' interactions\n'])
+            end
             binary_interaction_list{interaction_count,1} = strcat(Int1,'-',Int2); % Interactions
             %binary_interaction_list{interaction_count,2} = norm(Chromatograms(vii,:)-Chromatograms(viii,:)); % Delta_EucDist
             %binary_interaction_list{interaction_count,3} = abs(Protein.Center(vii)-Protein.Center(viii)); % Delta_Center
