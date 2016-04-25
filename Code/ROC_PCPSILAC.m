@@ -319,14 +319,22 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   clear X unique_names
   
   % Co-Apex score = norm(C) / sqrt(length(C))
-  I = find(abs(diff(Ngauss))>0 | Ngauss(2:end)==1);
-  I = [1; I+1];
-  I0 = 0;
+%   I = find(abs(diff(Ngauss))>0 | Ngauss(2:end)==1);
+%   I = [1; I+1];
+%   I0 = 0;
+%   CoApex = zeros(size(Ngauss));
+%   for ii = 1:length(I)
+%     I2 = I0+1 : I0 + Ngauss(I(ii));
+%     CoApex(I2) = norm(C(I2)) / sqrt(length(I2));
+%     I0 = max(I2);
+%   end
+  
+  % Co-Apex score = norm(C) / sqrt(length(C))
   CoApex = zeros(size(Ngauss));
-  for ii = 1:length(I)
-    I2 = I0+1 : I0 + Ngauss(I(ii));
-    CoApex(I2) = norm(C(I2)) / sqrt(length(I2));
-    I0 = max(I2);
+  for ii = 2:size(Gaus_import,1)
+    protName = Gaus_import{ii,1};
+    I = find(ismember(Gaus_import(:,1),protName)) - 1;
+    CoApex(ii-1) = norm(C(I)) / sqrt(length(I));
   end
   
   % Area under the chromatogram
@@ -350,9 +358,9 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Dist.Ngauss = squareform(pdist(Ngauss));
   Dist.CoApex = squareform(pdist(CoApex));
   Dist.AUC = squareform(pdist(auc));
-  %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
-  %Dist.R2raw = 1 - R.^2;
-  %Dist.Rpraw = p;
+  [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+  Dist.R2raw = 1 - R.^2;
+  Dist.Rpraw = p;
   
   % GRAVEYARD OF RELEGATED DIST MATRICES
   %   Dist.RawOverlap = nan(size(Chromatograms_raw,1),size(Chromatograms_raw,1));
@@ -386,6 +394,8 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   % This summarizes the proteins in our sample
   tic
   fprintf('        3. Make Protein structure.')
+  
+  clear Protein
   
   % Combine Majority Protein ID with Proteins Identified in replicate
   Protein.Isoform=Gaus_import(find(~Ibad)+1,1);
@@ -487,7 +497,11 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   fprintf('        4. Make TP, FP, FN matrices')
   
   % Make Pos_Corum_proteins, which is all individual proteins that are in corum and our dataset
-  Unique_MajorProteinIDs = unique(vertcat(Protein.MajorID_NoIsoforms{:}),'rows');
+  try
+    Unique_MajorProteinIDs = unique(vertcat(Protein.MajorID_NoIsoforms{:}),'rows');
+  catch
+    Unique_MajorProteinIDs = unique(vertcat(Protein.MajorID_NoIsoforms(:)),'rows');
+  end
   Pos_Corum_proteins = Unique_Corum(ismember(Unique_Corum, Unique_MajorProteinIDs));
   
   % Make Corum_Dataset, which is all interactions that are in corum and our dataset
@@ -675,8 +689,8 @@ for ii = 1:length(I2)
   allScores2(I2(ii),countV(I2(ii))+1) = allScores(ii,5);
 end
 class = allScores2(:,1);
-%score = max(allScores2(:,2:end),[],2);      % i) max score
-score = nanmean(allScores2(:,2:end),2);    % ii) mean score
+score = max(allScores2(:,2:end),[],2);      % i) max score
+%score = nanmean(allScores2(:,2:end),2);    % ii) mean score
 %score = nanmedian(allScores2(:,2:end),2);  % iii) median score
 clear allScores2 allScores TP_Matrix I1 I2
 
@@ -781,7 +795,7 @@ for pri = 1:length(desiredPrecision)
   fn_count = 0; % false negative interaction counter, used in 7b
   interaction_count = 0; % interaction counter, used in 7c
   
-  binary_interaction_list = cell(2*10^4,13);
+  binary_interaction_list = cell(2*10^6,13);
   FN_binary_interaction_list = zeros(10^7,13);
   
   for replicate_counter = 1:number_of_replicates*number_of_channels
@@ -817,7 +831,7 @@ for pri = 1:length(desiredPrecision)
     No_Int(replicate_counter,pri) = length(find(triu(Final_interactions==1)));
     
     % Predicted negative interactions
-    scoreMatrix = median(scoreMatrix,2);
+    scoreMatrix = nanmedian(scoreMatrix,2);
     scoreMatrix = reshape(scoreMatrix,size(Final_interactions,1),size(Final_interactions,1));
     Protein_elution = strcat(num2str(Protein.Center),'*',Protein.Isoform);
     U1 = triu(Negative2_matrix); % Take half of matrix therefor unique interactions
@@ -846,44 +860,34 @@ for pri = 1:length(desiredPrecision)
     
     
     % 7c. Find "Binary" interactions
-    % CAN YOU IMPROVE THIS?
-    % Find all non-zero entries of U first and loop through these? Why doesn't this work?
-    % ########
-    Protein_elution= strcat(num2str(Protein.Center),'*',Protein.Isoform);
-    [n,m]=size(Final_interactions);
-    U = triu(Final_interactions);    %Take half of matrix therefor unique interactions
-    for vii=1:n
-      for viii= 1:m
-        if U(vii,viii)==1
-          Int1=Protein_elution{vii};
-          Int2=Protein_elution{viii};
-          if strcmp(Int1, Int2)
-          else
-            interaction_count=1+interaction_count;
-            if mod(interaction_count,10000)==0;
-              fprintf(['                Detected ' num2str(interaction_count) ' interactions\n'])
-            end
-            binary_interaction_list{interaction_count,1} = strcat(Int1,'-',Int2); % Interactions
-            %binary_interaction_list{interaction_count,2} = norm(Chromatograms(vii,:)-Chromatograms(viii,:)); % Delta_EucDist
-            %binary_interaction_list{interaction_count,3} = abs(Protein.Center(vii)-Protein.Center(viii)); % Delta_Center
-            %binary_interaction_list{interaction_count,4} = abs(Protein.Height(vii)-Protein.Height(viii)); % Delta_Height
-            %binary_interaction_list{interaction_count,5} = abs(Protein.Width(vii)-Protein.Width(viii)); % Delta_Width
-            binary_interaction_list{interaction_count,2} = Dist.Euc(vii,viii); % Euc
-            binary_interaction_list{interaction_count,3} = Dist.Center(vii,viii); % Co-apex
-            binary_interaction_list{interaction_count,4} = Dist.R2(vii,viii); % R^2
-            binary_interaction_list{interaction_count,5} = 0; % empty for now
-            binary_interaction_list{interaction_count,6} = possibleInts(vii,viii); % Both_proteins_Corum
-            binary_interaction_list{interaction_count,7} = TP_Matrix(vii,viii); % Interaction_in_Corum
-            binary_interaction_list{interaction_count,8} = Protein.Isoform{vii}; % Protein_interactions1
-            binary_interaction_list{interaction_count,9} = Protein.Isoform{viii}; % Protein_interactions2
-            binary_interaction_list{interaction_count,10} = Protein.Center(vii); % Protein_interactions_center1
-            binary_interaction_list{interaction_count,11} = Protein.Center(viii); % Protein_interactions_center2
-            binary_interaction_list{interaction_count,12} = replicate_counter; % Protein_interactions_center2
-            binary_interaction_list{interaction_count,13} = scoreMatrix(vii,viii); % Interaction score
-          end
-        else
-        end
+    Final_interactions = triu(Final_interactions);
+    [I1,I2] = find(Final_interactions>0);
+    for ii = 1:length(I1)
+      vii = I1(ii);
+      viii = I2(ii);
+      if vii == viii
+        continue;
       end
+      Int1=Protein_elution{vii};
+      Int2=Protein_elution{viii};
+      interaction_count=1+interaction_count;
+      binary_interaction_list{interaction_count,1} = strcat(Int1,'-',Int2); % Interactions
+      %binary_interaction_list{interaction_count,2} = norm(Chromatograms(vii,:)-Chromatograms(viii,:)); % Delta_EucDist
+      %binary_interaction_list{interaction_count,3} = abs(Protein.Center(vii)-Protein.Center(viii)); % Delta_Center
+      %binary_interaction_list{interaction_count,4} = abs(Protein.Height(vii)-Protein.Height(viii)); % Delta_Height
+      %binary_interaction_list{interaction_count,5} = abs(Protein.Width(vii)-Protein.Width(viii)); % Delta_Width
+      binary_interaction_list{interaction_count,2} = Dist.Euc(vii,viii); % Euc
+      binary_interaction_list{interaction_count,3} = Dist.Center(vii,viii); % Co-apex
+      binary_interaction_list{interaction_count,4} = Dist.R2(vii,viii); % R^2
+      binary_interaction_list{interaction_count,5} = 0; % empty for now
+      binary_interaction_list{interaction_count,6} = possibleInts(vii,viii); % Both_proteins_Corum
+      binary_interaction_list{interaction_count,7} = TP_Matrix(vii,viii); % Interaction_in_Corum
+      binary_interaction_list{interaction_count,8} = Protein.Isoform{vii}; % Protein_interactions1
+      binary_interaction_list{interaction_count,9} = Protein.Isoform{viii}; % Protein_interactions2
+      binary_interaction_list{interaction_count,10} = Protein.Center(vii); % Protein_interactions_center1
+      binary_interaction_list{interaction_count,11} = Protein.Center(viii); % Protein_interactions_center2
+      binary_interaction_list{interaction_count,12} = replicate_counter; % Protein_interactions_center2
+      binary_interaction_list{interaction_count,13} = scoreMatrix(vii,viii); % Interaction score
     end
     
     tt = toc;
@@ -907,18 +911,18 @@ for pri = 1:length(desiredPrecision)
   length_unique_inter = length(unique_interaction);
   
   %Create array to store values
-  interaction_final.unique_interactions=cell(0,0);
-  interaction_final.replicate_numbers=cell(0,0);
-  interaction_final.proteinA=cell(0,0);
-  interaction_final.proteinB=cell(0,0);
-  interaction_final.CenterA=cell(0,0);
-  interaction_final.CenterB=cell(0,0);
+  interaction_final.unique_interactions=cell(length_unique_inter,0);
+  interaction_final.replicate_numbers=cell(length_unique_inter,0);
+  interaction_final.proteinA=cell(length_unique_inter,0);
+  interaction_final.proteinB=cell(length_unique_inter,0);
+  interaction_final.CenterA=cell(length_unique_inter,0);
+  interaction_final.CenterB=cell(length_unique_inter,0);
   %interaction_final.DeltaHeight=cell(0,0);
-  interaction_final.DeltaCenter=cell(0,0);
-  interaction_final.R2=cell(0,0);
-  interaction_final.DeltaEucDist=cell(0,0);
-  interaction_final.proteinInCorum=cell(0,0);
-  interaction_final.interactionInCorum=cell(0,0);
+  interaction_final.DeltaCenter=cell(length_unique_inter,0);
+  interaction_final.R2=cell(length_unique_inter,0);
+  interaction_final.DeltaEucDist=cell(length_unique_inter,0);
+  interaction_final.proteinInCorum=cell(length_unique_inter,0);
+  interaction_final.interactionInCorum=cell(length_unique_inter,0);
   interaction_final.score=nan(length_unique_inter,60);
   Unique_interaction_counter=0;
   for interaction_counter2A = 1:length_unique_inter
@@ -1227,7 +1231,7 @@ for pri = 1:length(desiredPrecision)
   interaction_final.precisionDropout = nan(Total_unique_interactions,1);
   for ii = 1:Total_unique_interactions
     cutoff = interaction_final.score(ii);
-    I = interaction_final.score > cutoff;
+    I = interaction_final.score >= cutoff;
     protInCor = cell2mat(interaction_final.proteinInCorum(I));
     intInCor = cell2mat(interaction_final.interactionInCorum(I));
     TP = sum(protInCor==1 & intInCor==1);
