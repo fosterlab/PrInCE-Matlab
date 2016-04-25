@@ -9,7 +9,7 @@ y(y>0) = 1;
 y(y~=1) = -1;
 fn = fieldnames(Dist);
 X = nan(length(Dist.(fn{1})(:)),length(fn));
-for ii = 1:length(fn); 
+for ii = 1:length(fn);
   X(:,ii) = Dist.(fn{ii})(:);
 end
 Nd = size(X,2);
@@ -40,21 +40,41 @@ for iter = 1:Nmodel
   % Make training and testing data
   
   % balance training data
-%   I1 = find(y==1 & I);
-%   I1 = I1(randsample(length(I1),round(trainingLength/2)));
-%   I0 = find(y==-1);
-%   I0 = I0(randsample(length(I0),round(trainingLength/2)));
-%   Itrain = ismember(1:length(y),[I1;I0]);
+  %   I1 = find(y==1 & I);
+  %   I1 = I1(randsample(length(I1),round(trainingLength/2)));
+  %   I0 = find(y==-1);
+  %   I0 = I0(randsample(length(I0),round(trainingLength/2)));
+  %   Itrain = ismember(1:length(y),[I1;I0]);
   
   % non-balanced training data
-  Iall = find(I);
-  Iall = Iall(randsample(length(Iall),trainingLength));
-  Itrain = ismember(1:length(y),Iall);
+  go = 1;
+  train_iter = 0;
+  iterMax = 100;
+  while go
+    train_iter = train_iter+1;
+    Iall = find(I);
+    Iall = Iall(randsample(length(Iall),trainingLength));
+    Itrain = ismember(1:length(y),Iall);
+    
+    Ipred = ~Itrain;
+    Xtr = X(Itrain,:);
+    ytr = y(Itrain);
+    Xnew = X(Ipred,:);
+    
+    % Ensure there are at least 3 data points in each class
+    go1 = sum(ytr>0)<3 | sum(ytr<0)<3;
+    
+    % Ensure no class-variable pair has zero variance
+    testvar = nan(2,Nd);
+    for jj = 1:Nd
+      testvar(1,jj) = var(Xtr(ytr>0,jj));
+      testvar(2,jj) = var(Xtr(ytr<0,jj));
+    end
+    go2 = sum(testvar(:)==0) > 0;
+    
+    go = (go1 | go2) & train_iter<=iterMax;
+  end
   
-  Ipred = ~Itrain;
-  Xtr = X(Itrain,:);
-  ytr = y(Itrain);
-  Xnew = X(Ipred,:);
   
   % Feature selection
   feats(iter,:) = IndFeat(Xtr,ytr);
@@ -62,7 +82,7 @@ for iter = 1:Nmodel
     feats(iter,:) = 3;
   end
   f2consider = find(feats(iter,:) > 2)
-  
+    
   % Fit Naive Bayes model
   nab = fitcnb(Xtr(:,f2consider),ytr);
   [~,scoretmp] = predict(nab,Xnew(:,f2consider));
