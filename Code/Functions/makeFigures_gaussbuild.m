@@ -74,6 +74,7 @@ for ci = 1:Nchannels
     Ngauss(ci,ri) = length(Coef{ci,ri})/3;
   end
 end
+Ngauss(Ngauss<1) = nan;
 
 figure,hold on
 h1 = hist(Ngauss(:),1:5);
@@ -166,7 +167,7 @@ saveas(gcf, sf, 'png');
 
 %% Raw chromatograms, cleaned chromatograms, fits
 
-if 1
+if 0
   
   figdir1 = [figdir 'GaussBuild/Chromatograms/'];
   if ~exist(figdir1, 'dir'); mkdir(figdir1); end
@@ -186,7 +187,7 @@ if 1
   
   for ii = 1:Nproteins
     
-    if sum(isnan(rawdata{1}(ii,:)))==length(rawdata{1}(ii,:)) && sum(isnan(rawdata{2}(ii,:)))==length(rawdata{2}(ii,:))
+    if sum(isnan(rawdata{1}(ii,:)))==length(rawdata{1}(ii,:))
       continue;
     end
     
