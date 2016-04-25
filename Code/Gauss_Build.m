@@ -193,6 +193,7 @@ for ci = 1:Nchannels % loop over channels
     % Throw out any models where the number of non-imputed data points, i.e. the real data, is less than
     % the number of parameters.
     Ngaussmax = floor(sum(rawdata_nonbc(ri,1:Nfractions)>0.01)/3);
+    Ngaussmax = min([5 Ngaussmax]);
     
     % fit 5 models and chose the best one
     %model = choosemodel_holdout(clean_chromatogram,MaxIter);
