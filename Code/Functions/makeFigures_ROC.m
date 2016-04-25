@@ -8,24 +8,36 @@ myC= [30/255 144/255 255/255
   193/255 205/255 193/255];
 
 figure
-subplot(2,1,1);
-f1_figure=bar(1:(number_of_replicates*number_of_channels), [Interaction_in_corum_not_detected(:,1) (Precision_array(:,2)) Interaction_not_in_corum(:,1)], 0.6, 'stack');
-
-for k=1:3
-  set(f1_figure(k),'facecolor', myC(k,:), 'EdgeColor', 'k' );
+subplot(2,1,1)
+bar_x = 1:(number_of_replicates*number_of_channels);
+bar_y = [Interaction_in_corum_not_detected(:,1) (Precision_array(:,2)) Interaction_not_in_corum(:,1)];
+xlim_flag = 0;
+if length(bar_x)==1
+  bar_x(2) = 0;
+  bar_y(2,:) = zeros(size(bar_y));
+  xlim_flag = 1;
 end
+b1 = bar(bar_x, bar_y, 0.6, 'stack');
+
+%for k=1:3
+%  set(b1,'facecolor', myC(k,:), 'EdgeColor', 'k' );
+%end
 legend('Proteins in corum (FP)', 'Interaction in corum (TP)',  'Proteins/Interactions not in corum');
 ylim([0,(Interaction_in_corum_not_detected(1,1)+Precision_array(1,2)+Interaction_not_in_corum(1,1))*1.1]);
-title({'Interactions observed across isotoplogue channels' ['Precision = ' num2str(round(desiredPrecision(pri)*100)) '%']},'FontSize', 12);
+if xlim_flag
+  x = [0.4 1.6];
+  xlim(x)
+end
+title({'Interactions observed across isotoplogue channels' ['Desired precision = ' num2str(round(desiredPrecision(pri)*100)) '%']},'FontSize', 12);
 ylabel('Number of interactions','FontSize', 8);
-xlabel('isotoplogue channels','FontSize', 8);
+xlabel('Interaction observed in at least N channels/replicates','FontSize', 8);
 
 f1=subplot(2,1,2);
-f2_figure=bar(1:(number_of_replicates*number_of_channels), [Interaction_in_corum_not_detected(:,1) (Precision_array(:,2)) Interaction_not_in_corum(:,1)], 0.6, 'stack');
+b2 = bar(bar_x, bar_y, 0.6, 'stack');
 
-for k=1:3
-  set(f2_figure(k),'facecolor', myC(k,:), 'EdgeColor', 'k' );
-end
+%for k=1:3
+%  set(b2,'facecolor', myC(k,:), 'EdgeColor', 'k' );
+%end
 legend('Proteins in corum (FP)', 'Interaction in corum (TP)',  'Proteins/Interactions not in corum');
 I2use = ceil(size(Precision_array,2)/2);
 y2 = max(sum(Precision_array(:,I2use)))*1.2;
@@ -33,13 +45,79 @@ if y2==0
   y2 = (Interaction_in_corum_not_detected(1,1)+Precision_array(1,2)+Interaction_not_in_corum(1,1))*1.1;
 end
 ylim([0,y2]);
+if xlim_flag
+  x = [0.4 1.6];
+  xlim(x)
+end
 title('Interactions observed across isotoplogue channels (Zoom)','FontSize', 12);
 ylabel('Number of interactions','FontSize', 8);
-xlabel('isotoplogue channels','FontSize', 8);
+xlabel('Interaction observed in at least N channels/replicates','FontSize', 8);
 
 % Save figure
 Final_Interaction_figure=[figdir1 'Observed_interactions_across_replicates_' mat2str(Precision_values(precision_write_out_counter)) '_precision.png'];
 saveas(gcf, Final_Interaction_figure);
+
+
+
+%% How many interactions were found in each replicate?
+
+[Ia,Ib] = find(~cellfun('isempty',interaction_final.replicate_numbers));
+
+N_intperrep = zeros(length(Ia), 1);
+itype = zeros(length(Ia), 1);
+for ii = 1:length(Ia)
+  N_intperrep(ii) = interaction_final.replicate_numbers{Ia(ii),Ib(ii)};
+  if interaction_final.proteinInCorum{Ia(ii)} && interaction_final.interactionInCorum{Ia(ii)}
+    itype(ii) = 1;
+  elseif interaction_final.proteinInCorum{Ia(ii)} && ~interaction_final.interactionInCorum{Ia(ii)}
+    itype(ii) = 2;
+  else
+    itype(ii) = 3;
+  end
+end
+
+x = 1:number_of_replicates*number_of_channels;
+h_tp = hist(N_intperrep(itype==1),x);
+h_fp = hist(N_intperrep(itype==2),x);
+h_nov = hist(N_intperrep(itype==3),x);
+hh = [h_fp; h_tp; h_nov];
+xlim_flag = 0;
+if length(x)==1
+  x(2) = 0;
+  hh(:,2) = zeros(length(hh),1);
+  xlim_flag = 1;
+end
+
+xlab = cell(number_of_replicates*number_of_channels,1);
+for ii = 1:number_of_replicates*number_of_channels
+  sr = nan(length(user.silacratios),1);
+  for jj = 1:length(user.silacratios)
+    sr(jj) = findstr(user.silacratios{1},GaussIn{1});
+  end
+  Irep = findstr('rep',GaussIn{ii});
+  rep = GaussIn{ii}(Irep+3);
+  xlab{ii} = ['Rep' rep '-' user.silacratios{sr>0}];
+end
+
+figure,hold on
+f2 = bar(x,hh', 0.8,'stacked');
+for k=1:3
+  set(f2(k),'facecolor', myC(k,:), 'EdgeColor', 'k' );
+end
+legend('Proteins in corum (FP)', 'Interaction in corum (TP)',  'Proteins/Interactions not in corum',...
+  'location','northwest');
+ylabel('Number of interactions','FontSize', 10);
+xlabel('Replicate - Isotopologue channel','FontSize', 10);
+title(['Desired precision = ' num2str(round(desiredPrecision(pri)*100)) '%'],'FontSize', 12);
+if xlim_flag
+  x = xlim;
+  x(2) = 1.6;
+  xlim(x)
+end
+set(gca,'xtick',x,'xticklabel',xlab,'fontsize',9)
+
+sf = [figdir1 'Number_interactions_per_replicate' mat2str(Precision_values(precision_write_out_counter)) '_precision.png'];
+saveas(gcf, sf);
 
 
 
