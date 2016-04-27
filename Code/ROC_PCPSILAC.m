@@ -358,9 +358,9 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Dist.Ngauss = squareform(pdist(Ngauss));
   Dist.CoApex = squareform(pdist(CoApex));
   Dist.AUC = squareform(pdist(auc));
-  [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
-  Dist.R2raw = 1 - R.^2;
-  Dist.Rpraw = p;
+  %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+  %Dist.R2raw = 1 - R.^2;
+  %Dist.Rpraw = p;
   
   % GRAVEYARD OF RELEGATED DIST MATRICES
   %   Dist.RawOverlap = nan(size(Chromatograms_raw,1),size(Chromatograms_raw,1));
@@ -528,7 +528,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   %   treat A-B as a true positive interaction.
   
   TP_Matrix= zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
-  Corum_Dataset_expanded = cell(size(Corum_Dataset));
+  %Corum_Dataset_expanded = cell(size(Corum_Dataset));
   ii = 0;
   for cc=1:size(Corum_Dataset,1)
     I_hyphen = strfind(Corum_Dataset{cc},'-');
@@ -593,24 +593,10 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   %% 5. Calculate score, the likelihood that a protein pair is interacting
   tic
   fprintf('        5. Score each interaction via Naive Bayes classifier')
-  % score approx_eq the likelihood that a protein pair is interacting
+  % score is proportional the likelihood that a protein pair is interacting
   
-  % Predict interactions through Euc
-  %scoreMatrix = 1 - Dist.Euc;
-  %score0 = scoreMatrix(possibleInts(:));
-  
-  % Predict interactions through R^2
-  %scoreMatrix = 1 - Dist.R2;
-  
-  % Predict interactions with a classifier
-  %[scoreMatrix, feats] = scoresvm(Dist,possibleInts,TP_Matrix);
-  %scoreMatrix = nanmedian(scoreMatrix,2);
-  %scoreMatrix = nanmean(scoreMatrix,2);
-  %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
   scoreMatrix = scorenb(Dist,possibleInts,TP_Matrix);
   scoreMatrix = nanmedian(scoreMatrix,2);
-  %scoreMatrix = nanmean(scoreMatrix,2);
-  %scoreMatrix = reshape(scoreMatrix,size(Dist.R2,1),size(Dist.R2,1));
   
   sf = [datadir2 'score_rep' num2str(replicate_counter) '.mat'];
   save(sf,'scoreMatrix','TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms','Dist')
@@ -628,9 +614,6 @@ end
 clear Int_matrix
 
 
-
-
-
 %% 6. Find the score thresholds
 
 tic
@@ -641,16 +624,19 @@ fprintf('    6. Find the score cutoff across all replicates')
 % This greatly reduces the memory used, as otherwise allScores is ~2.5GB.
 % NB: It's possible that two protein names will be mapped to the same numeric value.
 allScores = zeros(10^7,5);
+xcutoff_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
+calcprec_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
+calcrec_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
 ff = rand(1,15);
 kk = 0;
-for replicate_counter = 1:(number_of_replicates*number_of_channels)
-  sf = [datadir2 'score_rep' num2str(replicate_counter) '.mat'];
+for rr = 1:(number_of_replicates*number_of_channels)
+  sf = [datadir2 'score_rep' num2str(rr) '.mat'];
   load(sf)
   a = find(triu(possibleInts));
   [prot1i, prot2i] = ind2sub(size(possibleInts),a);
   I = kk+1 : kk+length(a);
   allScores(I,1) = TP_Matrix(a);           % Class label
-  allScores(I,4) = replicate_counter;         % Replicate
+  allScores(I,4) = rr;         % Replicate
   allScores(I,5) = median(scoreMatrix(a),2);  % Median score (equivalent to ensemble voting)
   
   % For space reasons, let's try converting Protein1, Protein2 into numeric
@@ -669,12 +655,31 @@ for replicate_counter = 1:(number_of_replicates*number_of_channels)
   N2a = length(unique(Protein.Isoform(prot2i)));
   N1b = length(unique(allScores(kk0+1:kk,2)));
   N2b = length(unique(allScores(kk0+1:kk,3)));
-  
   if N1a~=N1b || N2a~=N2b
     disp('Two protein names stored as the same number!')
   end
   
-  clear scoreMatrix inverse_self Protein possibleInts TP_Matrix
+  % Make non-redundant replicate-specific score/class
+  scorestmp = allScores(kk0+1:kk,:);
+  [~,I1,I2] = unique(scorestmp(:,2:3),'rows');
+  allScores2 = nan(length(I1),100);
+  countV = zeros(length(I1),1);
+  for ii = 1:length(I2)
+    countV(I2(ii)) = countV(I2(ii))+1; % how many times have we seen this interaction?
+    allScores2(I2(ii),1) = scorestmp(ii,1);
+    allScores2(I2(ii),countV(I2(ii))+1) = scorestmp(ii,5);
+  end
+  class_rep = allScores2(:,1);
+  score_rep = max(allScores2(:,2:end),[],2);      % i) max score
+  
+  % Find replicate-specific threshold
+  for di = 1:length(desiredPrecision)
+    [xcutoff_rep(rr,di), tmp] = calcPPIthreshold(score_rep,class_rep,desiredPrecision(di));
+    calcprec_rep(rr,di) = tmp.calcprec;
+    calcrec_rep(rr,di) = tmp.calcrec;
+  end
+  
+  clear scoreMatrix inverse_self Protein possibleInts TP_Matrix scorestmp Dist
 end
 allScores = allScores(1:kk,:);
 
@@ -695,87 +700,37 @@ score = max(allScores2(:,2:end),[],2);      % i) max score
 clear allScores2 allScores TP_Matrix I1 I2
 
 
-% 6b. Calculate the score threshold that gives the desired precision
-% Using a clever algorithm to speed up performance.
-% Algorithm: Calculate precision as a function of score very coarsely. Identify at what score
-% value precision crosses the desired level. Zoom in on that score value. Iterate.
-nn = 25;
-Tol = 0.001; % get within 0.1% precision
-maxIter = 20; % zoom in 20 times at most
-
+% 6b. Calculate global threshold
 xcutoff = nan(size(desiredPrecision));
 calcprec = zeros(size(xcutoff));
 calcrec = zeros(size(xcutoff));
-scoreRange = nan(nn*maxIter*length(desiredPrecision),1);  % Save
-precRange = nan(size(scoreRange));                        % these
-recRange = nan(size(scoreRange));                         % for
-tprRange = nan(size(scoreRange));                         % plotting
-fprRange = nan(size(scoreRange));                         % later.
+scoreRange = [];                       % Save
+precRange = [];                        % these
+recRange = [];                         % for
+tprRange = [];                         % plotting
+fprRange = [];                         % later.
+Ninteract = [];                        % ...
 for di = 1:length(desiredPrecision)
-  ds = linspace(min(score(:)),max(score(:)),nn); % start off with coarse search
-  calcTol = 10^10;
-  iter = 0;
-  deltaPrec = 1;
-  prec0 = zeros(nn,1);
-  % Stop zooming in when one of three things happens:
-  % i) you get close enough to the desired precision (within calcTol)
-  % ii) you've been through maxIter iterations
-  % iii) zooming in stops being useful (precision changes by less than deltaPrec b/w iterations)
-  while calcTol>Tol && iter<maxIter && deltaPrec>1e-3
-    iter=iter+1;
-    rec = nan(nn,1);
-    prec = nan(nn,1);
-    fpr = nan(nn,1);
-    tpr = nan(nn,1);
-    for dd =1:length(ds)
-      % ensemble VOTING
-      TP = sum(score>ds(dd) & class==1);
-      FP = sum(score>ds(dd) & class==0);
-      FN = sum(score<ds(dd) & class==1);
-      TN = sum(score<ds(dd) & class==0);
-      prec(dd) = TP/(TP+FP);
-      rec(dd) = TP/(TP+FN);
-      fpr(dd) = FP/(FP+TN);
-      tpr(dd) = TP/(TP+FN);
-    end
-    deltaPrec = nanmean(abs(prec - prec0));
-    
-    % Save vectors for plotting
-    I = (iter-1)*nn+1 : iter*nn;
-    scoreRange(I) = ds;
-    precRange(I) = prec;
-    recRange(I) = rec;
-    tprRange(I) = tpr;
-    fprRange(I) = fpr;
-    
-    % Calculate how close to desiredPrecision(di) you got
-    [calcTol,I] = min(abs(prec - desiredPrecision(di)));
-    
-    % Zoom in on region of interest
-    i1 = find(prec>desiredPrecision(di));
-    if isempty(i1);
-      mx = max(score(:));
-    else
-      mx = ds(i1(1));
-    end
-    i2 = find(prec<desiredPrecision(di));
-    if isempty(i2);
-      mn = min(score(:));
-    else
-      mn = ds(i2(end));
-    end
-    ds = linspace(mn,mx,nn);
-    prec0 = prec;
-  end
-  xcutoff(di) = ds(I);
-  calcprec(di) = prec(I);
-  calcrec(di) = rec(I);
+  [xcutoff(di), tmp] = calcPPIthreshold(score,class,desiredPrecision(di));
+  calcprec(di) = tmp.calcprec;
+  calcrec(di) = tmp.calcrec;
+  
+  % save plotting variables
+  I = ~isnan(tmp.scoreRange);
+  scoreRange = [scoreRange; tmp.scoreRange(I)'];
+  precRange = [precRange; tmp.precRange(I)'];
+  recRange = [recRange; tmp.recRange(I)'];
+  tprRange = [tprRange; tmp.tprRange(I)'];
+  fprRange = [fprRange; tmp.fprRange(I)'];
+  Ninteract = [Ninteract; tmp.Ninteractions(I)'];
 end
 [scoreRange,I] = sort(scoreRange);
 precRange = precRange(I);
 recRange = recRange(I);
 tprRange = tprRange(I);
 fprRange = fprRange(I);
+Ninteract = Ninteract(I);
+
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
@@ -783,7 +738,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 
-%% 7. Find and concatenate interactions at desired precision'
+%% 7. Find and concatenate interactions at desired precision
 
 firstFlag = 1;
 for pri = 1:length(desiredPrecision)
@@ -796,7 +751,7 @@ for pri = 1:length(desiredPrecision)
   interaction_count = 0; % interaction counter, used in 7c
   
   binary_interaction_list = cell(2*10^6,13);
-  FN_binary_interaction_list = zeros(10^7,13);
+  Neg_binary_interaction_list = zeros(2*10^6,3);
   
   for replicate_counter = 1:number_of_replicates*number_of_channels
     
@@ -821,20 +776,21 @@ for pri = 1:length(desiredPrecision)
     FN = sum(~Final_interactions(:) & TP_Matrix(:) & possibleInts(:));
     
     %Generate negative matrix for final interaction analysis
-    Negative2_matrix = ~Final_interactions & possibleInts;
+    %Negative2_matrix = ~Final_interactions & possibleInts;
     
     % final results
-    Recall(replicate_counter,pri) = TP/(TP+FN);
-    Precision(replicate_counter,pri) = TP/(TP+FP);
-    TPR(replicate_counter,pri) = TP/(TP+FN);
-    FPR(replicate_counter,pri) = FP/(FP+TN);
-    No_Int(replicate_counter,pri) = length(find(triu(Final_interactions==1)));
+    %Recall(replicate_counter,pri) = TP/(TP+FN);
+    %Precision(replicate_counter,pri) = TP/(TP+FP);
+    %TPR(replicate_counter,pri) = TP/(TP+FN);
+    %FPR(replicate_counter,pri) = FP/(FP+TN);
+    %No_Int(replicate_counter,pri) = length(find(triu(Final_interactions==1)));
     
-    % Predicted negative interactions
+    % Find "binary" NON interactions, both proteins in corum
     scoreMatrix = nanmedian(scoreMatrix,2);
     scoreMatrix = reshape(scoreMatrix,size(Final_interactions,1),size(Final_interactions,1));
     Protein_elution = strcat(num2str(Protein.Center),'*',Protein.Isoform);
-    U1 = triu(Negative2_matrix); % Take half of matrix therefor unique interactions
+    U1 = triu(~Final_interactions & possibleInts); 
+    %U1 = triu(~Final_interactions & TP_Matrix); % Take half of matrix therefor unique interactions
     [ia,ib] = find(U1 == 1); % protein1, protein2 indices in false negatives
     for ri=1:length(ia)
       ri1 = ia(ri);
@@ -848,9 +804,9 @@ for pri = 1:length(desiredPrecision)
         tmpname1 = sum(tmp .* ff(1:length(tmp)));
         tmp = double(Protein.Isoform{ri2});
         tmpname2 = sum(tmp .* ff(1:length(tmp)));
-        FN_binary_interaction_list(fn_count,1) = tmpname1; % Protein_interactions1
-        FN_binary_interaction_list(fn_count,2) = tmpname2; % Protein_interactions2
-        FN_binary_interaction_list(fn_count,3) = TP_Matrix(ri1,ri2); % Interaction_in_Corum
+        Neg_binary_interaction_list(fn_count,1) = tmpname1; % Protein_interactions1
+        Neg_binary_interaction_list(fn_count,2) = tmpname2; % Protein_interactions2
+        Neg_binary_interaction_list(fn_count,3) = TP_Matrix(ri1,ri2); % Interaction_in_Corum
       end
       % sanity check
       if ~strcmp(Int1, Int2) && Protein.Center(ri1)==Protein.Center(ri2) && ri1==ri2
@@ -859,7 +815,7 @@ for pri = 1:length(desiredPrecision)
     end
     
     
-    % 7c. Find "Binary" interactions
+    % Find "binary" interactions
     Final_interactions = triu(Final_interactions);
     [I1,I2] = find(Final_interactions>0);
     for ii = 1:length(I1)
@@ -896,7 +852,7 @@ for pri = 1:length(desiredPrecision)
   end
   
   binary_interaction_list = binary_interaction_list(1:interaction_count,:);
-  FN_binary_interaction_list = FN_binary_interaction_list(1:fn_count,:);
+  Neg_binary_interaction_list = Neg_binary_interaction_list(1:fn_count,:);
   
   
   
@@ -1028,12 +984,12 @@ for pri = 1:length(desiredPrecision)
   end
   
   %Copy number of unique_interaction across replicate to interaction array
-  interaction_final.times_observed_across_reps = number_unique_interaction;
+  %interaction_final.times_observed_across_reps = number_unique_interaction;
   
   %total number of interactions of unique replicates
-  total_observation=sum(number_observation_pre_interaction);
+  %total_observation = sum(number_observation_pre_interaction);
   %total number of interactions of unique replicates
-  total_unique_observation=sum(number_unique_interaction);
+  %total_unique_observation = sum(number_unique_interaction);
   
   
   % create unique identifier for false interactions
@@ -1042,40 +998,34 @@ for pri = 1:length(desiredPrecision)
   %       between A and B to not interacting. See Dec 3 notes for more info.
   %       The proper fix is to individually treat all Gaussian combinations exactly like we do for
   %       the positive interactions.
-  interaction_FN_pairs = FN_binary_interaction_list(:,1) + FN_binary_interaction_list(:,2);
-  length_unique_FN_inter = length(unique(interaction_FN_pairs));
+  %interaction_neg_pairs = Neg_binary_interaction_list(:,1) + Neg_binary_interaction_list(:,2);
+  %length_unique_neg_inter = length(unique(interaction_neg_pairs));
   
-  %Determine the number of unique false negatives
-  interaction_as_number = cat(1,FN_binary_interaction_list(:,3));
-  interaction_FN_incorum_pairs = interaction_FN_pairs(interaction_as_number==1);
-  length_unique_FN_incorum = length(unique(interaction_FN_incorum_pairs));
-  
-  %clear varibles to speed up processing
-  clearvars interaction_FN_incorum_pairs;
-  clearvars interaction_FN_pairs;
-  clearvars FN_binary_interaction_list;
-  clear interaction_as_number
-  
+  % Determine the number of unique false negatives
+  %length_unique_FN_incorum = length(unique(interaction_neg_pairs( Neg_binary_interaction_list(:,3)==1 )));
+
   % Caliculate TP, FP, FN and TN
   %Caliculate values from true interaction data set
-  True_proteinInCorum=sum([cell2mat(interaction_final.proteinInCorum)]);
-  True_interactionInCorum=sum([cell2mat(interaction_final.interactionInCorum)]);
+  True_proteinInCorum = cell2mat(interaction_final.proteinInCorum);
+  True_interactionInCorum = cell2mat(interaction_final.interactionInCorum);
+%  
+%   %Caliculate values from true interaction data set
+%   False_proteinInCorum = length_unique_neg_inter;
+%   False_interactionInCorum = length_unique_FN_incorum;
   
-  %Caliculate values from true interaction data set
-  False_proteinInCorum=length_unique_FN_inter;
-  False_interactionInCorum=length_unique_FN_incorum;
-  
-  %caliculate TP, FP, FN and TN
-  final_TN=False_proteinInCorum-False_interactionInCorum;
-  final_FP=True_proteinInCorum-True_interactionInCorum;
-  final_FN=False_interactionInCorum;
-  final_TP=True_interactionInCorum;
+  %caliculate TP, FP, FN and TN #PARSE_HERE
+  final_TN = sum(Neg_binary_interaction_list(:,3)==0);
+  final_FP = sum(True_proteinInCorum & ~True_interactionInCorum);
+  final_FN = sum(Neg_binary_interaction_list(:,3)==1);
+  final_TP = sum(True_proteinInCorum & True_interactionInCorum);
   
   % final results
-  final_Recall = final_TP/(final_TP+final_TN);
+  final_Recall = final_TP/(final_TP+final_FN);
   final_Precision = final_TP/(final_TP+final_FP);
   final_TPR = final_TP/(final_TP+final_FN);
   final_FPR =final_FP/(final_FP+final_TN);
+  
+  clearvars Neg_binary_interaction_list
   
   
   %Format data to be written out
@@ -1150,25 +1100,6 @@ for pri = 1:length(desiredPrecision)
     end
   end
   
-%   %Crete list of DeltaHeight, note ensure strjoin function is avalible
-%   interaction_final.DeltaHeight_formated=cell(Total_unique_interactions,1);
-%   
-%   for format_loop=1:Total_unique_interactions
-%     DeltaHeight_2bformated1=interaction_final.DeltaHeight(format_loop,:);
-%     DeltaHeight_2bformated1(cellfun('isempty',DeltaHeight_2bformated1)) = [];
-%     length_DeltaHeight=length(DeltaHeight_2bformated1);
-%     
-%     %Test if the array is longer then one entry
-%     if length_DeltaHeight<2
-%       interaction_final.DeltaHeight_formated(format_loop)=DeltaHeight_2bformated1(1);
-%     elseif length_DeltaHeight>=2
-%       for jj= 1:length(DeltaHeight_2bformated1)
-%         DeltaHeight_2bformated1{jj} = num2str(DeltaHeight_2bformated1{jj});
-%       end
-%       interaction_final.DeltaHeight_formated(format_loop)= {strjoin(DeltaHeight_2bformated1,' ; ')};
-%     end
-%   end
-  
   %Crete list of R^2, note ensure strjoin function is avalible
   interaction_final.R2_formated=cell(Total_unique_interactions,1);
   for format_loop=1:Total_unique_interactions
@@ -1229,17 +1160,19 @@ for pri = 1:length(desiredPrecision)
   
   % Create precision-dropout
   interaction_final.precisionDropout = nan(Total_unique_interactions,1);
+  tmpProtinCor = cell2mat(interaction_final.proteinInCorum);
+  tmpIntinCor = cell2mat(interaction_final.interactionInCorum);
   for ii = 1:Total_unique_interactions
     cutoff = interaction_final.score(ii);
     I = interaction_final.score >= cutoff;
-    protInCor = cell2mat(interaction_final.proteinInCorum(I));
-    intInCor = cell2mat(interaction_final.interactionInCorum(I));
+    protInCor = tmpProtinCor(I);
+    intInCor = tmpIntinCor(I);
     TP = sum(protInCor==1 & intInCor==1);
     FP = sum(protInCor==1 & intInCor==0);
     interaction_final.precisionDropout(ii) = TP / (TP+FP);
   end
   
-  
+  %#PARSE_HERE
   %create figure of precision replicates over replicates
   %create array to fill with number of interaction with both proteins in
   %corum and the number of interactions for these proteins in corum

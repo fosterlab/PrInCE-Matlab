@@ -1,4 +1,13 @@
-%Plot Precision calculations
+
+if ~exist('firstFlag','var')
+  firstFlag = 1;
+end
+
+%% How many interactions were found in at least N replicates?
+
+% #PARSE_HERE
+% Make two figures: one global, one replicate-specific
+
 Interaction_not_in_corum=(Precision_array(:,3)-Precision_array(:,1));
 Interaction_in_corum_not_detected=(Precision_array(:,1)-Precision_array(:,2));
 
@@ -11,6 +20,7 @@ figure
 subplot(2,1,1)
 bar_x = 1:(number_of_replicates*number_of_channels);
 bar_y = [Interaction_in_corum_not_detected(:,1) (Precision_array(:,2)) Interaction_not_in_corum(:,1)];
+prec_fig = bar_y(:,2) ./ (bar_y(:,1) + bar_y(:,2));
 xlim_flag = 0;
 if length(bar_x)==1
   bar_x(2) = 0;
@@ -18,10 +28,16 @@ if length(bar_x)==1
   xlim_flag = 1;
 end
 b1 = bar(bar_x, bar_y, 0.6, 'stack');
-
-%for k=1:3
-%  set(b1,'facecolor', myC(k,:), 'EdgeColor', 'k' );
-%end
+y = ylim;
+for ii = 1:length(prec_fig)
+  if isnan(prec_fig(ii))
+    s = '--';
+  else
+    s = [num2str(round(prec_fig(ii)*1000)/10) '%'];
+  end
+  texty = sum(bar_y(ii,:));
+  text(ii-0.25,texty+diff(y)*.025,s)
+end
 legend('Proteins in corum (FP)', 'Interaction in corum (TP)',  'Proteins/Interactions not in corum');
 ylim([0,(Interaction_in_corum_not_detected(1,1)+Precision_array(1,2)+Interaction_not_in_corum(1,1))*1.1]);
 if xlim_flag
@@ -34,10 +50,6 @@ xlabel('Interaction observed in at least N channels/replicates','FontSize', 8);
 
 f1=subplot(2,1,2);
 b2 = bar(bar_x, bar_y, 0.6, 'stack');
-
-%for k=1:3
-%  set(b2,'facecolor', myC(k,:), 'EdgeColor', 'k' );
-%end
 legend('Proteins in corum (FP)', 'Interaction in corum (TP)',  'Proteins/Interactions not in corum');
 I2use = ceil(size(Precision_array,2)/2);
 y2 = max(sum(Precision_array(:,I2use)))*1.2;
@@ -49,17 +61,31 @@ if xlim_flag
   x = [0.4 1.6];
   xlim(x)
 end
+y = ylim;
+for ii = 1:length(prec_fig)
+  if isnan(prec_fig(ii))
+    s = '--';
+  else
+    s = [num2str(round(prec_fig(ii)*1000)/10) '%'];
+  end
+  texty = sum(bar_y(ii,:));
+  text(ii-0.25,texty+diff(y)*.025,s)
+end
+ylim(y)
 title('Interactions observed across isotoplogue channels (Zoom)','FontSize', 12);
 ylabel('Number of interactions','FontSize', 8);
 xlabel('Interaction observed in at least N channels/replicates','FontSize', 8);
 
 % Save figure
-Final_Interaction_figure=[figdir1 'Observed_interactions_across_replicates_' mat2str(Precision_values(precision_write_out_counter)) '_precision.png'];
+Final_Interaction_figure=[figdir1 'Interactions_in_multiple_replicates_' mat2str(Precision_values(precision_write_out_counter)) '_precision.png'];
 saveas(gcf, Final_Interaction_figure);
 
 
 
 %% How many interactions were found in each replicate?
+
+% #PARSE_HERE
+% Make two figures: one global, one replicate-specific
 
 [Ia,Ib] = find(~cellfun('isempty',interaction_final.replicate_numbers));
 
@@ -123,17 +149,36 @@ saveas(gcf, sf);
 
 %% Final precision-recall, ROC curves
 
+%#PARSE_HERE
+% Make two figures, or can I put both global and replicate-specific here?
 if firstFlag ==1
+  % convert original Recall to fraction of possible CORUM interactions
+%   TP = Ninteract;
+%   allPositivesinCorum = final_FN + final_TP;
+%   Recall = TP / allPositivesinCorum;
+%   calcrec_final = final_TP / (final_FN + final_TP);
+%   
+%   recall_ratio = calcrec(di) / calcrec_final;
+%   
+%   x1 = min(Recall);
+%   x2 = max(Recall);
+
+  all_positives = final_TP + final_FN;
+  Recall_from_Ninteract = Ninteract / all_positives;
+  Recall_this_precision = calcrec * sum(class==1) / all_positives;
+  
   figure,hold on
-  plot(recRange,precRange)
-  xlabel('Recall','fontsize',12)
+  plot(Recall_from_Ninteract,precRange)
+  %plot(recRange,precRange)
+  xlabel({'Recall' 'as fraction of all possible CORUM interactions'},'fontsize',12)
   ylabel('Precision','fontsize',12)
   for ii = 1:length(desiredPrecision)
-    plot([0 1],[1 1].*desiredPrecision(ii),'--r')
-    plot([1 1].*calcrec(ii),[0 desiredPrecision(ii)],'--k')
+    plot([x1 x2],[1 1].*desiredPrecision(ii),'--r')
+    %plot([1 1].*calcrec(ii),[0 desiredPrecision(ii)],'--k')
+    plot([1 1].*Recall_this_precision(ii),[0 desiredPrecision(ii)],'--k')
     text(.8,desiredPrecision(ii)+.02,['precision = ' num2str(round(desiredPrecision(ii)*100)) '%'])
   end
-  axis([0 1 0 1])
+  axis([x1 x2 0 1])
   
   % Save figure
   set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
