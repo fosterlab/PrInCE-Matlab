@@ -3,8 +3,8 @@ function [score, feats] = scorenb(Dist,possibleInts,TP_Matrix)
 
 % Get data
 I = possibleInts(:);
-labels = TP_Matrix(:);
-y = labels(:);
+%labels = TP_Matrix(:);
+y = TP_Matrix(:);
 y(y>0) = 1;
 y(y~=1) = -1;
 fn = fieldnames(Dist);
@@ -30,8 +30,9 @@ for ii = 1:Nd
   X(:,ii) = (X(:,ii) - wmu(ii)) / 2 / (wstd(ii) + eps);
 end
 
-Nlabel1 = sum(y==1);
-trainingLength = min([1000 round(Nlabel1 * 0.8)]);
+% what training length do we need to expect to get 5 class == 1?
+classratio = sum(y==1) / sum(y==-1);
+trainingLength = min([1000 round(5/classratio)]);
 
 Nmodel = 15;
 score = nan(size(X,1),Nmodel);
@@ -49,7 +50,7 @@ for iter = 1:Nmodel
   % non-balanced training data
   go = 1;
   train_iter = 0;
-  iterMax = 100;
+  iterMax = 1000;
   while go
     train_iter = train_iter+1;
     Iall = find(I);
@@ -81,7 +82,7 @@ for iter = 1:Nmodel
   if sum(feats(iter,:)<=2)==size(feats,2)
     feats(iter,:) = 3;
   end
-  f2consider = find(feats(iter,:) > 2)
+  f2consider = find(feats(iter,:) > 2 & testvar(1,:)>0 & testvar(2,:)>0 )
     
   % Fit Naive Bayes model
   nab = fitcnb(Xtr(:,f2consider),ytr);
