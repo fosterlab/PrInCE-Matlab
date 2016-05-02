@@ -47,7 +47,12 @@ fprintf (fid_final,'%s,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,,,%6.4f,\n',...
 fprintf (fid_final,'%s,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
   'Assessed with replicate-specific threshold',final_Recall(2), final_Precision(2), final_TP(2), final_FP(2), ...
   length(interaction_final.global));
-fprintf (fid_final,',\n');
+if ~isempty(notes)
+  fprintf (fid_final,'\n\n\n\n Notes:');
+  for ii = 1:length(notes)
+    fprintf (fid_final,'\n %s', notes{ii});
+  end
+end
 fclose(fid_final);
 
 

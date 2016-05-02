@@ -1,7 +1,3 @@
-%%%%%%%%%%%%%%% Instructions for running Gauss_Build.m:
-%
-%
-%
 %%%%%%%%%%%%%%% Logic:
 %   0. Initialize
 %   for replicate
@@ -18,26 +14,6 @@
 %       10. Find Treatment interactions
 %       11. Write output files
 %       12. Make figures
-%
-%
-%%%%%%%%%%%%%%% To do:
-% - Why is this script pre-processing chromatograms? Shouldn't that have been done earlier?
-% - What's going on in 8b? We keep interactions with Delta_Center>2... so why check for it?
-% - FN_binary_interaction_list can get up to 3 GB. Can we make it smaller?
-%
-%
-%%%%%%%%%%%%%%% Fix the logic:
-% - 'Look up Major Protein group Information' can be seriously improved with a few findstr
-% - FN and TN are approximated. Instead of looking at all the combinations of Gaussians, it just
-%   treats them all the same. This is for speed reasons: there were too many combinations to go
-%   through individually. A fix is to treat things exactly how we treat TP, that is go through and
-%   assess each Gaussian-Gaussian pair.
-% - FN is calculated using only Int_matrix==1, but Int_matrix has values up to 4. Is it better to
-%   just use Int_matrix>0 ?
-%
-%
-%%%%%%%%%%%%%%% Bugs in my (this) code:
-% - My Corum_Dataset is 11516x1. Nick's Corum_Dataset is 1x16393. Why are they different sizes?
 
 
 diary([user.maindir 'logfile.txt'])
@@ -154,6 +130,7 @@ Precision = nan((size(Recall)));
 TPR = nan((size(Recall)));
 FPR = nan((size(Recall)));
 No_Int = nan((size(Recall)));
+Notes = cell(0,1);
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
@@ -605,8 +582,6 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
 end
-%%%%% Replicate counter ends
-
 
 
 
@@ -619,126 +594,189 @@ clear Int_matrix
 tic
 fprintf('    6. Find the score cutoff across all replicates')
 
-% 6a. Concatenate scores across replicates.
-% The following code converts Protein1 and Protein2 to unique (hopefully!) numeric values.
-% This greatly reduces the memory used, as otherwise allScores is ~2.5GB.
-% NB: It's possible that two protein names will be mapped to the same numeric value.
-allScores = zeros(10^7,5);
-xcutoff_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
-calcprec_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
-calcrec_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
-ninteract_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
-Nclass1_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
-ff = rand(1,15);
-kk = 0;
-for rr = 1:(number_of_replicates*number_of_channels)
-  sf = [datadir2 'score_rep' num2str(rr) '.mat'];
-  load(sf)
-  a = find(triu(possibleInts));
-  [prot1i, prot2i] = ind2sub(size(possibleInts),a);
-  I = kk+1 : kk+length(a);
-  allScores(I,1) = TP_Matrix(a);           % Class label
-  allScores(I,4) = rr;         % Replicate
-  allScores(I,5) = median(scoreMatrix(a),2);  % Median score (equivalent to ensemble voting)
+bad_desiredPrecision = 1;
+
+while bad_desiredPrecision
   
-  % For space reasons, let's try converting Protein1, Protein2 into numeric
-  kk0 = kk;
-  for ii = 1:length(prot1i)
-    kk = kk+1;
-    tmp = double(Protein.Isoform{prot1i(ii)});
-    allScores(kk,2) = sum(tmp .* ff(1:length(tmp)));
-    tmp = double(Protein.Isoform{prot2i(ii)});
-    allScores(kk,3) = sum(tmp .* ff(1:length(tmp)));
+  % 6a. Concatenate scores across replicates.
+  % The following code converts Protein1 and Protein2 to unique (hopefully!) numeric values.
+  % This greatly reduces the memory used, as otherwise allScores is ~2.5GB.
+  % NB: It's possible that two protein names will be mapped to the same numeric value.
+  allScores = zeros(10^7,5);
+  xcutoff_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
+  calcprec_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
+  calcrec_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
+  ninteract_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
+  Nclass1_rep = nan(number_of_replicates*number_of_channels, length(desiredPrecision));
+  ff = rand(1,15);
+  kk = 0;
+  for rr = 1:(number_of_replicates*number_of_channels)
+    sf = [datadir2 'score_rep' num2str(rr) '.mat'];
+    load(sf)
+    a = find(triu(possibleInts));
+    [prot1i, prot2i] = ind2sub(size(possibleInts),a);
+    I = kk+1 : kk+length(a);
+    allScores(I,1) = TP_Matrix(a);           % Class label
+    allScores(I,4) = rr;         % Replicate
+    allScores(I,5) = median(scoreMatrix(a),2);  % Median score (equivalent to ensemble voting)
+    
+    % For space reasons, let's try converting Protein1, Protein2 into numeric
+    kk0 = kk;
+    for ii = 1:length(prot1i)
+      kk = kk+1;
+      tmp = double(Protein.Isoform{prot1i(ii)});
+      allScores(kk,2) = sum(tmp .* ff(1:length(tmp)));
+      tmp = double(Protein.Isoform{prot2i(ii)});
+      allScores(kk,3) = sum(tmp .* ff(1:length(tmp)));
+    end
+    
+    % Check the name-to-numeric conversion
+    % Did we lose any unique names in the conversion?
+    N1a = length(unique(Protein.Isoform(prot1i)));
+    N2a = length(unique(Protein.Isoform(prot2i)));
+    N1b = length(unique(allScores(kk0+1:kk,2)));
+    N2b = length(unique(allScores(kk0+1:kk,3)));
+    if N1a~=N1b || N2a~=N2b
+      disp('Two protein names stored as the same number!')
+    end
+    
+    % Make non-redundant replicate-specific score/class
+    scorestmp = allScores(kk0+1:kk,:);
+    [~,I1,I2] = unique(scorestmp(:,2:3),'rows');
+    allScores2 = nan(length(I1),100);
+    countV = zeros(length(I1),1);
+    for ii = 1:length(I2)
+      countV(I2(ii)) = countV(I2(ii))+1; % how many times have we seen this interaction?
+      allScores2(I2(ii),1) = scorestmp(ii,1);
+      allScores2(I2(ii),countV(I2(ii))+1) = scorestmp(ii,5);
+    end
+    class_rep = allScores2(:,1);
+    score_rep = max(allScores2(:,2:end),[],2);      % i) max score
+    Nclass1_rep(rr) = sum(class_rep==1);
+    
+    % Find replicate-specific threshold
+    for di = 1:length(desiredPrecision)
+      [xcutoff_rep(rr,di), tmp] = calcPPIthreshold(score_rep,class_rep,desiredPrecision(di));
+      calcprec_rep(rr,di) = tmp.calcprec;
+      calcrec_rep(rr,di) = tmp.calcrec;
+      ninteract_rep(rr,di) = tmp.calcrec * sum(class_rep==1);
+    end
+    
+    clear scoreMatrix inverse_self Protein possibleInts TP_Matrix scorestmp Dist
   end
+  allScores = allScores(1:kk,:);
   
-  % Check the name-to-numeric conversion
-  % Did we lose any unique names in the conversion?
-  N1a = length(unique(Protein.Isoform(prot1i)));
-  N2a = length(unique(Protein.Isoform(prot2i)));
-  N1b = length(unique(allScores(kk0+1:kk,2)));
-  N2b = length(unique(allScores(kk0+1:kk,3)));
-  if N1a~=N1b || N2a~=N2b
-    disp('Two protein names stored as the same number!')
-  end
-  
-  % Make non-redundant replicate-specific score/class
-  scorestmp = allScores(kk0+1:kk,:);
-  [~,I1,I2] = unique(scorestmp(:,2:3),'rows');
+  % Remove redundant interactions
+  % Options: i) max score, ii) mean score, iii) median score
+  [~,I1,I2] = unique(allScores(:,2:3),'rows');
   allScores2 = nan(length(I1),100);
   countV = zeros(length(I1),1);
   for ii = 1:length(I2)
     countV(I2(ii)) = countV(I2(ii))+1; % how many times have we seen this interaction?
-    allScores2(I2(ii),1) = scorestmp(ii,1);
-    allScores2(I2(ii),countV(I2(ii))+1) = scorestmp(ii,5);
+    allScores2(I2(ii),1) = allScores(ii,1);
+    allScores2(I2(ii),countV(I2(ii))+1) = allScores(ii,5);
   end
-  class_rep = allScores2(:,1);
-  score_rep = max(allScores2(:,2:end),[],2);      % i) max score
-  Nclass1_rep(rr) = sum(class_rep==1);
+  class = allScores2(:,1);
+  score = max(allScores2(:,2:end),[],2);      % i) max score
+  %score = nanmean(allScores2(:,2:end),2);    % ii) mean score
+  %score = nanmedian(allScores2(:,2:end),2);  % iii) median score
+  clear allScores2 allScores TP_Matrix I1 I2
   
-  % Find replicate-specific threshold
+  
+  % Check class_ratio. Something over 1000 is pretty high.
+  % - As a reference, compare it to the trainingLength you'd need to get 2 or 3 class=1 examples.
+  % - What can I do if class_ratio is too high?
+  class_ratio = sum(class==0) / sum(class==1);
+  if class_ratio>1000
+    fprintf('\n\n -------------------------- WARNING --------------------------')
+    fprintf('\n A strong imbalance between pos and neg classes was detected:')
+    fprintf('\n there are %d known NON-interactions for each known interaction.', round(class_ratio))
+    fprintf('\n This ratio should be less than 1000.')
+    fprintf('\n The maximum achievable precision and the number of detectable')
+    fprintf('\n interactions are likely reduced.')
+    fprintf('\n To fix, try using a modified CORUM file. \n\n')
+    notei = length(notes);
+    notes{notei+1} = ['A strong imbalance between pos and neg classes was detected. There are ' num2str(class_ratio) ' known NON-interactions for each known interaction. This ratio should be less than 1000. To fix, try using a modified CORUM file.'];
+  end
+  
+  
+  % 6b. Calculate global threshold
+  xcutoff = nan(size(desiredPrecision));
+  calcprec = zeros(size(xcutoff));
+  calcrec = zeros(size(xcutoff));
+  scoreRange = [];                       % Save
+  precRange = [];                        % these
+  recRange = [];                         % for
+  tprRange = [];                         % plotting
+  fprRange = [];                         % later.
+  Ninteract = [];                        % ...
   for di = 1:length(desiredPrecision)
-    [xcutoff_rep(rr,di), tmp] = calcPPIthreshold(score_rep,class_rep,desiredPrecision(di));
-    calcprec_rep(rr,di) = tmp.calcprec;
-    calcrec_rep(rr,di) = tmp.calcrec;
-    ninteract_rep(rr,di) = tmp.calcrec * sum(class_rep==1);
+    [xcutoff(di), tmp] = calcPPIthreshold(score,class,desiredPrecision(di));
+    calcprec(di) = tmp.calcprec;
+    calcrec(di) = tmp.calcrec;
+    
+    % save plotting variables
+    I = ~isnan(tmp.scoreRange);
+    scoreRange = [scoreRange; tmp.scoreRange(I)'];
+    precRange = [precRange; tmp.precRange(I)'];
+    recRange = [recRange; tmp.recRange(I)'];
+    tprRange = [tprRange; tmp.tprRange(I)'];
+    fprRange = [fprRange; tmp.fprRange(I)'];
+    Ninteract = [Ninteract; tmp.Ninteractions(I)'];
+  end
+  [scoreRange,I] = sort(scoreRange);
+  precRange = precRange(I);
+  recRange = recRange(I);
+  tprRange = tprRange(I);
+  fprRange = fprRange(I);
+  Ninteract = Ninteract(I);
+  
+  
+  % Check that desiredPrecision is within [min(precRange) max(precRange)]
+  bad_desiredPrecision1 = desiredPrecision>max(precRange);
+  bad_desiredPrecision2 = desiredPrecision<min(precRange);
+  bad_desiredPrecision = bad_desiredPrecision1 | bad_desiredPrecision2;
+  % If desiredPrecision is too high, lower it
+  if ~isempty(find(bad_desiredPrecision1, 1))
+    max_achievable_precision = max(precRange) * 0.99;
+    fprintf('\n\n -------------------------- WARNING --------------------------')
+    fprintf('\n Desired precision %6.4f is not achievable with current settings.', desiredPrecision(bad_desiredPrecision1))
+    fprintf('\n Lowering it to %6.4f and recalculating score threshold... \n\n', max_achievable_precision)
+    desiredPrecision(bad_desiredPrecision1) = max_achievable_precision;
+    notei = length(notes);
+    notes{notei+1} = ['Desired precision ' num2str(desiredPrecision(bad_desiredPrecision1)) ' was not achievable. It was lowered to ' num2str(max_achievable_precision) '.'];
+  end
+  % If desiredPrecision is too low, raise it
+  if ~isempty(find(bad_desiredPrecision2, 1))
+    min_achievable_precision = min(precRange);
+    fprintf('\n\n -------------------------- WARNING --------------------------')
+    fprintf('\n Desired precision %6.4f is not achievable with current settings.', desiredPrecision(bad_desiredPrecision1))
+    fprintf('\n Raising it to %6.4f and recalculating score threshold... \n\n', min_achievable_precision)
+    desiredPrecision(bad_desiredPrecision1) = min_achievable_precision;
+    notei = length(notes);
+    notes{notei+1} = ['Desired precision ' num2str(desiredPrecision(bad_desiredPrecision1)) ' was not achievable. It was raised to ' num2str(min_achievable_precision) '.'];
   end
   
-  clear scoreMatrix inverse_self Protein possibleInts TP_Matrix scorestmp Dist
-end
-allScores = allScores(1:kk,:);
-
-% Remove redundant interactions
-% Options: i) max score, ii) mean score, iii) median score
-[~,I1,I2] = unique(allScores(:,2:3),'rows');
-allScores2 = nan(length(I1),100);
-countV = zeros(length(I1),1);
-for ii = 1:length(I2)
-  countV(I2(ii)) = countV(I2(ii))+1; % how many times have we seen this interaction?
-  allScores2(I2(ii),1) = allScores(ii,1);
-  allScores2(I2(ii),countV(I2(ii))+1) = allScores(ii,5);
-end
-class = allScores2(:,1);
-score = max(allScores2(:,2:end),[],2);      % i) max score
-%score = nanmean(allScores2(:,2:end),2);    % ii) mean score
-%score = nanmedian(allScores2(:,2:end),2);  % iii) median score
-clear allScores2 allScores TP_Matrix I1 I2
-
-
-% 6b. Calculate global threshold
-xcutoff = nan(size(desiredPrecision));
-calcprec = zeros(size(xcutoff));
-calcrec = zeros(size(xcutoff));
-scoreRange = [];                       % Save
-precRange = [];                        % these
-recRange = [];                         % for
-tprRange = [];                         % plotting
-fprRange = [];                         % later.
-Ninteract = [];                        % ...
-for di = 1:length(desiredPrecision)
-  [xcutoff(di), tmp] = calcPPIthreshold(score,class,desiredPrecision(di));
-  calcprec(di) = tmp.calcprec;
-  calcrec(di) = tmp.calcrec;
+  if length(desiredPrecision) > length(unique(desiredPrecision))
+    fprintf('\n\n -------------------------- WARNING --------------------------')
+    fprintf('\n Desired precision contains some duplicates, likely due to ')
+    fprintf('\n multiple levels being unachievable. Removing duplicate entries. \n\n')
+    desiredPrecision = unique(desiredPrecision);
+  end
   
-  % save plotting variables
-  I = ~isnan(tmp.scoreRange);
-  scoreRange = [scoreRange; tmp.scoreRange(I)'];
-  precRange = [precRange; tmp.precRange(I)'];
-  recRange = [recRange; tmp.recRange(I)'];
-  tprRange = [tprRange; tmp.tprRange(I)'];
-  fprRange = [fprRange; tmp.fprRange(I)'];
-  Ninteract = [Ninteract; tmp.Ninteractions(I)'];
 end
-[scoreRange,I] = sort(scoreRange);
-precRange = precRange(I);
-recRange = recRange(I);
-tprRange = tprRange(I);
-fprRange = fprRange(I);
-Ninteract = Ninteract(I);
+
+
+% ## Check that desiredPrecision leads to good xcutoff.
+%   - Is xcutoff(rep) too low? Does it let in more than MaxInter interactions?
+%   - What's a good MaxInter?
+
+
+
 
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
-
 
 
 
