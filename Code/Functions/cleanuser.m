@@ -7,6 +7,7 @@ function user_new = cleanuser(user)
 
 user_new = user;
 
+
 %% Check that files exist
 
 % check that user.maindir ends in a forward slash
@@ -16,18 +17,26 @@ end
 
 % do the data files exist?
 % user.MQfiles
-% user.calfile
+for ii = 1:length(user.MQfiles)
+  if ~exist(user.MQfiles{ii},'file')
+    error('\n The following file could not be found: \n %s', user.MQfiles{ii})
+  end
+end
 % user.majorproteingroupsfile
+if ~exist(user.majorproteingroupsfile,'file')
+  error('\n The following file could not be found: \n %s', user.majorproteingroupsfile)
+end
 % user.mastergaussian
 % user.fastafile
 % user.omimfile
 % user.corumfile
+if ~exist(user.corumfile,'file')
+  error('\n The following file could not be found: \n %s', user.corumfile)
+end
 
-% user.corumpairwisefile
+% Make user.corumpairwisefile
 fn_corumpair = [user.maindir '/Data/Corum_pairwise.csv'];
-try 
-  ls(fn_corumpair)
-catch
+if ~exist(fn_corumpair,'file')
   disp('cleanuser: Making Corum_pairwise.csv.')
   try
     corum2pairwise(user)
@@ -37,7 +46,7 @@ catch
 end
 user_new.corumpairwisefile = fn_corumpair;
 
-% user.corumcomplexfile
+% Make user.corumcomplexfile
 fn_corumcomplex = [user.maindir '/Data/Corum_complex.csv'];
 try
   corumextractcomplex(user)
@@ -57,6 +66,11 @@ end
 
 % ensure that fractions are between 0 and 1, not 0% and 100%
 
+% ensure that user.Dilution_factor exists
+
+% ensure that the silac ratios in user.MQfiles and user.silacratios are the same order
+
+% ensure that treatmentcondition is part of every comparisonpairs
 
 
 
