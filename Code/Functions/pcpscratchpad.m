@@ -837,7 +837,7 @@ for ii = 1:length(Nc_range)
   end
   
   pval(pval>pthreshold & pval<=1) = 1;
-    
+  
   imagesc(Nlc_range,Nl_range,pval),caxis([0 1.5])
   axis xy
   xlabel('labels in complex')
@@ -859,40 +859,40 @@ Nl_range = 1:25;
 pth = 1e-7;
 
 for N = [100 500 1000 5000 10000 100000];
-
-fraction = nan(length(Nc_range),length(Nl_range));
-for ii = 1:length(Nc_range)
-  Nc = Nc_range(ii);
-  for jj = 1:length(Nl_range)
-    Nl = Nl_range(jj);
-    
-    Nlc = 0;
-    pval = 1;
-    while pval>pth
-      Nlc = Nlc+1;
-      if Nlc>Nc || Nlc>Nl || Nc+Nlc>N
-        fraction(ii,jj) = 1.5;
-        break
+  
+  fraction = nan(length(Nc_range),length(Nl_range));
+  for ii = 1:length(Nc_range)
+    Nc = Nc_range(ii);
+    for jj = 1:length(Nl_range)
+      Nl = Nl_range(jj);
+      
+      Nlc = 0;
+      pval = 1;
+      while pval>pth
+        Nlc = Nlc+1;
+        if Nlc>Nc || Nlc>Nl || Nc+Nlc>N
+          fraction(ii,jj) = 1.5;
+          break
+        end
+        T = [Nlc Nc-Nlc; Nl-Nlc N-Nc-Nlc];
+        [~,pval] = fishertest(T);
+        fraction(ii,jj) = Nlc/Nc;
       end
-      T = [Nlc Nc-Nlc; Nl-Nlc N-Nc-Nlc];
-      [~,pval] = fishertest(T);
-      fraction(ii,jj) = Nlc/Nc;
+      
     end
-    
   end
-end
-
-figure
-imagesc(fraction)
-caxis([0 1.5])
-axis xy
-set(gca,'xtick',1:length(Nl_range),'xticklabel',num2cell(Nl_range),...
-  'ytick',1:length(Nc_range),'yticklabel',num2cell(Nc_range))
-colorbar
-xlabel('How many times does the label occur?')
-ylabel('Size of complex')
-title(['What fraction of the complex needs to have the label? N=' num2str(N)])
-
+  
+  figure
+  imagesc(fraction)
+  caxis([0 1.5])
+  axis xy
+  set(gca,'xtick',1:length(Nl_range),'xticklabel',num2cell(Nl_range),...
+    'ytick',1:length(Nc_range),'yticklabel',num2cell(Nc_range))
+  colorbar
+  xlabel('How many times does the label occur?')
+  ylabel('Size of complex')
+  title(['What fraction of the complex needs to have the label? N=' num2str(N)])
+  
 end
 
 
@@ -972,12 +972,12 @@ for ii = 1:2
   
   
   
-%   I1a = find(ismember(txt_val{ii}(:,1),'P46940')) - 1;
-%   I1b = find(ismember(txt_val{ii}(:,1),'P60953')) - 1;
-%   I2a = find(ismember(txt_val{ii}(:,1),'Q13043')) - 1;
-%   I2b = find(ismember(txt_val{ii}(:,1),'O00429')) - 1;
-%   I3a = find(ismember(txt_val{ii}(:,1),'O94967')) - 1;
-%   I3b = find(ismember(txt_val{ii}(:,1),'P50542')) - 1;
+  %   I1a = find(ismember(txt_val{ii}(:,1),'P46940')) - 1;
+  %   I1b = find(ismember(txt_val{ii}(:,1),'P60953')) - 1;
+  %   I2a = find(ismember(txt_val{ii}(:,1),'Q13043')) - 1;
+  %   I2b = find(ismember(txt_val{ii}(:,1),'O00429')) - 1;
+  %   I3a = find(ismember(txt_val{ii}(:,1),'O94967')) - 1;
+  %   I3b = find(ismember(txt_val{ii}(:,1),'P50542')) - 1;
   I1a = strmatch('P46940', txt_val{ii}(:,1)) - 1;
   I1b = strmatch('P60953', txt_val{ii}(:,1)) - 1;
   I2a = strmatch('Q13043', txt_val{ii}(:,1)) - 1;
@@ -1049,4 +1049,49 @@ ratioAB = FPab / TPab;
 fracTPremoved = (TPa + TPb - TPab) / (TPa + TPb);
 fracFPremoved = (FPa + FPb - FPab) / (FPa + FPb);
 [fracTPremoved fracFPremoved]
+
+
+
+%% Understand why some Tissue replicates have no interactions
+% Compare scoreMatrix between replicates
+% Run Initialize in ROC_PCPSILAC
+
+prct = [50 75 90 95 99];
+
+rep_prctile = zeros(6,length(prct)+1);
+for ii = 1:(number_of_replicates*number_of_channels)
+  sf = [datadir2 'score_rep' num2str(ii) '.mat'];
+  load(sf)
+  
+  clear TP_Matrix possibleInts Protein inverse_self Chromatograms Dist
+  
+  for jj = 1:length(prct)
+    rep_prctile(ii,jj) = prctile(scoreMatrix(:),prct(jj));
+  end
+  rep_prctile(ii,jj+1) = max(scoreMatrix(:));
+end
+
+
+
+%% Play with Tukey. Does it work for Ali's 30-group, 2-treatment, 3-replicate data?
+
+data = rand(30,2,3);
+data(1,1,:) = data(1,1,:) + 1;
+data(2,1,:) = data(2,1,:) + 1;
+data(3,1,:) = data(3,1,:) + 1;
+
+cc = 0;
+X = zeros(30*2*3,1);
+G = zeros(size(X));
+for ii = 1:30 % group
+  for jj = 1:2 % treatment
+    for kk = 1:3 % replicate
+      cc = cc+1;
+      X(cc) = data(ii,jj,kk);
+      G(cc) = jj;
+    end
+  end
+end
+
+[~,~,stats] = anovan(X,G,'display','off');
 

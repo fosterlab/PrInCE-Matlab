@@ -20,21 +20,24 @@ end
 for ii = 1:Na
   Ni(ii) = length(refComplex{ii});
   for jj = 1:Nb
-    T(ii,jj) = length(intersect(refComplex{ii},predComplex{jj}))^2;
+    T(ii,jj) = length(intersect(refComplex{ii},predComplex{jj}));
   end
 end
 
 
-% Calculate sensitivity
-sn = T ./ repmat(Ni,1,Nb);
-Sn_ref = max(sn,[],2);
-Sn = sum(Sn_ref .* Ni) / sum(Ni);
+% Calculate sensitivity (average of each reference complex)
+% sn = T ./ repmat(Ni,1,Nb);
+% Sn_ref = max(sn,[],2);
+% Sn = sum(Sn_ref .* Ni) / sum(Ni);
+Trefmax = max(T,[],2);
+Sn = sum(Trefmax) / sum(Ni);
 
-
-% Calculate PPV
-ppv = T ./ repmat(sum(T),Na,1);
-PPV_pred = max(ppv,[],1);
-PPV = nansum(PPV_pred .* sum(T)) / sum(T(:));
+% Calculate PPV (average of each predicted complex)
+% ppv = T ./ repmat(sum(T),Na,1);
+% PPV_pred = max(ppv,[],1);
+% PPV = nansum(PPV_pred .* sum(T)) / sum(T(:));
+Tpredmax = max(T);
+PPV = sum(Tpredmax) / sum(T(:));
 
 
 % Calculate geometric accuracy, as defined in Brohee and van Helden (2006)

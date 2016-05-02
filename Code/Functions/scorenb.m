@@ -63,7 +63,7 @@ for iter = 1:Nmodel
     Xnew = X(Ipred,:);
     
     % Ensure there are at least 3 data points in each class
-    go1 = sum(ytr>0)<3 | sum(ytr<0)<3;
+    go1 = sum(ytr>0)<2 | sum(ytr<0)<2;
     
     % Ensure no class-variable pair has zero variance
     testvar = nan(2,Nd);
@@ -71,7 +71,7 @@ for iter = 1:Nmodel
       testvar(1,jj) = var(Xtr(ytr>0,jj));
       testvar(2,jj) = var(Xtr(ytr<0,jj));
     end
-    go2 = sum(testvar(:)==0) > 0;
+    go2 = sum(testvar(1,:)~=0) == 0 | sum(testvar(2,:)~=0) == 0;
     
     go = (go1 | go2) & train_iter<=iterMax;
   end

@@ -61,6 +61,9 @@ for jj = 1:2
   bar(bar_x, bar_y, 0.6, 'stack');
   I2use = ceil(size(PA,1)/2);
   y2 = sum(bar_y(I2use,:))*1.2;
+  if y2==0
+    y2 = y(2)/2;
+  end
   ylim([0,y2]);
   if xlim_flag
     x = [0.4 1.6];
@@ -228,7 +231,7 @@ saveas(gcf, sf, 'png');
 
 %% Histogram of score for class=0, class=1
 
-Nx = max([15 length(class)/1000]);
+Nx = max([15 length(class)/3000]);
 x = linspace(min(score),max(score),Nx);
 h1 = hist(score(class==1),x);
 h0 = hist(score(class==0),x);
