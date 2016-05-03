@@ -100,34 +100,71 @@ if ~skipflag
   % Find input files
   ChromatogramIn = cell(Nchannels,1);
   GaussIn = cell(Nchannels,1);
-  for ii = 1:Nchannels
-    if user.nickflag
-      % NB THIS IS BAD FIX IT!!!!
-      % USING NICK'S DATA FOR NOW
-      datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
+  if user.nickflag==1
+    datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
+    for ii = 1:Nchannels
       ChromatogramIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Raw_data_maxquant_modified.xlsx']; % from Alignment
-    else
-      if user.skipalignment
-        ChromatogramIn{ii} = user.MQfiles{ii};
-      else
-        ChromatogramIn{ii} = [datadir 'Alignment/Adjusted_' user.silacratios{ii} '_Raw_data_maxquant.csv']; % from Alignment
-      end
-    end
-  end
-  for ii = 1:Nchannels
-    if user.nickflag
-      % NB THIS IS BAD FIX IT!!!!
-      % USING NICK'S DATA FOR NOW
-      datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
       GaussIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
+    end
+  else
+    dd = dir([datadir 'Alignment/Adjusted_*_Combined_OutputGaus.csv']);
+    if user.skipalignment==1 || isempty(dd)
+      % If Alignment was skipped, use raw data + Gauss_Build output
+      
+      for di = 1:Nchannels
+        ChromatogramIn{di} = user.MQfiles{di};
+      end
+      
+      dd = dir([datadir 'GaussBuild/*_Combined_OutputGaus.csv']);
+      for di = 1:length(dd)
+        GaussIn{di} = [datadir 'GaussBuild/' dd(di).name];
+      end
     else
-      if user.skipalignment
-        GaussIn{ii} = [datadir 'GaussBuild/' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
-      else
-        GaussIn{ii} = [datadir 'Alignment/Adjusted_' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
+      % If Alignment was not skipped, use Alignment output
+      
+      dd = dir([datadir 'Alignment/Adjusted_*_Raw_data_maxquant.csv']);
+      for di = 1:length(dd)
+        ChromatogramIn{di} = [datadir 'Alignment/' dd(di).name];
+      end
+      
+      dd = dir([datadir 'Alignment/Adjusted_*_Combined_OutputGaus.csv']);
+      for di = 1:length(dd)
+        GaussIn{di} = [datadir 'Alignment/' dd(di).name];
       end
     end
   end
+  
+  % Find input files
+%   ChromatogramIn = cell(Nchannels,1);
+%   GaussIn = cell(Nchannels,1);
+%   for ii = 1:Nchannels
+%     if user.nickflag
+%       % NB THIS IS BAD FIX IT!!!!
+%       % USING NICK'S DATA FOR NOW
+%       datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
+%       ChromatogramIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Raw_data_maxquant_modified.xlsx']; % from Alignment
+%     else
+%       if user.skipalignment
+%         ChromatogramIn{ii} = user.MQfiles{ii};
+%       else
+%         ChromatogramIn{ii} = [datadir 'Alignment/Adjusted_' user.silacratios{ii} '_Raw_data_maxquant.csv']; % from Alignment
+%       end
+%     end
+%   end
+%   for ii = 1:Nchannels
+%     if user.nickflag
+%       % NB THIS IS BAD FIX IT!!!!
+%       % USING NICK'S DATA FOR NOW
+%       datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
+%       GaussIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
+%     else
+%       if user.skipalignment
+%         GaussIn{ii} = [datadir 'GaussBuild/' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
+%       else
+%         GaussIn{ii} = [datadir 'Alignment/Adjusted_' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
+%       end
+%     end
+%   end
   
   % User defined variables
   %position_fraction1=6; %Denote the position of the first fraction in fraction_to_plot of aligned samples
@@ -176,8 +213,18 @@ if ~skipflag
       txt_val{ii} = tmp.textdata;
     end
     
-    % Confirm that the 'Replicate' column is the first column in num_val
-    if ismember('replicate',lower(txt_val{ii}(1,:))); % is 'Replicate' in txt_val header?
+    % Confirm that the 'Replicate' column is in the header
+    Ihead = strfind(lower(txt_val{ii}(1,:)),'replicate');
+    replicate_in_header = find(~cellfun('isempty', Ihead));
+    if isempty(replicate_in_header)
+      error('Comparison: Chromatogram numerical and text data mismatch.')
+    end
+    
+    % Confirm that the first column of num_val is the replicate
+    Nempty = sum(isempty(num_val{ii}(:,1)));
+    if length(unique(num_val{ii}(:,1)))==user.Nreplicate && Nempty<2
+      % num_val{ii}(:,1) is the replicate number
+    else
       I = find(ismember(lower(txt_val{ii}(1,:)),'replicate'));
       replicate_cell = txt_val{ii}(:,I);
       replicate_vector = nan(size(replicate_cell));
@@ -193,9 +240,8 @@ if ~skipflag
       elseif length(replicate_vector) == size(num_val{ii},1)+1
         num_val{ii} = [replicate_vector(2:end) num_val{ii}];
       end
-    else
-      error('Comparison: Chromatogram file is missing the replicate column.')
     end
+
     
     % Remove header from txt_val if necessary
     if size(txt_val{ii},1) == size(num_val{ii},1)+1
@@ -203,7 +249,6 @@ if ~skipflag
     elseif size(txt_val{ii},1) == size(num_val{ii},1)
       % do nothing
     else
-      error('Comparison: Chromatogram numerical and text data mismatch.')
     end
     
     %Remove data point with low values
@@ -662,8 +707,9 @@ if ~skipflag
     % ii) find all fitted Gaussians for that protein
     I = cell(Nchannels,1);
     for jj = 1:Nchannels
-      tmp = strfind(GaussSummary(jj).Protein_name,protName);
-      I{jj} = find(~cellfun('isempty',tmp));
+      %tmp = strfind(GaussSummary(jj).Protein_name,protName);
+      %I{jj} = find(~cellfun('isempty',tmp));
+      I{jj} = find(ismember(GaussSummary(jj).Protein_name, protName));
     end
     
     % iii) find the best replicate-channel for this protein using R^2
