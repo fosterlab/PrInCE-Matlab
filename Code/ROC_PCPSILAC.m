@@ -130,7 +130,7 @@ Precision = nan((size(Recall)));
 TPR = nan((size(Recall)));
 FPR = nan((size(Recall)));
 No_Int = nan((size(Recall)));
-Notes = cell(0,1);
+notes = cell(0,1);
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
@@ -156,19 +156,6 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Corum_Protein_names = (reshape(Corum_Import{1,1},2,No)');
   Unique_Corum = unique(Corum_Protein_names);
   
-  %     %Raw data for analysis of euclidean distance
-  %     %import data files summary data
-  %     Maxquant = fopen (ChromatogramIn{replicate_counter});
-  %     Maxquant_raw = textscan(Maxquant, '%s', 'Delimiter',',');
-  %     fclose(Maxquant);
-  %
-  %     %Reshape data for use in analysis
-  %     Raw_Dimension=size(Maxquant_raw{:});
-  %     Raw_data_reshaped=reshape(Maxquant_raw{:},68,(Raw_Dimension(1)/68))';
-  %
-  %     %divide up reshaped data in correct form
-  %     Chromatograms_raw = Raw_data_reshaped(2:end,3:end);
-  %     Chromatograms_raw = cellfun(@str2num,Chromatograms_raw);
   
   % Raw SILAC ratios
   tmp = importdata(ChromatogramIn{replicate_counter});
@@ -182,15 +169,6 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   if tmp < user.Nreplicate*2+1 % i.e. the column has unique elements in the ballpark of user.Nreplicate
     Chromatograms_raw = Chromatograms_raw(:,2:end);
   end
-  
-  %   %Gaus data data for analysis of center analysis
-  %   Gaus_import_name = fopen (GaussIn{replicate_counter});
-  %   Gaus_import = textscan(Gaus_import_name, '%s', 'Delimiter',',');
-  %   fclose(Gaus_import_name);
-  %
-  %   %Reshape data for use in analysis
-  %   Gaus_import_Dimension=size(Gaus_import{:});
-  %   Gaus_import_reshaped=reshape(Gaus_import{:},7,(Gaus_import_Dimension(1)/7))';
   
   % Gaussian parameters
   tmp = importdata(GaussIn{replicate_counter}, ',');
@@ -296,15 +274,15 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   clear X unique_names
   
   % Co-Apex score = norm(C) / sqrt(length(C))
-%   I = find(abs(diff(Ngauss))>0 | Ngauss(2:end)==1);
-%   I = [1; I+1];
-%   I0 = 0;
-%   CoApex = zeros(size(Ngauss));
-%   for ii = 1:length(I)
-%     I2 = I0+1 : I0 + Ngauss(I(ii));
-%     CoApex(I2) = norm(C(I2)) / sqrt(length(I2));
-%     I0 = max(I2);
-%   end
+  %   I = find(abs(diff(Ngauss))>0 | Ngauss(2:end)==1);
+  %   I = [1; I+1];
+  %   I0 = 0;
+  %   CoApex = zeros(size(Ngauss));
+  %   for ii = 1:length(I)
+  %     I2 = I0+1 : I0 + Ngauss(I(ii));
+  %     CoApex(I2) = norm(C(I2)) / sqrt(length(I2));
+  %     I0 = max(I2);
+  %   end
   
   % Co-Apex score = norm(C) / sqrt(length(C))
   CoApex = zeros(size(Ngauss));
@@ -335,9 +313,9 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Dist.Ngauss = squareform(pdist(Ngauss));
   Dist.CoApex = squareform(pdist(CoApex));
   Dist.AUC = squareform(pdist(auc));
-  [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
-  Dist.R2raw = 1 - R.^2;
-  Dist.Rpraw = p;
+  %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+  %Dist.R2raw = 1 - R.^2;
+  %Dist.Rpraw = p;
   
   % GRAVEYARD OF RELEGATED DIST MATRICES
   %   Dist.RawOverlap = nan(size(Chromatograms_raw,1),size(Chromatograms_raw,1));
@@ -421,13 +399,13 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   
   % Remove non-unique entries from each row of Protein_IDS_no_isoform
   Protein_IDS_no_isoform_no_dup_processed = cell(size(Protein_IDs));
-  for Protein_ID_counter3 = 2:Dimension_of_Protein_IDs(1)
-    Array_to_check1=Protein_IDS_no_isoform(Protein_ID_counter3,:);
-    Array_to_check_empty=cellfun(@isempty,Array_to_check1);
-    Array_to_check1(Array_to_check_empty)=[]; % Replace empty cells with NaN
-    uniqueCells=unique(Array_to_check1);
-    for Protein_ID_counter4 = 1:length(uniqueCells)
-      Protein_IDS_no_isoform_no_dup_processed{Protein_ID_counter3,Protein_ID_counter4}=uniqueCells(Protein_ID_counter4);
+  for ii = 2:Dimension_of_Protein_IDs(1)
+    Array_to_check1 = Protein_IDS_no_isoform(ii,:);
+    Array_to_check_empty = cellfun(@isempty,Array_to_check1);
+    Array_to_check1(Array_to_check_empty) = []; % Replace empty cells with NaN
+    uniqueCells = unique(Array_to_check1);
+    for jj = 1:length(uniqueCells)
+      Protein_IDS_no_isoform_no_dup_processed{ii,jj} = uniqueCells(jj);
     end
   end
   
@@ -435,13 +413,13 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   % For each protein that was fitted by a Gaussian
   %   Find the row containing that protein name in Protein_IDs
   %   Store all protein names from that row of Protein_IDs
-  Protein.MajorIDs=cell(Dimensions_Gaus_import,Dimension_of_Protein_IDs(2));
-  Protein.MajorID_NoIsoforms=cell(Dimensions_Gaus_import,Dimension_of_Protein_IDs(2));
+  Protein.MajorIDs = cell(Dimensions_Gaus_import,Dimension_of_Protein_IDs(2));
+  Protein.MajorID_NoIsoforms = cell(Dimensions_Gaus_import,Dimension_of_Protein_IDs(2));
   f = 0;
-  for Gaus_import_counter1 = 1:Dimensions_Gaus_import(1)
+  for ii = 1:Dimensions_Gaus_import(1)
     
     %disp(Lookup_protein_name)
-    Lookup_protein_name = Protein.Isoform(Gaus_import_counter1);
+    Lookup_protein_name = Protein.Isoform(ii);
     
     tmp = find(strcmp(Lookup_protein_name,Protein_IDs));
     [Check_counter1, Check_counter2] = ind2sub(size(Protein_IDs),tmp);
@@ -449,16 +427,16 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     %copy names to MajorID from Protein_IDs raw data
     Array_to_check1 = Protein_IDs(Check_counter1,:);
     Array_to_check_empty1 = cellfun(@isempty,Array_to_check1);
-    for Check_counter3 = 1:nnz(~Array_to_check_empty1)
-      Protein.MajorIDs{Gaus_import_counter1,Check_counter3} = {Protein_IDs{Check_counter1,Check_counter3}};
+    for jj = 1:nnz(~Array_to_check_empty1)
+      Protein.MajorIDs{ii,jj} = {Protein_IDs{Check_counter1,jj}};
     end
     
     %copy names to MajorID_NoIsoforms from Protein_IDS_no_isoform_no_dup_processed
     Array_to_check2=Protein_IDS_no_isoform_no_dup_processed(Check_counter1,:);
     Array_to_check_empty2=cellfun(@isempty,Array_to_check2);
-    for Check_counter4 = 1:nnz(~Array_to_check_empty2)
-      a = Protein_IDS_no_isoform_no_dup_processed{Check_counter1,Check_counter4};
-      Protein.MajorID_NoIsoforms{Gaus_import_counter1,Check_counter4}=a{1};
+    for jj = 1:nnz(~Array_to_check_empty2)
+      a = Protein_IDS_no_isoform_no_dup_processed{Check_counter1,jj};
+      Protein.MajorID_NoIsoforms{ii,jj}=a{1};
     end
   end
   
@@ -539,7 +517,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     tmp(isemptyCellArray) = {'--fake'};
     inCorum(ni,:) = ismember(tmp,Unique_Corum);
   end
-  inCorum = sum(inCorum);
+  inCorum = sum(inCorum,1);
   
   % Calculate possible interaction matrix, asks are both proteins in corum
   Int_matrix = inCorum'*inCorum;
@@ -696,7 +674,9 @@ while bad_desiredPrecision
     fprintf('\n interactions are likely reduced.')
     fprintf('\n To fix, try using a modified CORUM file. \n\n')
     notei = length(notes);
-    notes{notei+1} = ['A strong imbalance between pos and neg classes was detected. There are ' num2str(class_ratio) ' known NON-interactions for each known interaction. This ratio should be less than 1000. To fix, try using a modified CORUM file.'];
+    notes{notei+1} = ['A strong imbalance between pos and neg classes was detected. There are '...
+      num2str(class_ratio) ...
+      ' known NON-interactions for each known interaction. This ratio should be less than 1000.'];
   end
   
   
@@ -772,9 +752,6 @@ end
 %   - What's a good MaxInter?
 
 
-
-
-
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
@@ -792,7 +769,7 @@ for di = 1:length(desiredPrecision)
   interaction_count = 0; % interaction counter, used in 7c
   
   binary_interaction_list = cell(2*10^6,15);
-  Neg_binary_interaction_list = zeros(2*10^6,3);
+  Neg_binary_interaction_list = zeros(10^7,3);
   
   for replicate_counter = 1:number_of_replicates*number_of_channels
     
@@ -812,10 +789,10 @@ for di = 1:length(desiredPrecision)
     Final_interactions = (pos_global | pos_repspecific) & inverse_self;
     
     % Calculate TP, FP, TN, FN
-    TP = sum(Final_interactions(:) & TP_Matrix(:) & possibleInts(:));
-    FP = sum(Final_interactions(:) & ~TP_Matrix(:) & possibleInts(:));
-    TN = sum(~Final_interactions(:) & ~TP_Matrix(:) & possibleInts(:));
-    FN = sum(~Final_interactions(:) & TP_Matrix(:) & possibleInts(:));
+    %TP = sum(Final_interactions(:) & TP_Matrix(:) & possibleInts(:));
+    %FP = sum(Final_interactions(:) & ~TP_Matrix(:) & possibleInts(:));
+    %TN = sum(~Final_interactions(:) & ~TP_Matrix(:) & possibleInts(:));
+    %FN = sum(~Final_interactions(:) & TP_Matrix(:) & possibleInts(:));
     
     
     % Find "binary" NON interactions, both proteins in corum
@@ -880,7 +857,7 @@ for di = 1:length(desiredPrecision)
     end
     
     tt = toc;
-    fprintf('  ...  %.2f seconds\n',tt)
+    fprintf('... %d interactions  ...  %.2f seconds\n',length(I1),tt)
   end
   
   binary_interaction_list = binary_interaction_list(1:interaction_count,:);
@@ -1226,7 +1203,8 @@ for di = 1:length(desiredPrecision)
   fprintf('  ...  %.2f seconds\n',tt)
   
   
-  if ~isempty(treatment_replicates)
+  %if ~isempty(treatment_replicates)
+  if 0
     tic
     fprintf('        10. Interactions observed only under treatment')
     Observed_treatment=zeros(Total_unique_interactions,1);
