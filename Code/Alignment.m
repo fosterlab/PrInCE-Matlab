@@ -138,14 +138,36 @@ if ~skipflag
   fprintf('    1. Read input')
   
   % Import MaxQuant data files
+  %num_val = cell(Nchannels,1);
+  %txt_val = cell(Nchannels,1);
+  %for ii = 1:Nchannels
+  %  [num_val{ii},txt_val{ii}] = xlsread(user.MQfiles{ii}); %Import file raw Maxqaunt output
+  %  txt_val{ii} = txt_val{ii}(:,1);
+  %end
+  %if flag3; [num_val{ii+1},txt_val{ii+1}] = xlsread(InputFile{3});end %Import file raw Maxqaunt output
+  %[SEC_size_alignment] = xlsread(user.calfile);
+  
+  % Import MaxQuant data files
   num_val = cell(Nchannels,1);
   txt_val = cell(Nchannels,1);
   for ii = 1:Nchannels
-    [num_val{ii},txt_val{ii}] = xlsread(user.MQfiles{ii}); %Import file raw Maxqaunt output
-    txt_val{ii} = txt_val{ii}(:,1);
+    tmp = importdata(user.MQfiles{ii});
+    
+    % remove 'sheet1' fields
+    if isfield(tmp,'Sheet1')
+      tmp = tmp.Sheet1;
+    end
+    fn = fieldnames(tmp);
+    for jj = 1:length(fn)
+      tmp1 = tmp.(fn{jj});
+      if isfield(tmp1,'Sheet1')
+        tmp.(fn{jj}) = tmp.(fn{jj}).Sheet1;
+      end
+    end
+    
+    num_val{ii} = tmp.data;
+    txt_val{ii} = tmp.textdata(:,1);
   end
-  %if flag3; [num_val{ii+1},txt_val{ii+1}] = xlsread(InputFile{3});end %Import file raw Maxqaunt output
-  [SEC_size_alignment] = xlsread(user.calfile);
   
   % Import Gauss fits for each replicate
   %   Gaus_import: mx6, where m is the number of proteins with a fitted Gaussian
