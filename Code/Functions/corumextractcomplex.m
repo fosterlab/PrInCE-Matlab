@@ -23,6 +23,9 @@ while 1
   if(~ischar(t)),break,end
   cc = cc+1;
   Idelim = strfind(t, ';');
+  if sum(Idelim)==0
+    Idelim = strfind(t, ',');
+  end
   organism{cc} = t(Idelim(3)+1 : Idelim(4)-1);
   complexes{cc} = t(Idelim(4)+1 : Idelim(5)-1);
 end
