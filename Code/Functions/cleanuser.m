@@ -15,6 +15,11 @@ if user.maindir(end) ~= '/'
   user_new.maindir = [user.maindir '/'];
 end
 
+% check that nickflag exists, if not set it to zero
+if ~isfield(user,'nickflag')
+  user_new.nickflag = 0;
+end
+
 % do the data files exist?
 % user.MQfiles
 for ii = 1:length(user.MQfiles)
