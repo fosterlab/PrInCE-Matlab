@@ -141,7 +141,10 @@ for kk = 1:2
   for ii = 1:number_of_replicates*number_of_channels
     sr = nan(length(user.silacratios),1);
     for jj = 1:length(user.silacratios)
-      sr(jj) = findstr(user.silacratios{1},GaussIn{1});
+      tmp = findstr(user.silacratios{jj},GaussIn{ii});
+      if ~isempty(tmp)
+        sr(jj) = tmp;
+      end
     end
     Irep = findstr('rep',GaussIn{ii});
     rep = GaussIn{ii}(Irep+3);

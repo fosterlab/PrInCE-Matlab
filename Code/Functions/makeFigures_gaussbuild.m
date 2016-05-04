@@ -167,7 +167,11 @@ saveas(gcf, sf, 'png');
 
 %% Raw chromatograms, cleaned chromatograms, fits
 
-if 0
+if ~isfield(user,'fastgaussbuild')
+  user.fastgaussbuild = 1;
+end
+
+if ~user.fastgaussbuild
   
   figdir1 = [figdir 'GaussBuild/Chromatograms/'];
   if ~exist(figdir1, 'dir'); mkdir(figdir1); end

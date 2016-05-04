@@ -129,7 +129,8 @@ end
 fclose(fid_final2);
 
 
-if ~isempty(treatment_replicates)
+%if ~isempty(treatment_replicates)
+if 0
   %Write out treatment specific interactions
   Final_list_Interactionsname=strcat(datadir3,'Final_Treatment_specific_interactions_list_',mat2str(Precision_values(precision_write_out_counter)),'_precision.csv');
   fid_final_3 = fopen(Final_list_Interactionsname,'w');
