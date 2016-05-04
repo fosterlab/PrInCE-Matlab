@@ -79,7 +79,7 @@ if ~skipflag
   Experimental_channels = user.silacratios;
   User_alignment_window1 = user.userwindow; % User defined window to consider Guassian the same
   Nchannels = length(Experimental_channels);
-  Diltuion_factor_master_mix = user.Dilution_factor;
+  %Diltuion_factor_master_mix = user.Dilution_factor;
   fraction_to_plot = user.Nfraction;
   
   
