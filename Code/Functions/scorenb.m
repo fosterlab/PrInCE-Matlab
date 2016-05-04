@@ -82,7 +82,10 @@ for iter = 1:Nmodel
   if sum(feats(iter,:)<=2)==size(feats,2)
     feats(iter,:) = 3;
   end
-  f2consider = find(feats(iter,:) > 2 & testvar(1,:)>0 & testvar(2,:)>0 )
+  f2consider = find(feats(iter,:) > 2 & testvar(1,:)>0 & testvar(2,:)>0 );
+  if isempty(f2consider)
+    f2consider = find(testvar(1,:)>0 & testvar(2,:)>0 );
+  end
     
   % Fit Naive Bayes model
   nab = fitcnb(Xtr(:,f2consider),ytr);
