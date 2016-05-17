@@ -1095,3 +1095,123 @@ end
 
 [~,~,stats] = anovan(X,G,'display','off');
 
+
+N = 100000;
+y = exprnd(1,N,1);
+x = randn(N,1)*600 + 2500;
+x(x<0) = nan;
+
+[h1,hx] = hist(x);
+
+bins = linspace(0, max(x),25);
+yavg = nan(length(bins)-1,1);
+for ii = 1:length(yavg)
+  I = x>bins(ii) & x<bins(ii+1);
+  if sum(I)>25
+    yavg(ii) = nanmean(y(I));
+  end
+end
+
+figure
+subplot(3,1,1:2),hold on
+scatter(x,y)
+plot(bins(1:end-1)+diff(bins(1:2))/2,yavg,'k','linewidth',2)
+legend('data','average')
+subplot(3,1,3)
+bar(hx,-h1,1)
+set(gca,'visible','off')
+
+
+
+%% Make figures for new Comparison method
+
+% Run up to Load Data in Gauss_Build for apoptosis
+
+%protName = 'Q86UA1';
+protName = 'Q86X55-1';
+
+I1 = strfind(txt_val{1}(:,1),protName);
+I1 = find(~cellfun('isempty', I1)) - 1;
+I2 = strfind(txt_val{2}(:,1),protName);
+I2 = find(~cellfun('isempty', I2)) - 1;
+
+y1 = rawdata{1}(I1,:);
+y2 = rawdata{2}(I2,:);
+x1 = repmat(1:55,3,1);
+x2 = repmat(1:55,3,1);
+I = ~isnan(y1(:));
+y1 = y1(I);
+x1 = x1(I);
+I = ~isnan(y2(:));
+y2 = y2(I);
+x2 = x2(I);
+
+figure,hold on
+scatter(x1,y1,30,'r','filled')
+scatter(x2,y2,30,'b','filled')
+y = ylim;
+legend('Condition 1', 'Condition 2')
+xlabel('Time','fontsize',10)
+ylabel('Intensity','fontsize',10)
+set(gca,'xtick',[14 28 38])
+grid on
+saveas(gcf,'fig1.png')
+
+
+% Fit models
+model1 = choosemodel_AIC(y1,x1,'AICc',5);
+model2 = choosemodel_AIC(y2,x2,'AICc',5);
+xi = linspace(0,60,1001);
+yfit1 = zeros(size(xi));
+yfit1_lb = zeros(size(xi));
+yfit1_ub = zeros(size(xi));
+for kk = 1:length(model1.coeffs)/3
+  I = (kk-1)*3;
+  H = model1.coeffs(1 + I);
+  C = model1.coeffs(2 + I);
+  W = model1.coeffs(3 + I);
+  hu = model1.CIs(1,1+I);
+  hl = model1.CIs(2,1+I);
+  cu = model1.CIs(1,2+I);
+  cl = model1.CIs(2,2+I);
+  wu = model1.CIs(1,3+I);
+  wl = model1.CIs(2,3+I);
+  yfit1 = yfit1 + H*exp(-((xi-C)/W).^2);
+  yfit1_lb = yfit1_lb + hl*exp(-((xi-cl)/wl).^2);
+  yfit1_ub = yfit1_ub + hu*exp(-((xi-cu)/wu).^2);
+end
+yfit2 = zeros(size(xi));
+yfit2_lb = zeros(size(xi));
+yfit2_ub = zeros(size(xi));
+for kk = 1:length(model2.coeffs)/3
+  I = (kk-1)*3;
+  H = model2.coeffs(1 + (kk-1)*3);
+  C = model2.coeffs(2 + (kk-1)*3);
+  W = model2.coeffs(3 + (kk-1)*3);
+  yfit2 = yfit2 + H*exp(-((xi-C)/W).^2);
+  hu = model2.CIs(1,1+I);
+  hl = model2.CIs(2,1+I);
+  cu = model2.CIs(1,2+I);
+  cl = model2.CIs(2,2+I);
+  wu = model2.CIs(1,3+I);
+  wl = model2.CIs(2,3+I);
+  yfit2_lb = yfit2_lb + hl*exp(-((xi-cl)/wl).^2);
+  yfit2_ub = yfit2_ub + hu*exp(-((xi-cu)/wu).^2);
+end
+
+I_reverse = sort(1:length(xi),'descend');
+
+figure,hold on
+scatter(x1,y1,30,'r','filled')
+scatter(x2,y2,30,'b','filled')
+legend('Condition 1', 'Condition 2')
+patch([xi xi(I_reverse)], [yfit1_ub yfit1_lb(I_reverse)],[1 .9 .9],'edgecolor',[1 .9 .9])
+patch([xi xi(I_reverse)], [yfit2_ub yfit2_lb(I_reverse)],[.9 .9 1],'edgecolor',[.9 .9 1])
+plot(xi,yfit1,'r')
+plot(xi,yfit2,'b')
+scatter(x1,y1,30,'r','filled')
+scatter(x2,y2,30,'b','filled')
+set(gca,'xtick',[14 28 38])
+grid on
+saveas(gcf,'fig2.png')
+

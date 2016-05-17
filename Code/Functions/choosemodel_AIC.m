@@ -68,18 +68,19 @@ ft{4} = fittype('gauss4');
 ft{5} = fittype('gauss5');
 
 % Define fit options
-LB = [0.1 0 1]; % H, C, W
+LB = [0.2 0 1]; % H, C, W
 UB = [inf length(cleanchrom)+10 inf]; % H, C, W
 fo{1} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',repmat(LB,1,1),...
   'Upper',repmat(UB,1,1),'MaxIter',400,'Display','off');
 fo{2} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',repmat(LB,1,2),...
-  'Upper',repmat(UB,1,1),'MaxIter',400,'Display','off');
+  'Upper',repmat(UB,1,2),'MaxIter',400,'Display','off');
 fo{3} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',repmat(LB,1,3),...
-  'Upper',repmat(UB,1,1),'MaxIter',400,'Display','off');
+  'Upper',repmat(UB,1,3),'MaxIter',400,'Display','off');
 fo{4} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',repmat(LB,1,4),...
-  'Upper',repmat(UB,1,1),'MaxIter',400,'Display','off');
+  'Upper',repmat(UB,1,4),'MaxIter',400,'Display','off');
 fo{5} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',repmat(LB,1,5),...
-  'Upper',repmat(UB,1,1),'MaxIter',400,'Display','off');
+  'Upper',repmat(UB,1,5),'MaxIter',400,'Display','off');
+
 
 I = cleanchrom>0;
 msse = nan(5,1);
@@ -142,6 +143,7 @@ else
 end
 
 model.coeffs = coeffvalues(curveFit{Ngauss});
+model.CIs = confint(curveFit{Ngauss});
 model.SSE = msse(Ngauss);
 model.adjrsquare = R2(Ngauss);
 model.curveFit = curveFit{Ngauss};

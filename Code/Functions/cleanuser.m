@@ -77,6 +77,8 @@ end
 
 % ensure that treatmentcondition is part of every comparisonpairs
 
+% ensure that 
+
 
 
 %% Add user.maindir/Code and user.maindr/Code/Functions to path

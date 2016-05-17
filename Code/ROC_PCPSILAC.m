@@ -111,17 +111,23 @@ else
   end
 end
 
-% Define which replicates are treatment
 number_of_replicates = length(ChromatogramIn) / number_of_channels;
-I = find(strcmp(user.silacratios,user.treatmentcondition));
-treatment_replicates = [];
-if ~isempty(I)
-  treatment_replicates = (1:number_of_replicates)+(I-1)*number_of_replicates;
-end
-untreatment_replicates = [];
-I = 1:number_of_replicates*number_of_channels;
-if ~isempty(I)
-  untreatment_replicates = I(~ismember(I,treatment_replicates));
+
+% Map each rep*channel to a channel
+rep2channel = zeros(length(dd),1);
+for ii = 1:length(dd)
+  ratioInFilename = zeros(length(user.silacratios),1);
+  for jj = 1:length(user.silacratios)
+    if ~isempty(strfind(dd(ii).name,user.silacratios{jj}))
+      ratioInFilename(jj) = 1;
+    end
+  end
+  
+  if sum(ratioInFilename)~=1
+    error('Gaussian fitting filenames are badly formatted')
+  end
+  
+  rep2channel(ii) = find(ratioInFilename);
 end
 
 % pre-allocate final results
@@ -313,9 +319,9 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Dist.Ngauss = squareform(pdist(Ngauss));
   Dist.CoApex = squareform(pdist(CoApex));
   Dist.AUC = squareform(pdist(auc));
-  %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
-  %Dist.R2raw = 1 - R.^2;
-  %Dist.Rpraw = p;
+  [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+  Dist.R2raw = 1 - R.^2;
+  Dist.Rpraw = p;
   
   % GRAVEYARD OF RELEGATED DIST MATRICES
   %   Dist.RawOverlap = nan(size(Chromatograms_raw,1),size(Chromatograms_raw,1));
@@ -722,7 +728,7 @@ while bad_desiredPrecision
     fprintf('\n\n -------------------------- WARNING --------------------------')
     fprintf('\n Desired precision %6.4f is not achievable with current settings.', desiredPrecision(bad_desiredPrecision1))
     fprintf('\n Lowering it to %6.4f and recalculating score threshold... \n\n', max_achievable_precision)
-    desiredPrecision(bad_desiredPrecision1) = max_achievable_precision;
+    desiredPrecision(bad_desiredPrecision1) = round(max_achievable_precision*100)/100;
     notei = length(notes);
     notes{notei+1} = ['Desired precision ' num2str(desiredPrecision(bad_desiredPrecision1)) ' was not achievable. It was lowered to ' num2str(max_achievable_precision) '.'];
   end
@@ -732,7 +738,7 @@ while bad_desiredPrecision
     fprintf('\n\n -------------------------- WARNING --------------------------')
     fprintf('\n Desired precision %6.4f is not achievable with current settings.', desiredPrecision(bad_desiredPrecision1))
     fprintf('\n Raising it to %6.4f and recalculating score threshold... \n\n', min_achievable_precision)
-    desiredPrecision(bad_desiredPrecision1) = min_achievable_precision;
+    desiredPrecision(bad_desiredPrecision1) = round(min_achievable_precision*100)/100;
     notei = length(notes);
     notes{notei+1} = ['Desired precision ' num2str(desiredPrecision(bad_desiredPrecision1)) ' was not achievable. It was raised to ' num2str(min_achievable_precision) '.'];
   end
@@ -885,7 +891,7 @@ for di = 1:length(desiredPrecision)
   
   %Create array to store values
   interaction_final.unique_interactions=cell(length_unique_inter,0);
-  interaction_final.replicate_numbers=cell(length_unique_inter,0);
+  interaction_final.replicate_numbers=nan(length_unique_inter,0);
   interaction_final.proteinA=cell(length_unique_inter,0);
   interaction_final.proteinB=cell(length_unique_inter,0);
   interaction_final.CenterA=cell(length_unique_inter,0);
@@ -921,8 +927,7 @@ for di = 1:length(desiredPrecision)
       
       for row = 1:length(goodC)
         %check size of replicate_numbers
-        interaction_final.replicate_numbers{cc,row} = ...
-          binary_interaction_list{Ibin(goodC(row)),12};
+        interaction_final.replicate_numbers(cc,row) = binary_interaction_list{Ibin(goodC(row)),12};
         
         % copy the values for the first unique interaction to the list
         interaction_final.proteinA(cc,row) = binary_interaction_list(Ibin(goodC(row)),8);
@@ -944,8 +949,7 @@ for di = 1:length(desiredPrecision)
       
       interaction_final.unique_interactions(cc,1)= unique_interaction(ii);
       %check size of replicate_numbers
-      interaction_final.replicate_numbers{cc,1}=...
-        binary_interaction_list{Ibin(1),12};
+      interaction_final.replicate_numbers(cc,1) = binary_interaction_list{Ibin(1),12};
       
       %copy the values for the first unique interaction to the list
       interaction_final.proteinA(cc,1) = binary_interaction_list(Ibin(1),8);
@@ -985,21 +989,24 @@ for di = 1:length(desiredPrecision)
   for ii = 1:Total_unique_interactions
     
     %convert cell array to double
-    a = interaction_final.replicate_numbers(ii,:);
-    ix = ~cellfun('isempty',a);
-    testA = [a{ix}];
+    %a = interaction_final.replicate_numbers(ii,:);
+    %ix = ~cellfun('isempty',a);
+    %testA = [a{ix}];
     %Save values
-    number_observation_pre_interaction(ii) = nnz(testA);
+    %number_observation_pre_interaction(ii) = nnz(testA);
+    number_observation_pre_interaction(ii) = sum(interaction_final.replicate_numbers(ii,:)>0);
     
     %Determine if multiple gaussians within the same replicate were indentified
+    testA = interaction_final.replicate_numbers(ii,:);
+    testA = testA(~isnan(testA));
     unique_testA = unique(testA);
     number_of_unique = length(unique_testA);
     number_unique_interaction(ii) = number_of_unique;
     
     %Which replicate is the interaction in
-    for replicate_counter = 1:(number_of_replicates*number_of_channels)
-      interactions_prep_replicate(ii,replicate_counter) = nnz(find(testA(:)==replicate_counter));
-    end
+%     for replicate_counter = 1:(number_of_replicates*number_of_channels)
+%       interactions_prep_replicate(ii,replicate_counter) = nnz(find(testA(:)==replicate_counter));
+%     end
   end
   
   %Copy number of unique_interaction across replicate to interaction array
@@ -1121,13 +1128,18 @@ for di = 1:length(desiredPrecision)
   %Crete list of replicates, note ensure strjoin function is avalible
   interaction_final.Replicates_formated=cell(Total_unique_interactions,1);
   for format_loop=1:Total_unique_interactions
-    Replicates_2bformated1=interaction_final.replicate_numbers(format_loop,:);
-    Replicates_2bformated1(cellfun('isempty',Replicates_2bformated1)) = [];
-    length_Replicates=length(Replicates_2bformated1);
+    Replicates_2bformated1 = interaction_final.replicate_numbers(format_loop,:);
+    Replicates_2bformated1(Replicates_2bformated1==0) = [];
+    
+    % turn rep*channel into just rep
+    Replicates_2bformated1 = mod(Replicates_2bformated1,number_of_replicates) + 1;
+
+    Replicates_2bformated1 = num2cell(Replicates_2bformated1);
+
     %Test if the array is longer then one entry
-    if length_Replicates<2
-      interaction_final.Replicates_formated{format_loop}=mat2str(Replicates_2bformated1{1});
-    elseif length_Replicates>=2
+    if length(Replicates_2bformated1)==1
+      interaction_final.Replicates_formated{format_loop} = mat2str(Replicates_2bformated1{1});
+    elseif length(Replicates_2bformated1)>=2
       for jj= 1:length(Replicates_2bformated1)
         Replicates_2bformated1{jj} = num2str(Replicates_2bformated1{jj});
       end
@@ -1164,11 +1176,11 @@ for di = 1:length(desiredPrecision)
   Recall_plot = nan(Total_unique_interactions,1);
   FPR_plot = nan(Total_unique_interactions,1);
   for ii = 1:Total_unique_interactions
-    cutoff = interaction_final.score(ii);
+    cutoff = interaction_final.score(ii) - 10e-100;
     I = interaction_final.score >= cutoff;
     TP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==1);
     FP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==0);
-    
+        
     interaction_final.precisionDropout(ii) = TP / (TP + FP);
     Recall_plot(ii) = TP / all_positives;
   end
@@ -1203,107 +1215,24 @@ for di = 1:length(desiredPrecision)
   fprintf('  ...  %.2f seconds\n',tt)
   
   
-  %if ~isempty(treatment_replicates)
-  if 0
-    tic
-    fprintf('        10. Interactions observed only under treatment')
-    Observed_treatment=zeros(Total_unique_interactions,1);
-    Observed_untreatment=zeros(Total_unique_interactions,1);
-    treatment_specific_interaction=zeros(Total_unique_interactions,1);
-    untreatment_specific_interaction=zeros(Total_unique_interactions,1);
-    
-    %Determine If there are condition specific interactions detected
-    for treatment_counter=1:Total_unique_interactions
-      
-      Observed_treatment(treatment_counter,1)=nnz(interactions_prep_replicate(treatment_counter,treatment_replicates));
-      Observed_untreatment(treatment_counter,1)=nnz(interactions_prep_replicate(treatment_counter,untreatment_replicates));
-      
-      %Determine if there are treatment specific interactions detected
-      if Observed_treatment(treatment_counter,1)>=2 && Observed_untreatment(treatment_counter,1)==0
-        treatment_specific_interaction(treatment_counter,1)=1;
-      end
-      
-      %Determine if there are untreatment specific interactions detected
-      if Observed_untreatment(treatment_counter,1)>=2 && Observed_treatment(treatment_counter,1)==0
-        untreatment_specific_interaction(treatment_counter,1)=1;
-      end
-      
+  
+  % Determine channel-specific interactions
+  interaction_final.channel = cell(Total_unique_interactions,1);
+  for ii = 1:Total_unique_interactions
+    tmp = interaction_final.replicate_numbers(ii,:);
+    tmp(tmp==0) = [];
+    interaction_final.channel{ii} = unique(rep2channel(tmp))';
+    tmp = cell(1,length(interaction_final.channel{ii}));
+    for jj = 1:length(interaction_final.channel{ii})
+      tmp{jj} = user.silacratios{interaction_final.channel{ii}(jj)};
     end
-    
-    %Copy treatment specific interaction to list to write out
-    treatment_specific.unique_interactions=cell(0,0);
-    treatment_specific.proteinA=cell(0,0);
-    treatment_specific.proteinB=cell(0,0);
-    treatment_specific.centerA_formated=cell(0,0);
-    treatment_specific.centerB_formated=cell(0,0);
-    treatment_specific.Replicates_formated=cell(0,0);
-    treatment_specific.DeltaCenter_formated=cell(0,0);
-    treatment_specific.R2_formated=cell(0,0);
-    treatment_specific.DeltaEuc_formated=cell(0,0);
-    treatment_specific.proteinInCorum=cell(0,0);
-    treatment_specific.interactionInCorum=cell(0,0);
-    
-    %Create counter
-    treatment_row_counter=1;
-    for treatment_counter=1:Total_unique_interactions
-      if  treatment_specific_interaction(treatment_counter,1)==1;
-        treatment_specific.unique_interactions(treatment_row_counter,1)=interaction_final.unique_interactions(treatment_counter,1);
-        treatment_specific.proteinA(treatment_row_counter,1)=interaction_final.proteinA(treatment_counter,1);
-        treatment_specific.proteinB(treatment_row_counter,1)=interaction_final.proteinB(treatment_counter,1);
-        treatment_specific.centerA_formated(treatment_row_counter,1)=interaction_final.centerA_formated(treatment_counter,1);
-        treatment_specific.centerB_formated(treatment_row_counter,1)=interaction_final.centerB_formated(treatment_counter,1);
-        treatment_specific.Replicates_formated(treatment_row_counter,1)=interaction_final.Replicates_formated(treatment_counter,1);
-        treatment_specific.DeltaCenter_formated(treatment_row_counter,1)=interaction_final.DeltaCenter_formated(treatment_counter,1);
-        treatment_specific.R2_formated(treatment_row_counter,1)=interaction_final.Deltawidth_formated(treatment_counter,1);
-        treatment_specific.DeltaEuc_formated(treatment_row_counter,1)=interaction_final.DeltaEuc_formated(treatment_counter,1);
-        treatment_specific.proteinInCorum(treatment_row_counter,1)=interaction_final.proteinInCorum(treatment_counter,1);
-        treatment_specific.interactionInCorum(treatment_row_counter,1)=interaction_final.interactionInCorum(treatment_counter,1);
-        treatment_row_counter=1+treatment_row_counter;
-      end
+    if length(tmp)>1
+      interaction_final.channel_formatted{ii} = strjoin(tmp, ' ; ');
+    else
+      interaction_final.channel_formatted{ii} = tmp{1};
     end
-    
-    %Determine the number of interactions
-    treament_specific_interactionsnum=length(treatment_specific.unique_interactions);
-    
-    
-    %Copy treatment specific interaction to list to write out
-    untreatment_specific.unique_interactions=cell(0,0);
-    untreatment_specific.proteinA=cell(0,0);
-    untreatment_specific.proteinB=cell(0,0);
-    untreatment_specific.centerA_formated=cell(0,0);
-    untreatment_specific.centerB_formated=cell(0,0);
-    untreatment_specific.Replicates_formated=cell(0,0);
-    untreatment_specific.DeltaCenter_formated=cell(0,0);
-    untreatment_specific.R2_formated=cell(0,0);
-    untreatment_specific.DeltaEuc_formated=cell(0,0);
-    untreatment_specific.proteinInCorum=cell(0,0);
-    untreatment_specific.interactionInCorum=cell(0,0);
-    
-    %Create counter
-    untreatment_row_counter=1;
-    for treatment_counter=1:Total_unique_interactions
-      if  untreatment_specific_interaction(treatment_counter,1)==1;
-        untreatment_specific.unique_interactions(untreatment_row_counter,1)=interaction_final.unique_interactions(treatment_counter,1);
-        untreatment_specific.proteinA(untreatment_row_counter,1)=interaction_final.proteinA(treatment_counter,1);
-        untreatment_specific.proteinB(untreatment_row_counter,1)=interaction_final.proteinB(treatment_counter,1);
-        untreatment_specific.centerA_formated(untreatment_row_counter,1)=interaction_final.centerA_formated(treatment_counter,1);
-        untreatment_specific.centerB_formated(untreatment_row_counter,1)=interaction_final.centerB_formated(treatment_counter,1);
-        untreatment_specific.Replicates_formated(untreatment_row_counter,1)=interaction_final.Replicates_formated(treatment_counter,1);
-        untreatment_specific.DeltaCenter_formated(untreatment_row_counter,1)=interaction_final.DeltaCenter_formated(treatment_counter,1);
-        untreatment_specific.R2_formated(untreatment_row_counter,1)=interaction_final.R2_formated(treatment_counter,1);
-        untreatment_specific.DeltaEuc_formated(untreatment_row_counter,1)=interaction_final.DeltaEuc_formated(treatment_counter,1);
-        untreatment_specific.proteinInCorum(untreatment_row_counter,1)=interaction_final.proteinInCorum(treatment_counter,1);
-        untreatment_specific.interactionInCorum(untreatment_row_counter,1)=interaction_final.interactionInCorum(treatment_counter,1);
-        untreatment_row_counter=1+untreatment_row_counter;
-      end
-    end
-    
-    %Determine the number of interactions
-    untreament_specific_interactionsnum=length(untreatment_specific.unique_interactions);
-    
-    tt = toc;
-    fprintf('  ...  %.2f seconds\n',tt)
   end
+  
   
   
   tic
@@ -1311,6 +1240,8 @@ for di = 1:length(desiredPrecision)
   writeOutput_ROC
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
+  
+  
   
   tic
   fprintf('        12. Make figures')

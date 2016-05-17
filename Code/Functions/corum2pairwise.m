@@ -27,8 +27,18 @@ while 1
   if(~ischar(t)),break,end
   cc = cc+1;
   Idelim = strfind(t, ';');
+  
+%   Iquotes = strfind(t,'"');
+%   % remove ',' between each pair of quotes
+%   for ii = 1:length(Iquotes)/2
+%     i1 = Iquotes((ii-1)*2 +1);
+%     i2 = Iquotes(ii*2);
+%     Idelim(Idelim > i1 & Idelim < i2) = [];
+%   end
+  
   organism{cc} = t(Idelim(3)+1 : Idelim(4)-1);
   complexes{cc} = t(Idelim(4)+1 : Idelim(5)-1);
+  complexes{cc} = strrep(complexes{cc}, '"', '');
 end
 organism = organism(1:cc);
 complexes = complexes(1:cc);

@@ -110,12 +110,12 @@ for kk = 1:2
     I = ones(size(interaction_final.global));
   end
   
-  [Ia,Ib] = find(~cellfun('isempty',interaction_final.replicate_numbers) & repmat(I,1,size(interaction_final.replicate_numbers,2)));
+  [Ia,Ib] = find(interaction_final.replicate_numbers>0 & repmat(I,1,size(interaction_final.replicate_numbers,2))>0 );
   
   N_intperrep = zeros(length(Ia), 1);
   itype = zeros(length(Ia), 1);
   for ii = 1:length(Ia)
-    N_intperrep(ii) = interaction_final.replicate_numbers{Ia(ii),Ib(ii)};
+    N_intperrep(ii) = interaction_final.replicate_numbers(Ia(ii),Ib(ii));
     if interaction_final.proteinInCorum(Ia(ii)) && interaction_final.interactionInCorum(Ia(ii))
       itype(ii) = 1;
     elseif interaction_final.proteinInCorum(Ia(ii)) && ~interaction_final.interactionInCorum(Ia(ii))
@@ -244,8 +244,8 @@ p0 = patch([0 x x(end)],[0 h0 0],'r');
 p1 = patch([0 x x(end)],[0 h1 0],'g');
 ax = axis;
 plot([1 1].*xcutoff(di),[ax(3) ax(4)],'--r')
-h = text(xcutoff(di)-diff(ax(1:2))*.02,ax(3)+diff(ax(3:4))*.75,...
-  ['precision = ' num2str(round(desiredPrecision(di)*100)) '%']);
+h = text(xcutoff(di)-diff(ax(1:2))*.02,ax(3)+diff(ax(3:4))*.65,...
+  ['Global precision = ' num2str(round(desiredPrecision(di)*100)) '%']);
 set(h, 'rotation', 90)
 for ii = 1:size(xcutoff_rep,1)
   plot([1 1].*xcutoff_rep(ii,di),[ax(3) ax(4)],'linestyle','--','color',[.6 .6 .6])
@@ -279,8 +279,8 @@ p0 = patch([0 x x(end)],[0 h0/sum(h0) 0],'r');
 p1 = patch([0 x x(end)],[0 h1/sum(h1) 0],'g');
 ax = axis;
 plot([1 1].*xcutoff(di),[ax(3) ax(4)],'--r')
-h = text(xcutoff(di)-diff(ax(1:2))*.02,ax(3)+diff(ax(3:4))*.75,...
-  ['precision = ' num2str(round(desiredPrecision(di)*100)) '%']);
+h = text(xcutoff(di)-diff(ax(1:2))*.02,ax(3)+diff(ax(3:4))*.65,...
+  ['Global precision = ' num2str(round(desiredPrecision(di)*100)) '%']);
 set(h, 'rotation', 90)
 for ii = 1:size(xcutoff_rep,1)
   plot([1 1].*xcutoff_rep(ii,di),[ax(3) ax(4)],'linestyle','--','color',[.6 .6 .6])
