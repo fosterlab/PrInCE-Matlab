@@ -73,23 +73,14 @@ fprintf('    1. Read input data')
 % Final_Interactions_list
 interactionPairs = cell(countPrec,1);
 for ii = 1:countPrec
-  tmp = importdata(InteractionIn{ii});
+  %tmp = importdata(InteractionIn{ii});
+  tmp = readFinalInteractionList(InteractionIn{ii});
   
-  % remove header from textdata if necessary
-  if size(tmp.textdata,1)==size(tmp.data,1)+1
-    tmp.textdata = tmp.textdata(2:end,:);
-  elseif size(tmp.textdata,1)==size(tmp.data,1)
-  else
-    disp('Error: Complexes: Mismatch between imported numerical and text data sizes')
-  end
-  
-  % Need 4 columns: Protein-A, Protein-B, replicates, scores
-  % Hard code these to textdata(:,[2 3 6 13])
-  interactionPairs{ii} = tmp.textdata(:,[2:3 6 13]);
+  % Need 4 columns: Protein-A, Protein-B, replicates, precision-cutoff
+  interactionPairs{ii} = tmp(:,[2:3 6 15]);
 end
 
 % scoreMatrix+Protein
-interactionScore = cell(user.Nreplicate,1);
 Proteins = cell(user.Nreplicate,1);
 for ii = 1:user.Nreplicate
   load(scoreIn{ii})
@@ -98,10 +89,9 @@ for ii = 1:user.Nreplicate
   if mod(Nprot_rep,1)~=0 || length(Protein.Isoform)~=Nprot_rep
     error('Complexes: Badly formatted scoreMatrix')
   end
-  interactionScore{ii} = reshape(scoreMatrix,Nprot_rep,Nprot_rep);
   Proteins{ii} = Protein;
 end
-clear scoreMatrix TP_Matrix inMatrix possibleInts inverse_self Protein
+clear scoreMatrix TP_Matrix inMatrix possibleInts inverse_self Protein Dist
 
 % corum
 corumComplex = importdata(user.corumcomplexfile, ',');
@@ -168,7 +158,7 @@ fprintf('    3. Convert IDs to indices')
 % also include how many replicates it was seen in.
 interactionPairs2 = cell(countPrec,1);
 for ii = 1:countPrec
-  interactionPairs2{ii} = nan(size(interactionPairs{ii},1),3);
+  interactionPairs2{ii} = nan(size(interactionPairs{ii},1),7);
   
   for jj = 1:size(interactionPairs{ii},1)
     I1 = find(ismember(uniqueProteins,interactionPairs{ii}{jj,1}));
@@ -176,7 +166,14 @@ for ii = 1:countPrec
     tmp = interactionPairs{ii}{jj,3};
     nrep = length(unique(tmp(isstrprop(tmp,'digit'))));
     
-    interactionPairs2{ii}(jj,:) = [I1 I2 nrep];
+    tmp2 = zeros(1,3);
+    for kk = 1:3
+      tmp2(kk) = double(ismember(num2str(kk),interactionPairs{ii}{jj,3}));
+    end
+    
+    precdrop = str2num(interactionPairs{ii}{jj,4});
+    
+    interactionPairs2{ii}(jj,:) = [I1 I2 nrep precdrop tmp2];
   end
 end
 
@@ -242,64 +239,63 @@ fprintf('    4. Build complexes, exploration')
 % end
 % intMatrix(intMatrix<minrep) = 0;
 
-scoreRange = [0.9 0.95 0.99 0.99 0.999 0.9999 0.99999];
-pRange = [0 10 100 1000 10000];
+precRange = [0.5 0.7 0.9];
+pRange = [0 100 1000];
+densRange = [ 0 1 2];
 
-ga = nan(user.Nreplicate,length(scoreRange),length(pRange));
-nc = nan(user.Nreplicate,length(scoreRange),length(pRange));
-avgsize = nan(user.Nreplicate,length(scoreRange),length(pRange));
-mr = nan(user.Nreplicate,length(scoreRange),length(pRange));
-Members2 = cell(user.Nreplicate,length(scoreRange),length(pRange));
-Members3 = cell(user.Nreplicate,length(scoreRange),length(pRange));
+ga = nan(user.Nreplicate,length(precRange),length(pRange), length(densRange));
+nc = nan(user.Nreplicate,length(precRange),length(pRange), length(densRange));
+avgsize = nan(user.Nreplicate,length(precRange),length(pRange), length(densRange));
+mr = nan(user.Nreplicate,length(precRange),length(pRange), length(densRange));
+Members2 = cell(user.Nreplicate,length(precRange),length(pRange), length(densRange));
+Members3 = cell(user.Nreplicate,length(precRange),length(pRange), length(densRange));
 best_params = nan(user.Nreplicate,2);
 for repi = 1:user.Nreplicate
-  for ii = 1:length(scoreRange)
+  for ii = 2:length(precRange)
     
-    % make intMatrix from scoreMatrix, i.e. optimize xcutoff
-    
-    % i) Make interaction matrix
-    xcutoff = scoreRange(ii);
-    I = interactionScore{repi}>xcutoff;
-    intMatrix = interactionScore{repi};
-    intMatrix(~I) = 0;
+    % i) make intMatrix from scoreMatrix, i.e. optimize xcutoff
+    intMatrix = zeros(Nprot_pred,Nprot_pred);
+    for jj = 1:size(interactionPairs2{1},1)
+      if interactionPairs2{1}(jj,end - repi + 1)
+        x = interactionPairs2{1}(jj,1:2);
+        precdrop = interactionPairs2{1}(jj,4);
+        intMatrix(x(1),x(2)) = precdrop;
+        intMatrix(x(2),x(1)) = precdrop;
+      end
+    end
+    intMatrix(intMatrix < precRange(ii)) = 0;
+    intMatrix(intMatrix >= precRange(ii)) = 1;
     
     for jj = 1:length(pRange)
       
-      disp([num2str(repi) ', ' num2str(ii) ', ' num2str(jj)])
-      
-      % ii) make complexes
-      Members2{repi,ii,jj} = myclusterone(intMatrix, pRange(jj), 0);
-      if isempty(Members2{repi,ii,jj}); continue; end
-      
-      % iii) convert Members2 (row/columns of intMatrix) to protein indices
-      for kk = 1:length(Members2{repi,ii,jj})
-        Members3{repi,ii,jj}{kk} = unique(Proteins2{repi}(Members2{repi,ii,jj}{kk}));
+      for mm = 1:length(densRange)
         
-        if length(Members3{repi,ii,jj}{kk})<3
-          Members3{repi,ii,jj}{kk} = [];
+        disp([num2str(repi) ', ' num2str(ii) ', ' num2str(jj) ', ' num2str(mm)])
+        
+        % ii) make complexes
+        Members2{repi,ii,jj,mm} = myclusterone(intMatrix, pRange(jj), densRange(mm));
+        if isempty(Members2{repi,ii,jj,mm}); continue; end
+                
+        % iv) assess how good the complexes are
+        ga(repi,ii,jj,mm) = geomacc(Members2{repi,ii,jj,mm},corumComplex2);
+        mr(repi,ii,jj,mm) = matchingratio(Members2{repi,ii,jj,mm},corumComplex2);
+        nc(repi,ii,jj,mm) = length(Members2{repi,ii,jj,mm});
+        tmp = zeros(nc(repi,ii,jj,mm),1);
+        for kk = 1:nc(repi,ii,jj,mm)
+          tmp(kk) = length(Members2{repi,ii,jj,mm}{kk});
         end
-        Members3{repi,ii,jj} = Members3{repi,ii,jj}(~cellfun('isempty',Members3{repi,ii,jj}));
+        avgsize(repi,ii,jj,mm) = prctile(tmp,75);
+        
       end
-      if isempty(Members3{repi,ii,jj}); continue; end
-      
-      % iv) assess how good the complexes are
-      ga(repi,ii,jj) = geomacc(Members3{repi,ii,jj},corumComplex2);
-      mr(repi,ii,jj) = matchingratio(Members3{repi,ii,jj},corumComplex2);
-      nc(repi,ii,jj) = length(Members3{repi,ii,jj});
-      tmp = zeros(nc(repi,ii,jj),1);
-      for kk = 1:nc(repi,ii,jj)
-        tmp(kk) = length(Members2{repi,ii,jj}{kk});
-      end
-      avgsize(repi,ii,jj) = prctile(tmp,75);
       
     end
   end
   
   % v) choose parameters
-  tmp = sq(ga(repi,:,:));
+  tmp = sq(ga(repi,:,:,:));
   [~,I] = max(tmp(:));
-  [I1, I2] = ind2sub(size(tmp),I);
-  best_params(ii,:) = [scoreRange(I1) pRange(I2)];
+  [i1, i2, i3] = ind2sub(size(tmp),I);
+  best_params(repi,:) = [precRange(i1) pRange(i2) densRange(i3)];
 end
 
 tt = toc;
@@ -310,7 +306,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 %% 5. Build final complex list
 
 tic
-fprintf('    4. Build final complex list')
+fprintf('    5. Build final complex list')
 
 Ncomplex = zeros(countPrec,1);
 for ii = 1:countPrec
@@ -324,7 +320,8 @@ for ii = 1:countPrec
   end
   intMatrix(intMatrix<minrep) = 0;
   
-  [ComplexList(ii).Members, ComplexList(ii).Connections] = myclusterone(intMatrix, best_params(ii,1), best_params(ii,2));
+  %[ComplexList(ii).Members, ComplexList(ii).Connections] = myclusterone(intMatrix, best_params(ii,1), best_params(ii,2));
+  [ComplexList(ii).Members, ComplexList(ii).Connections] = myclusterone(intMatrix, 1, 1);
   Ncomplex(ii) = length(ComplexList(ii).Members);
 end
 
@@ -333,13 +330,13 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 
-%% 5. Match each predicted complex to a CORUM complex
+%% 6. Match each predicted complex to a CORUM complex
 % for each predicted complex
 %   calculate the overlap with each CORUM complex
 %   report the CORUM complex with the highest overlap
 
 tic
-fprintf('    5. Match each complex to a CORUM complex')
+fprintf('    6. Match each complex to a CORUM complex')
 
 corumMatches = cell(countPrec,1);
 for ii = 1:countPrec
@@ -381,49 +378,49 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 
-%% optimize the sparse interaction matrix for corum
-
-scoreRange = [0.9 0.95 0.99 0.99 0.999 0.9999 0.99999];
-pRange = [0 10 100 1000 10000];
-
-Members2 = cell(user.Nreplicate,length(scoreRange),length(pRange));
-ga = nan(user.Nreplicate,length(scoreRange),length(pRange));
-nc = nan(user.Nreplicate,length(scoreRange),length(pRange));
-avgsize = nan(user.Nreplicate,length(scoreRange),length(pRange));
-mr = nan(user.Nreplicate,length(scoreRange),length(pRange));
-for repi = 1:user.Nreplicate
-  for ii = 1:length(scoreRange)
-    
-    % i) Make interaction matrix
-    xcutoff = scoreRange(ii);
-    I = interactionScore{repi}>xcutoff;
-    intMatrix = interactionScore{repi};
-    intMatrix(~I) = 0;
-    
-    % ii) Explore parameters
-    for jj = 1:length(pRange)
-      disp([num2str(ii) ', ' num2str(jj)])
-      
-      % iii) make complexes
-      Members2{repi,ii,jj} = myclusterone(intMatrix, pRange(jj), 0);
-      if isempty(Members2{repi,ii,jj}); continue; end
-      
-      % iv) calculate Geometric Accuracy
-      ga(repi,ii,jj) = geomacc(Members2{repi,ii,jj},corumComplex2);
-      
-      % iva) calculate Matching Ratio
-      mr(repi,ii,jj) = matchingratio(Members2{repi,ii,jj},corumComplex2);
-      
-      nc(repi,ii,jj) = length(Members2{repi,ii,jj});
-      tmp = zeros(nc(repi,ii,jj),1);
-      for kk = 1:nc(repi,ii,jj)
-        tmp(kk) = length(Members2{repi,ii,jj}{kk});
-      end
-      avgsize(repi,ii,jj) = mean(tmp);
-      
-    end
-  end
-end
+% %% optimize the sparse interaction matrix for corum
+%
+% scoreRange = [0.9 0.95 0.99 0.99 0.999 0.9999 0.99999];
+% pRange = [0 10 100 1000 10000];
+%
+% Members2 = cell(user.Nreplicate,length(scoreRange),length(pRange));
+% ga = nan(user.Nreplicate,length(scoreRange),length(pRange));
+% nc = nan(user.Nreplicate,length(scoreRange),length(pRange));
+% avgsize = nan(user.Nreplicate,length(scoreRange),length(pRange));
+% mr = nan(user.Nreplicate,length(scoreRange),length(pRange));
+% for repi = 1:user.Nreplicate
+%   for ii = 1:length(scoreRange)
+%
+%     % i) Make interaction matrix
+%     xcutoff = scoreRange(ii);
+%     I = interactionScore{repi}>xcutoff;
+%     intMatrix = interactionScore{repi};
+%     intMatrix(~I) = 0;
+%
+%     % ii) Explore parameters
+%     for jj = 1:length(pRange)
+%       disp([num2str(ii) ', ' num2str(jj)])
+%
+%       % iii) make complexes
+%       Members2{repi,ii,jj} = myclusterone(intMatrix, pRange(jj), 0);
+%       if isempty(Members2{repi,ii,jj}); continue; end
+%
+%       % iv) calculate Geometric Accuracy
+%       ga(repi,ii,jj) = geomacc(Members2{repi,ii,jj},corumComplex2);
+%
+%       % iva) calculate Matching Ratio
+%       mr(repi,ii,jj) = matchingratio(Members2{repi,ii,jj},corumComplex2);
+%
+%       nc(repi,ii,jj) = length(Members2{repi,ii,jj});
+%       tmp = zeros(nc(repi,ii,jj),1);
+%       for kk = 1:nc(repi,ii,jj)
+%         tmp(kk) = length(Members2{repi,ii,jj}{kk});
+%       end
+%       avgsize(repi,ii,jj) = mean(tmp);
+%
+%     end
+%   end
+% end
 
 
 
