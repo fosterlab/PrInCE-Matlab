@@ -56,41 +56,26 @@ if ~skipflag
   Experimental_channels = user.silacratios;
   User_alignment_window1 = user.User_alignment_window1;
   Nreplicates = user.Nreplicate;
-  
-  
-  %User_alignment_window2 = 8; %for Second round of alignment
   Nchannels = length(Experimental_channels);  % Defines the number of experiments to be compared
-  %Alignment_to_user= 'MvsL'; %Define the experimental channel to use for alignment
-  %User_defined_zero_value = 0.2; %lowest value to be shown in Adjusted Chromatograms
   
   
   % Define folders, i.e. define where everything lives.
-  %maindir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/'; % where everything lives
   codedir = [maindir 'Code/']; % where this script lives
   funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
-  datadir = [maindir 'Data/']; % where data files live
-  datadir1 = [maindir 'Data/Alignment/']; % where data files live
-  datadir2 = [maindir 'Data/GaussBuild/']; % where data files live
-  figdir1 = [maindir 'Figures/Alignment/']; % where figures live
+  datadir = [maindir 'Output/Data/Alignment/']; % where data files live
+  figdir = [maindir 'Output/Figures/Alignment/']; % where figures live
   % Make folders if necessary
-  if ~exist(codedir, 'dir'); mkdir(codedir); end
-  if ~exist(funcdir, 'dir'); mkdir(funcdir); end
   if ~exist(datadir, 'dir'); mkdir(datadir); end
-  if ~exist(datadir1, 'dir'); mkdir(datadir1); end
-  if ~exist(datadir2, 'dir'); error('\nData files from Gauss_Build.m not found\n'); end
-  if ~exist(figdir1, 'dir'); mkdir(figdir1); end
+  if ~exist([maindir '/Output'], 'dir'); mkdir([maindir '/Output']); end
+  if ~exist([maindir '/Output/Data'], 'dir'); mkdir([maindir '/Output/Data']); end
+  if ~exist([maindir '/Output/Figures'], 'dir'); mkdir([maindir '/Output/Figures']); end
+  if ~exist([maindir '/Output/tmp'], 'dir'); error('Data from Gauss_Build not found'); end
+  if ~exist([maindir '/Output/Data/GaussBuild'], 'dir'); error('Data from Gauss_Build not found'); end
+  if ~exist(datadir, 'dir'); mkdir(datadir); end
+  if ~exist(figdir, 'dir'); mkdir(figdir); end
+ 
   
-  
-  % List all input files. These contain data that will be read by this script.
-  % InputFile{1} = [datadir 'Combined_replicates_2014_04_22_contaminates_removed_for_MvsL_scripts.xlsx'];
-  % InputFile{2} = [datadir 'Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.xlsx'];
-  % InputFile{3} = [datadir 'Combined_replicates_2014_04_22_contaminates_removed_for_HvsM_scripts.xlsx'];
-  % InputFile{4} = [datadir 'SEC_alignment.xlsx'];
   flag3 = 0;
-  %try ls(InputFile{3});
-  %catch
-  %  flag3 = 0;
-  %end
   
   
   % for now, read files in from Nick's data
@@ -107,7 +92,7 @@ if ~skipflag
       end
     end
   else %my output
-    dd = dir([datadir2 '*Combined_OutputGaus_rep*csv']);
+    dd = dir([maindir '/Output/tmp/' '*Combined_OutputGaus_rep*csv']);
     tmp = length(dd) / length(Experimental_channels);
     
     % Check that all replicate files were made in Gauss_Build
@@ -119,8 +104,8 @@ if ~skipflag
     GassSumInputFile = cell(Nchannels, Nreplicates);
     for ei=1:Nchannels
       for replicates= 1:Nreplicates
-        GaussInputFile{ei,replicates} = [datadir2 Experimental_channels{ei} '_Combined_OutputGaus_rep' num2str(replicates) '.csv'];
-        GassSumInputFile{ei,replicates} = [datadir2 Experimental_channels{ei} '_Summary_Gausians_for_individual_proteins_rep' num2str(replicates) '.csv'];
+        GaussInputFile{ei,replicates} = [maindir '/Output/tmp/' Experimental_channels{ei} '_Combined_OutputGaus_rep' num2str(replicates) '.csv'];
+        GassSumInputFile{ei,replicates} = [maindir '/Output/tmp/' Experimental_channels{ei} '_Summary_Gausians_for_individual_proteins_rep' num2str(replicates) '.csv'];
       end
     end
   end
@@ -137,15 +122,6 @@ if ~skipflag
   tic
   fprintf('    1. Read input')
   
-  % Import MaxQuant data files
-  %num_val = cell(Nchannels,1);
-  %txt_val = cell(Nchannels,1);
-  %for ii = 1:Nchannels
-  %  [num_val{ii},txt_val{ii}] = xlsread(user.MQfiles{ii}); %Import file raw Maxqaunt output
-  %  txt_val{ii} = txt_val{ii}(:,1);
-  %end
-  %if flag3; [num_val{ii+1},txt_val{ii+1}] = xlsread(InputFile{3});end %Import file raw Maxqaunt output
-  %[SEC_size_alignment] = xlsread(user.calfile);
   
   % Import MaxQuant data files
   num_val = cell(Nchannels,1);

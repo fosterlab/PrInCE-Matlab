@@ -32,7 +32,7 @@ for ii = 1:Nchannels
   title([user.silacratios{ii} ' - Raw'])
   
   set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-  sf=[figdir 'GaussBuild/Chromatograms_raw_' user.silacratios{ii}];
+  sf=[figdir 'Chromatograms_raw_' user.silacratios{ii}];
   saveas(gcf, sf, 'png');
   
   ax = axis;
@@ -58,7 +58,7 @@ for ii = 1:Nchannels
   title([user.silacratios{ii} ' - Clean'])
   
   set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-  sf=[figdir 'GaussBuild/Chromatograms_clean_' user.silacratios{ii}];
+  sf=[figdir '/Chromatograms_clean_' user.silacratios{ii}];
   saveas(gcf, sf, 'png');
   
   axis(ax)
@@ -86,7 +86,7 @@ ylim([0 max(h1(:))*1.05])
 set(gca,'xtick',1:5,'fontsize',12)
 
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir 'GaussBuild/Hist_NumberOfGaussians'];
+sf=[figdir '/Hist_NumberOfGaussians'];
 saveas(gcf, sf, 'png');
 
 
@@ -135,7 +135,7 @@ for ci = 1:Nchannels
 end
 
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir 'GaussBuild/Hist_GaussianParameters'];
+sf=[figdir '/Hist_GaussianParameters'];
 saveas(gcf, sf, 'png');
 
 
@@ -161,7 +161,7 @@ text(x,y2,['Median R^2 = ' num2str(nanmedian(adjrsquare(:)))],'fontsize',12)
 set(gca,'fontsize',12)
 
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir 'GaussBuild/Hist_R2'];
+sf=[figdir '/Hist_R2'];
 saveas(gcf, sf, 'png');
 
 
@@ -173,7 +173,7 @@ end
 
 if ~user.fastgaussbuild
   
-  figdir1 = [figdir 'GaussBuild/Chromatograms/'];
+  figdir1 = [figdir '/Chromatograms/'];
   if ~exist(figdir1, 'dir'); mkdir(figdir1); end
   
   colour_to_use=[0.254 0.411 0.882 %Colour: Royal Blue
@@ -259,7 +259,7 @@ if ~user.fastgaussbuild
     axis(ax)
     
     
-    sf = [figdir 'GaussBuild/Chromatograms/' mat2str(replicate(ii)),'_',txt_val{1}{ii+1,1},'.png'];
+    sf = [figdir '/Chromatograms/' mat2str(replicate(ii)),'_',txt_val{1}{ii+1,1},'.png'];
     saveas(gcf, sf);
     close all
     

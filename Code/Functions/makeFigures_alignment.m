@@ -50,7 +50,7 @@ set(gca,'YTickLabel',[]);
 set(gca,'XAxisLocation','top');
 
 %generate image name
-Image_name = [figdir1 'Bar_alignment_image.png'];
+Image_name = [figdir 'Bar_alignment_image.png'];
 
 %Save image
 saveas(Image, Image_name)
@@ -89,7 +89,7 @@ for ci = 1:Nchannels
   %   xlabel('Divergence');
   %   ylabel('Number of identifications');
   
-  Image_name=[figdir1 'DivergenceHist_between_replicates' Experimental_channels{ci} '.png'];
+  Image_name=[figdir 'DivergenceHist_between_replicates' Experimental_channels{ci} '.png'];
   saveas(gcf, Image_name, 'png');
 end
 
@@ -151,7 +151,7 @@ for ci = 1:Nchannels
     xlabel(P4,'Euclidean Distance');
     ylabel(P4,'# of Gaussians');
     
-    Image_name=[figdir1 'Histograms_rep' num2str(rr1) '_vs_rep' num2str(rr2) '_' Experimental_channels{ci} '.png'];
+    Image_name=[figdir 'Histograms_rep' num2str(rr1) '_vs_rep' num2str(rr2) '_' Experimental_channels{ci} '.png'];
     saveas(gcf, Image_name, 'png');
   end
 end
@@ -204,7 +204,7 @@ for ci = 1:Nchannels
   %   xlabel('replicate 3')
   %   ylabel('alignment replicate')
   
-  Image_name=[figdir1 'Scatter_allreps_' Experimental_channels{ci} '.png'];
+  Image_name=[figdir 'Scatter_allreps_' Experimental_channels{ci} '.png'];
   set(gcf,'paperunits','inches','paperposition',[0.1 0.1 6 2+2*Nreplicates])
   saveas(gcf, Image_name, 'png');
 end

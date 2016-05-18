@@ -65,7 +65,7 @@ xlim([-1,frac2+1]);
 title('Changes in Gaussians observed across fractions');
 xlabel('Fractions');
 ylabel('# of Guassian centers');
-saveas(gcf, [figdir 'Comparison/Fold_changes_Gaussians_normalized.png']);
+saveas(gcf, [figdir '/Fold_changes_Gaussians_normalized.png']);
 
 
 
@@ -122,7 +122,7 @@ xlim([-1,frac2+1]);
 title('Changes in Gaussians observed across fractions');
 xlabel('Fractions');
 ylabel('# of Guassian centers');
-saveas(gcf, [figdir 'Comparison/Fold_changes_Gaussians.png']);
+saveas(gcf, [figdir '/Fold_changes_Gaussians.png']);
 
 
 
@@ -256,7 +256,7 @@ if user.fastcomparison==0
       ylabel('Norml. fold change','fontsize',10)
       xlabel('Gaussian number','fontsize',10)
       
-      sf = [figdir 'Comparison/IndividualProteins/' rep_protName '_foldchange.png'];
+      sf = [figdir '/IndividualProteins/' rep_protName '_foldchange.png'];
       saveas(gcf, sf);
       close all
       
@@ -533,7 +533,7 @@ if 0
       xlim([0.5 number_of_gaussian_to_plot+0.5]);
       
       %Save image
-      Save_name_plot=[figdir 'Comparison/ProteinGaussianMaps/' mat2str(Gaussian_counter1),'_2_PCP_SEC_Profiles of of_',Protein_to_plot,'.png'];
+      Save_name_plot=[figdir '/ProteinGaussianMaps/' mat2str(Gaussian_counter1),'_2_PCP_SEC_Profiles of of_',Protein_to_plot,'.png'];
       List_of_pdf{List_of_pdf_counter,1}=Save_name_plot;
       List_of_pdf{List_of_pdf_counter,2}=List_of_pdf_counter;
       List_of_pdf_counter=List_of_pdf_counter+1;

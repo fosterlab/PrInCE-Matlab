@@ -43,22 +43,16 @@ Nchannels = length(experimental_channels);
 % Define folders, i.e. define where everything lives.
 codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
-datadir0 = [maindir 'Data/']; % where data files live
-datadir = [maindir 'Data/GaussBuild/']; % where data files live
-%datadir1 = [maindir 'Data/GaussBuild/Output_Chromatograms/'];
-%datadir2 = [maindir 'Data/GaussBuild/Output_Chromatograms_filtered_out/'];
-%datadir3 = [maindir 'Data/GaussBuild/OutputGaus/'];
-%datadir4 = [maindir 'Data/GaussBuild/OutputGaus_filtered_out/'];
-figdir = [maindir 'Figures/']; % where figures live
+datadir = [maindir 'Output/Data/GaussBuild/']; % where data files live
+figdir = [maindir 'Output/Figures/GaussBuild/']; % where figures live
 % Make folders if necessary
-if ~exist(datadir0, 'dir'); mkdir(datadir0); end
 if ~exist(datadir, 'dir'); mkdir(datadir); end
-%if ~exist(datadir1, 'dir'); mkdir(datadir1); end
-%if ~exist(datadir2, 'dir'); mkdir(datadir2); end
-%if ~exist(datadir3, 'dir'); mkdir(datadir3); end
-%if ~exist(datadir4, 'dir'); mkdir(datadir4); end
+if ~exist([maindir '/Output'], 'dir'); mkdir([maindir '/Output']); end
+if ~exist([maindir '/Output/Data'], 'dir'); mkdir([maindir '/Output/Data']); end
+if ~exist([maindir '/Output/Figures'], 'dir'); mkdir([maindir '/Output/Figures']); end
+if ~exist([maindir '/Output/tmp'], 'dir'); mkdir([maindir '/Output/tmp']); end
+if ~exist(datadir, 'dir'); mkdir(datadir); end
 if ~exist(figdir, 'dir'); mkdir(figdir); end
-if ~exist([figdir '/GaussBuild'], 'dir'); mkdir([figdir '/GaussBuild']); end
 
 
 

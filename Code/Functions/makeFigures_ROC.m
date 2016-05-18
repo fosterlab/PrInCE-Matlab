@@ -6,8 +6,8 @@ precPlot = num2str(round(desiredPrecision(precision_write_out_counter)*100));
 %% How many interactions were found in at least N replicates?
 
 sf = cell(2,1);
-sf{1} = [figdir1 'Interactions_in_multiple_replicates_' precPlot '_GlobalPrecision.png'];
-sf{2} = [figdir1 'Interactions_in_multiple_replicates_' precPlot '_ReplicatePrecision.png'];
+sf{1} = [figdir 'Interactions_in_multiple_replicates_' precPlot '_GlobalPrecision.png'];
+sf{2} = [figdir 'Interactions_in_multiple_replicates_' precPlot '_ReplicatePrecision.png'];
 titles = cell(2,1);
 titles{1} =   ['Desired precision = ' precPlot '% (applied globally)'];
 titles{2} =   ['Desired precision = ' precPlot '% (applied at replicate)'];
@@ -96,8 +96,8 @@ end
 %% How many interactions were found in each replicate?
 
 sf = cell(2,1);
-sf{1} = [figdir1 'Number_interactions_per_replicate' precPlot '_GlobalPrecision.png'];
-sf{2} = [figdir1 'Number_interactions_per_replicate' precPlot '_ReplicatePrecision.png'];
+sf{1} = [figdir 'Number_interactions_per_replicate' precPlot '_GlobalPrecision.png'];
+sf{2} = [figdir 'Number_interactions_per_replicate' precPlot '_ReplicatePrecision.png'];
 titles = cell(2,1);
 titles{1} =   ['Desired precision = ' precPlot '% (applied globally)'];
 titles{2} =   ['Desired precision = ' precPlot '% (applied at replicate)'];
@@ -203,7 +203,7 @@ legend('Interactions assessed globally','Interactions assessed per replicate','E
 
 % Save figure
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir1 'Final_PrecisionRecall_' precPlot '_GlobalPrecision'];
+sf=[figdir 'Final_PrecisionRecall_' precPlot '_GlobalPrecision'];
 saveas(gcf, sf, 'png');
 
 
@@ -227,7 +227,7 @@ legend('Interactions assessed globally','Interactions assessed per replicate','l
 
 % Save figure
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir1 'Final_ROC_' precPlot '_GlobalPrecision'];
+sf=[figdir 'Final_ROC_' precPlot '_GlobalPrecision'];
 saveas(gcf, sf, 'png');
 
 
@@ -264,7 +264,7 @@ title('Histogram of interaction scores for protein pairs in CORUM','fontsize',12
 
 % Save figure
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir1 'ScoreHistogram_' precPlot '_GlobalPrecision'];
+sf=[figdir 'ScoreHistogram_' precPlot '_GlobalPrecision'];
 saveas(gcf, sf, 'png');
 
 
@@ -299,6 +299,6 @@ title('Histogram of interaction scores for protein pairs in CORUM','fontsize',12
 
 % Save figure
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir1 'ScoreHistogram_normalized_' precPlot '_GlobalPrecision'];
+sf=[figdir 'ScoreHistogram_normalized_' precPlot '_GlobalPrecision'];
 saveas(gcf, sf, 'png');
 

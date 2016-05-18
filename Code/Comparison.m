@@ -86,28 +86,27 @@ if ~skipflag
   % Define folders, i.e. define where everything lives.
   codedir = [maindir 'Code/']; % where this script lives
   funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
-  datadir = [maindir 'Data/']; % where data files live
-  figdir = [maindir 'Figures/']; % where figures live
+  datadir = [maindir 'Output/Data/Comparison/']; % where data files live
+  figdir = [maindir 'Output/Figures/Comparison/']; % where figures live
   % Make folders if necessary
-  if ~exist(codedir, 'dir'); mkdir(codedir); end
-  if ~exist(funcdir, 'dir'); mkdir(funcdir); end
-  if ~exist(datadir, 'dir'); mkdir(datadir); end
-  if ~exist([datadir 'Comparison'], 'dir'); mkdir([datadir 'Comparison']); end
+  if ~exist([maindir '/Output'], 'dir'); mkdir([maindir '/Output']); end
+  if ~exist([maindir '/Output/Data'], 'dir'); mkdir([maindir '/Output/Data']); end
+  if ~exist([maindir '/Output/Figures'], 'dir'); mkdir([maindir '/Output/Figures']); end
+  if ~exist([maindir '/Output/tmp'], 'dir'); mkdir([maindir '/Output/tmp']); end
   if ~exist(figdir, 'dir'); mkdir(figdir); end
-  if ~exist([figdir 'Comparison'], 'dir'); mkdir([figdir 'Comparison']); end
-  if ~exist([figdir 'Comparison/IndividualProteins'], 'dir'); mkdir([figdir 'Comparison/IndividualProteins']); end
+  if ~exist(datadir, 'dir'); mkdir(datadir); end
+  if ~exist([figdir '/IndividualProteins'], 'dir'); mkdir([figdir '/IndividualProteins']); end
   
   % Find input files
   ChromatogramIn = cell(Nchannels,1);
   GaussIn = cell(Nchannels,1);
   if user.nickflag==1
-    datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
     for ii = 1:Nchannels
-      ChromatogramIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Raw_data_maxquant_modified.xlsx']; % from Alignment
-      GaussIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
+      ChromatogramIn{ii} = [maindir '/Output/tmp/' 'Adjusted_' user.silacratios{ii} '_Raw_data_maxquant_modified.xlsx']; % from Alignment
+      GaussIn{ii} = [maindir '/Output/tmp/' 'Adjusted_' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
     end
   else
-    dd = dir([datadir 'Alignment/Adjusted_*_Combined_OutputGaus.csv']);
+    dd = dir([maindir '/Output/tmp/Adjusted_*_Combined_OutputGaus.csv']);
     if user.skipalignment==1 || isempty(dd)
       % If Alignment was skipped, use raw data + Gauss_Build output
       
@@ -115,62 +114,25 @@ if ~skipflag
         ChromatogramIn{di} = user.MQfiles{di};
       end
       
-      dd = dir([datadir 'GaussBuild/*_Combined_OutputGaus.csv']);
+      dd = dir([maindir '/Output/Data/GaussBuild/*_Combined_OutputGaus.csv']);
       for di = 1:length(dd)
-        GaussIn{di} = [datadir 'GaussBuild/' dd(di).name];
+        GaussIn{di} = [maindir '/Output/Data/GaussBuild/' dd(di).name];
       end
     else
       % If Alignment was not skipped, use Alignment output
       
-      dd = dir([datadir 'Alignment/Adjusted_*_Raw_data_maxquant.csv']);
+      dd = dir([maindir '/Output/Data/Alignment/Adjusted_*_Raw_data_maxquant.csv']);
       for di = 1:length(dd)
-        ChromatogramIn{di} = [datadir 'Alignment/' dd(di).name];
+        ChromatogramIn{di} = [maindir '/Output/Data/Alignment/' dd(di).name];
       end
       
-      dd = dir([datadir 'Alignment/Adjusted_*_Combined_OutputGaus.csv']);
+      dd = dir([maindir '/Output/Data/Alignment//Adjusted_*_Combined_OutputGaus.csv']);
       for di = 1:length(dd)
-        GaussIn{di} = [datadir 'Alignment/' dd(di).name];
+        GaussIn{di} = [maindir '/Output/Data/Alignment/' dd(di).name];
       end
     end
   end
   
-  % Find input files
-%   ChromatogramIn = cell(Nchannels,1);
-%   GaussIn = cell(Nchannels,1);
-%   for ii = 1:Nchannels
-%     if user.nickflag
-%       % NB THIS IS BAD FIX IT!!!!
-%       % USING NICK'S DATA FOR NOW
-%       datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
-%       ChromatogramIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Raw_data_maxquant_modified.xlsx']; % from Alignment
-%     else
-%       if user.skipalignment
-%         ChromatogramIn{ii} = user.MQfiles{ii};
-%       else
-%         ChromatogramIn{ii} = [datadir 'Alignment/Adjusted_' user.silacratios{ii} '_Raw_data_maxquant.csv']; % from Alignment
-%       end
-%     end
-%   end
-%   for ii = 1:Nchannels
-%     if user.nickflag
-%       % NB THIS IS BAD FIX IT!!!!
-%       % USING NICK'S DATA FOR NOW
-%       datadir2 = '/Users/Mercy/Academics/Foster/NickCodeData/3_Comparsion processing/';
-%       GaussIn{ii} = [datadir2 'Adjusted_' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
-%     else
-%       if user.skipalignment
-%         GaussIn{ii} = [datadir 'GaussBuild/' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
-%       else
-%         GaussIn{ii} = [datadir 'Alignment/Adjusted_' user.silacratios{ii} '_Combined_OutputGaus.csv']; % from Alignment
-%       end
-%     end
-%   end
-  
-  % User defined variables
-  %position_fraction1=6; %Denote the position of the first fraction in fraction_to_plot of aligned samples
-  %fraction_to_plot=55; %For figure define fraction to plot and to considered, all Gaussian under this value will be ignored
-  %Compare the Areas of the Gaussian curves to use for downstream analysis
-  %Diltuion_factor_master_mix=0.70; %Define the precentage of standard mixed into samples
   
   % Plotting variables
   myC= [30/255 144/255 255/255
@@ -262,15 +224,6 @@ if ~skipflag
     a(isnan(a)) = [];
     replicate_num = length(unique(a));
     
-    % Clean chromatograms
-    % YOU'RE ADDING 3 NANS TO THE END. MAKE SURE THIS IS CORRECT!!!!!!!!!!!!!!!!!!!!!!
-    %   tmp2 = zeros(size(num_val{ii},1),size(num_val{ii},2)+3);
-    %   for ri = 1:Nproteins % loop over proteins
-    %     num_val{ii}(ri,:) = cleanChromatogram(num_val{ii}(ri,:),[1 3]);
-    %     tmp2(ri,:) = [num_val{ii}(ri,:) nan(1,3)];
-    %   end
-    %   num_val{ii} = tmp2;
-    
     % The data is nan-padded. Find where the real data starts and stops.
     nanmax = size(num_val{ii},1);
     tmp = find(sum(isnan(num_val{ii}))==size(num_val{ii},1));
@@ -282,9 +235,6 @@ if ~skipflag
     
     % Ensure txt_val is a single column of protein names
     txt_val{ii} = txt_val{ii}(:,1);
-    %if size(txt_val{ii},2)~=1
-    %  fprintf('\nComparison: Error: violated assumption, textdata is not single column of protein names')
-    %end
     
     % Add unique identifiers to the chromatograms
     Unique_indentifer_maxqaunt = cell(Nproteins,1);
@@ -328,10 +278,6 @@ if ~skipflag
   
   %expected amount of proteins, note 1 is the height
   %Standard_area=Nfraction*1*(1/Diltuion_factor_master_mix);
-  
-  %Copy data to be used for plotting
-  %num_val_MvsL_for_figures = num_val_MvsL;
-  %num_val_HvsL_for_figures = num_val_HvsL;
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
@@ -1020,7 +966,7 @@ if ~skipflag
   
   %% 9. Write output
   tic
-  fprintf('    9. Write output')
+  fprintf('    9. Write output\n')
   
   writeOutput_comparison
   
@@ -1029,7 +975,7 @@ if ~skipflag
   
   %% 10. Make figures
   tic
-  fprintf('    10. Make figures')
+  fprintf('    10. Make figures\n')
   
   makeFigures_comparison
   

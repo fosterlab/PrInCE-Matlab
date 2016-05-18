@@ -31,7 +31,7 @@ for ci = 1:length(Experimental_channels)
     
     I = find(cleandata{1}(:,1) == rr);
     
-    fid9_Name = [datadir1 'Adjusted_' Experimental_channel '_Raw_data_maxquant_rep' mat2str(rr) '.csv'];
+    fid9_Name = [maindir '/Output/tmp/' 'Adjusted_' Experimental_channel '_Raw_data_maxquant_rep' mat2str(rr) '.csv'];
     Column_header=repmat('%s,', 1, (lenght_new_fraction)+2);
     
     fid9 = fopen(fid9_Name,'at');
@@ -69,7 +69,7 @@ for ci = 1:length(Experimental_channels)
       Irawdata(ii) = I(1);
     end
     
-    fid9B_Name = [datadir1 'Adjusted_' Experimental_channel '_Raw_for_ROC_analysis_rep' mat2str(rr) '.csv'];
+    fid9B_Name = [maindir '/Output/tmp/' 'Adjusted_' Experimental_channel '_Raw_for_ROC_analysis_rep' mat2str(rr) '.csv'];
     Column_header=repmat('%s,', 1, ((lenght_new_fraction)+2));
     
     tmp1 = zeros(length(Irawdata),size(adjusted_raw_data{ci},2));
@@ -108,7 +108,7 @@ for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
   for rr = 1:Nreplicates
     
-    fid7_Name = [datadir1  'Adjusted_Combined_OutputGaus_' Experimental_channel '_rep' mat2str(rr) '.csv'];
+    fid7_Name = [maindir '/Output/tmp/'  'Adjusted_Combined_OutputGaus_' Experimental_channel '_rep' mat2str(rr) '.csv'];
     fid7 = fopen(fid7_Name,'at');
     fprintf (fid7,'%s,%s,%s,%s,%s,%s,%s\n',...
       'Protein name', 'Height', 'Center','Width','SSE','adjrsquare', 'Complex Size');  %Write Header
@@ -129,7 +129,7 @@ disp('        Adjusted_*vsL_Combined_OutputGaus,.csv')
 for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
   
-  fid7_Name = [datadir1 'Adjusted_' Experimental_channel '_Combined_OutputGaus.csv'];
+  fid7_Name = [maindir '/Output/tmp/' 'Adjusted_' Experimental_channel '_Combined_OutputGaus.csv'];
   fid10 = fopen(fid7_Name,'at');
   fprintf (fid10,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',...
     'Protein name', 'Height', 'Center','Width','SSE','adjrsquare', 'Complex Size');  %Write Header
@@ -156,7 +156,7 @@ disp('        Adjusted_*vsL_Raw_data_maxquant.csv')
 for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
   
-  fid11_Name = [datadir1 'Adjusted_' Experimental_channel '_Raw_data_maxquantb.csv'];
+  fid11_Name = [maindir '/Output/tmp/' 'Adjusted_' Experimental_channel '_Raw_data_maxquantb.csv'];
   fid11 = fopen(fid11_Name,'at');
   %fprintf (fid11,[Column_header, '\n'], Title_import2{:});  %Write Header
   % protein name, replicate, data(:)

@@ -26,35 +26,25 @@ tic
 fprintf('\n    0. Initialize')
 
 
-
 % Load user settings
 maindir = user.maindir;
 Experimental_channels = user.silacratios;
 desiredPrecision = user.desiredPrecision;
 number_of_channels = length(user.silacratios);
-%InputFile{1} = user.majorproteingroupsfile;
-%InputFile{2} = user.corumfile;
-%InputFile{4} = user.mastergaussian;
-
 
 
 % Define folders, i.e. define where everything lives.
 codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
-datadir = [maindir 'Data/']; % where data files live
-datadir1 = [datadir 'ROC/']; % where data files live
-datadir2 = [datadir 'ROC/tmp/']; % where data files live
-datadir3 = [datadir 'ROC/CombinedResults/']; % where data files live
-figdir1 = [maindir 'Figures/ROC/']; % where figures live
-%tmpdir = '/Users/Mercy/Academics/Foster/Jenny_PCPSILAC/PCPSILAC_Analysis/Data/Alignment/';
+datadir = [maindir 'Output/Data/Interactions/']; % where data files live
+figdir = [maindir 'Output/Figures/Interactions/']; % where figures live
 % Make folders if necessary
-if ~exist(codedir, 'dir'); mkdir(codedir); end
-if ~exist(funcdir, 'dir'); mkdir(funcdir); end
+if ~exist([maindir '/Output'], 'dir'); mkdir([maindir '/Output']); end
+if ~exist([maindir '/Output/Data'], 'dir'); mkdir([maindir '/Output/Data']); end
+if ~exist([maindir '/Output/Figures'], 'dir'); mkdir([maindir '/Output/Figures']); end
+if ~exist([maindir '/Output/tmp'], 'dir'); mkdir([maindir '/Output/tmp']); end
+if ~exist(figdir, 'dir'); mkdir(figdir); end
 if ~exist(datadir, 'dir'); mkdir(datadir); end
-if ~exist(datadir1, 'dir'); mkdir(datadir1); end
-if ~exist(datadir2, 'dir'); mkdir(datadir2); end
-if ~exist(datadir3, 'dir'); mkdir(datadir3); end
-if ~exist(figdir1, 'dir'); mkdir(figdir1); end
 
 if user.nickflag==1
   %define Raw SILAC ratios data, This is the output from the alignment script
@@ -77,36 +67,36 @@ if user.nickflag==1
     HvsL_filename_gaus_rep1,HvsL_filename_gaus_rep2,HvsL_filename_gaus_rep3};
   
 else
-  dd = dir([datadir 'Alignment/Adjusted*Raw_for_ROC_analysis*rep*csv']);
+  dd = dir([maindir '/Output/tmp/Adjusted_*_Combined_OutputGaus.csv']);
   
   % Define Raw SILAC ratios data. Dynamically find filenames
   if user.skipalignment==1 || isempty(dd)
     % If Alignment was skipped, use raw data + Gauss_Build output
     
-    dd = dir([datadir 'GaussBuild/*_Raw_data_maxquant_rep*.csv']);
+    dd = dir([maindir 'Output/tmp/*_Raw_data_maxquant_rep*.csv']);
     ChromatogramIn = cell(size(dd));
     for di = 1:length(dd)
-      ChromatogramIn{di} = [datadir 'GaussBuild/' dd(di).name];
+      ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
     end
     
     GaussIn = cell(size(dd));
-    dd = dir([datadir 'GaussBuild/*Combined_OutputGaus*rep*csv']);
+    dd = dir([maindir 'Output/tmp/*Combined_OutputGaus*rep*csv']);
     for di = 1:length(dd)
-      GaussIn{di} = [datadir 'GaussBuild/' dd(di).name];
+      GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
     end
   else
     % If Alignment was not skipped, use Alignment output
     
-    dd = dir([datadir 'Alignment/Adjusted*Raw_for_ROC_analysis*rep*csv']);
+    dd = dir([maindir 'Output/tmp/Adjusted*Raw_for_ROC_analysis*rep*csv']);
     ChromatogramIn = cell(size(dd));
     for di = 1:length(dd)
-      ChromatogramIn{di} = [datadir 'Alignment/' dd(di).name];
+      ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
     end
     
     GaussIn = cell(size(dd));
-    dd = dir([datadir 'Alignment/Adjusted_Combined_OutputGaus*rep*csv']);
+    dd = dir([maindir 'Output/tmp/Adjusted_Combined_OutputGaus*rep*csv']);
     for di = 1:length(dd)
-      GaussIn{di} = [datadir 'Alignment/' dd(di).name];
+      GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
     end
   end
 end
@@ -559,7 +549,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   scoreMatrix = scorenb(Dist,possibleInts,TP_Matrix);
   scoreMatrix = nanmedian(scoreMatrix,2);
   
-  sf = [datadir2 'score_rep' num2str(replicate_counter) '.mat'];
+  sf = [maindir '/Output/tmp/' 'score_rep' num2str(replicate_counter) '.mat'];
   save(sf,'scoreMatrix','TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms','Dist')
   clear scoreMatrix TP_Matrix possibleInts Protein inverse_self Chromatograms Dist
   
@@ -595,7 +585,7 @@ while bad_desiredPrecision
   ff = rand(1,15);
   kk = 0;
   for rr = 1:(number_of_replicates*number_of_channels)
-    sf = [datadir2 'score_rep' num2str(rr) '.mat'];
+    sf = [maindir '/Output/tmp/' 'score_rep' num2str(rr) '.mat'];
     load(sf)
     a = find(triu(possibleInts));
     [prot1i, prot2i] = ind2sub(size(possibleInts),a);
@@ -784,7 +774,7 @@ for di = 1:length(desiredPrecision)
     fprintf(['            Replicate ' num2str(replicate_counter)])
     
     % Re-load scoreMatrix, TP_Matrix, possibleInts, and Protein
-    sf = [datadir2 'score_rep' num2str(replicate_counter) '.mat'];
+    sf = [maindir '/Output/tmp/' 'score_rep' num2str(replicate_counter) '.mat'];
     load(sf)
     
     % determine final interaction matrices
@@ -1176,7 +1166,7 @@ for di = 1:length(desiredPrecision)
   Recall_plot = nan(Total_unique_interactions,1);
   FPR_plot = nan(Total_unique_interactions,1);
   for ii = 1:Total_unique_interactions
-    cutoff = interaction_final.score(ii) - 10e-100;
+    cutoff = interaction_final.score(ii) - 10e-10;
     I = interaction_final.score >= cutoff;
     TP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==1);
     FP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==0);

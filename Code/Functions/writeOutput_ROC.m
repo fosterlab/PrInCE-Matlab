@@ -36,7 +36,7 @@ Precision_values = desiredPrecision * 100;
 % end
 % fclose(Inter_pre_rep);
 
-Final_Results_name=strcat(datadir3,'Summary_Interactions_',mat2str(Precision_values(precision_write_out_counter)),'pc_replicate.csv');
+Final_Results_name=strcat(datadir,'Summary_Interactions_',mat2str(Precision_values(precision_write_out_counter)),'pc_replicate.csv');
 fid_final= fopen(Final_Results_name,'wt'); % create the summary file of the interaction output
 fprintf (fid_final,',%s,%s,%s,%s,%s,,,%s\n',... %header for OutputGaus output
   'Recall', 'Precision', 'Number of TP interactions','Number of FP interactions','Number of novel interactions',...
@@ -57,7 +57,7 @@ fclose(fid_final);
 
 
 % Final interactions list, and channel-specific final interactions
-Final_list_Interactionsname=strcat(datadir3,'Final_Interactions_list_',mat2str(Precision_values(precision_write_out_counter)),'_precision.csv');
+Final_list_Interactionsname=strcat(datadir,'Final_Interactions_list_',mat2str(Precision_values(precision_write_out_counter)),'_precision.csv');
 fid_final_1 = fopen(Final_list_Interactionsname,'w');
 fprintf (fid_final_1,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
   'Unique interactions','Protein A','Protein B','Center A',...
@@ -68,7 +68,7 @@ fprintf (fid_final_1,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
 fn = cell(1,length(user.silacratios));
 fid = zeros(1,length(user.silacratios));
 for ii = 1:length(user.silacratios)
-  fn{ii} = strcat(datadir3,'Final_Interactions_list_',user.silacratios{ii},'only_',mat2str(Precision_values(precision_write_out_counter)),'_precision.csv');
+  fn{ii} = strcat(datadir,'Final_Interactions_list_',user.silacratios{ii},'only_',mat2str(Precision_values(precision_write_out_counter)),'_precision.csv');
   fid(ii) = fopen(fn{ii},'w');
   fprintf (fid(ii),'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
     'Unique interactions','Protein A','Protein B','Center A',...
@@ -124,7 +124,7 @@ fclose(fid_final_1);
 
 
 preci = 1;
-Final_Results_name=strcat(datadir3,'Precision_across_replicates_',mat2str(Precision_values(precision_write_out_counter)),'GlobalPrecision.csv');
+Final_Results_name=strcat(datadir,'Precision_across_replicates_',mat2str(Precision_values(precision_write_out_counter)),'GlobalPrecision.csv');
 fid_final2= fopen(Final_Results_name,'wt'); % create the summary file of the interaction output
 fprintf (fid_final2,'%s,,\n','Assessed with global threshold');
 fprintf (fid_final2,'%s,%s,%s,%s,%s,%s,\n',... %header for OutputGaus output

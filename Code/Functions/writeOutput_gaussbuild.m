@@ -76,38 +76,10 @@ for ci = 1:Nchannels
           %write out Gaussians for further analysis
           Values_Considered_for_analysis = Values_Considered_for_analysis+1; %Records the number of gaussians which will outputed
           
-%           %For Gausians
-%           fileName1A = [datadir3 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_OutputGaus.csv'];
-%           fid1A = fopen(fileName1A,'at'); % create the output file
-%           fprintf (fid1A,'%6.4f,%6.4f,%s,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
-%             ri, replicate(ri) , txt_val{ci}{ri+1}, Height, Center, Width, SSE(ci,ri), adjrsquare(ci,ri), round(Size_of_complex/10)*10);
-%           fclose(fid1A);
-%           
-%           %For Chromatograms
-%           fileName2A = [datadir1 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_Output_Chromatograms.csv'];
-%           fid2A = fopen(fileName2A,'at');
-%           fprintf(fid2A,'%6.4f,%6.4f,%s,',ri, replicate(ri), txt_val{ci}{ri+1});
-%           fprintf(fid2A,'%6.4g,', cleandata{ci}(ri,:));
-%           fprintf(fid2A,'\n');
-%           fclose(fid2A);
         elseif Height<0.5 || Width<1 || Center<=1 || Center>=Nfractions || isnan(cleandata{ci}(ri,round(Center+5)))
           %write out Gaussians excluded from further analysis
           Values_Not_Considered_for_analysis=Values_Not_Considered_for_analysis+1; %Records the number of guassian which will outputed
           
-%           %For Gausians
-%           fileName1B = [datadir4 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_OutputGaus_filtered_out.csv'];
-%           fid2A = fopen(fileName1B,'at'); % create the output file
-%           fprintf (fid2A,'%6.4f,%6.4f,%s,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
-%             ri, nan ,txt_val{ci}{ri+1}, Height, Center, Width, SSE, adjrsquare, (round(Size_of_complex/10)*10));
-%           fclose(fid2A);
-%           
-%           %For Chromatograms
-%           fileName2B = [datadir2 num2str(ri),'_',mat2str(i),'_',Experimental_channel,'_Output_Chromatograms_filtered_out.csv'];
-%           fid2B = fopen(fileName2B,'at');
-%           fprintf(fid2B,'%6.4f,%6.4f,%s,',ri, replicate(ri), txt_val{ci}{ri+1});
-%           fprintf(fid2B,'%6.4g,', cleandata{ci}(ri,:));
-%           fprintf(fid2B,'\n');
-%           fclose(fid2B);
         end
       end
       Gaussians_used_in_analysis_counter(ci,ri) = Values_Considered_for_analysis;
@@ -117,66 +89,26 @@ for ci = 1:Nchannels
 end
 
 
-%% *_Summary_Gausians_identifed.csv
-%disp('        Writing *_Summary_Gausians_identifed.csv...')
-if 0
-for ci = 1:Nchannels
-  fn = strcat([datadir user.silacratios{ci} '_Summary_Gausians_identifed.csv']);
-  
-  Mean_No_Quant_String = sum(~isnan(rawdata{ci}(:))) / size(rawdata{ci},1);
-  Mean_No_After_adding_one_missing_data = sum(tmp1{ci}(:)>0) / size(tmp1{ci},1);
-  Mean_No_After_filtering = sum(tmp2{ci}(:)>.05) / size(tmp2{ci},1);
-  
-  fid3 = fopen(fn,'w');
-  fprintf (fid3,'%s,%s,%s,%s,%s,%s\n',...
-    'Predicted complex number','Predicted complex', 'CORUM match',...
-    'Best or 2nd best match?', 'N overlap', 'Percent overlap');                      %Write Header
-  
-  fprintf (fid3,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f\n',...
-    Nproteins, Mean_No_Quant_String, Mean_No_After_adding_one_missing_data,Mean_No_After_filtering,...
-    sum(No_Gaus==0 & Try_Fit(ci,:)==1), sum(No_Gaus==1 & Try_Fit(ci,:)==1), sum(No_Gaus==2 & Try_Fit(ci,:)==1),...
-    sum(No_Gaus==3 & Try_Fit(ci,:)==1), sum(No_Gaus==4 & Try_Fit(ci,:)==1), sum(No_Gaus==5& Try_Fit(ci,:)==1), sum(Try_Fit(1,:)));
-  fclose(fid3);
-end
-end
-
-
-%% Proteins_not_fitted_to_gaussian_*.csv
-%disp('        Writing Proteins_not_fitted_to_gaussian_*.csv...')
-if 0
-  for ci = 1:Nchannels
-    fn = strcat([datadir 'Proteins_not_fitted_to_gaussian_' user.silacratios{ci} '.csv']);
-    fid5 = fopen(fn,'w');
-    for ri = 1:Nproteins
-      if length(Coef{ci,ri})<3 && Try_Fit(ci,ri)==1
-        fprintf(fid5,'%6.4f,%s,%6.4f,', replicate(ri),txt_val{ci}{(ri+1)},replicate(ri));
-        fprintf(fid5,'%6.4g,', rawdata{ci}(ri,:));
-        fprintf(fid5,'\n');
-      end
-    end
-    fclose(fid5);
-  end
-end
 
 
 %% *_Summary_Gausians_for_individual_proteins.csv
 %disp('        Writing *_Summary_Gausians_for_individual_proteins.csv...')
-
-for ci = 1:Nchannels
-  fn = strcat([datadir user.silacratios{ci} '_Summary_Gausians_for_individual_proteins.csv']);
-  fid4 = fopen(fn,'w');
-  fprintf (fid4,'%s,%s,%s,\n',...
-    'Protein_number', 'Gene_name', 'Number_of_Gausians_detected');               %Write Header
-  for ri=1:Nproteins
-    fprintf(fid4, '%s,%s,%s,\n', num2str(ri),...
-      txt_val{ci}{ri+1},...  % Protein_names
-      num2str(No_Gaus(ri)));
+if 0
+  for ci = 1:Nchannels
+    fn = strcat([datadir user.silacratios{ci} '_Summary_Gausians_for_individual_proteins.csv']);
+    fid4 = fopen(fn,'w');
+    fprintf (fid4,'%s,%s,%s,\n',...
+      'Protein_number', 'Gene_name', 'Number_of_Gausians_detected');               %Write Header
+    for ri=1:Nproteins
+      fprintf(fid4, '%s,%s,%s,\n', num2str(ri),...
+        txt_val{ci}{ri+1},...  % Protein_names
+        num2str(No_Gaus(ri)));
       %num2str(length(Coef{ci,ri})/3),...
       %num2str(Gaussians_excluded_from_analysis_counter(ci,ri)));
+    end
+    fclose(fid4);
   end
-  fclose(fid4);
 end
-
 
 
 
@@ -209,24 +141,6 @@ end
 
 
 
-%% *_Combined_Chromatograms.csv
-%disp('        Writing MvsL_Combined_Chromatograms.csv...')
-if 0
-  for ci = 1:Nchannels
-    fn = strcat([datadir user.silacratios{ci} '_Combined_Chromatograms.csv']);
-    Combined_OutputGaus_length = size(protgausI{ci},1);
-    
-    fid_combined_Chromatogram = fopen(fn,'w');
-    for kk = 1:Combined_OutputGaus_length
-      ri = protgausI{ci}(kk,1);
-      fprintf(fid_combined_Chromatogram,'%6.4f,%6.4f,%6.4f,',kk,ri,replicate(ri)); %Write out the index information
-      fprintf(fid_combined_Chromatogram,'%s,',txt_val{ci}{ri+1}); %Write out protein name
-      fprintf(fid_combined_Chromatogram,'%6.4g,',cleandata{ci}(ri,5:end)); %Chromatogram information
-      fprintf(fid_combined_Chromatogram,'\n');
-    end
-    fclose(fid_combined_Chromatogram);
-  end
-end
 
 
 %% *_Combined_OutputGaus_rep*.csv
@@ -240,7 +154,7 @@ for ci = 1:Nchannels
   Experimental_channel = user.silacratios{ci};
   for divider_counter1 = 1:length(Unique_replicate)
     %Create name of gaussian file to output divided gaus data to
-    Process_Gaus_import_Name= [datadir Experimental_channel '_Combined_OutputGaus_rep' mat2str(divider_counter1) '.csv'];
+    Process_Gaus_import_Name= [maindir '/Output/tmp/' Experimental_channel '_Combined_OutputGaus_rep' mat2str(divider_counter1) '.csv'];
     
     fid_processing= fopen(Process_Gaus_import_Name,'wt'); % create the output file with the header infromation
     fprintf (fid_processing,'%s,%s,%s,%s,%s,%s,%s\n',... %header for OutputGaus output
@@ -271,33 +185,33 @@ end
 %disp('        Writing *_Summary_Gausians_for_individual_proteins_rep*.csv...')
 
 Unique_replicate = unique(replicate);
-
-for ci = 1:Nchannels
-  Experimental_channel = user.silacratios{ci};
-  for divider_counter1 = 1:length(Unique_replicate)
-    %Create name of gaussian file to output divided gaus data to
-    Process_Summary_gausian_info_Name= [datadir Experimental_channel,'_Summary_Gausians_for_individual_proteins_rep',mat2str(divider_counter1),'.csv'];
-    
-    fid_processing= fopen(Process_Summary_gausian_info_Name,'wt'); % create the output file with the header infromation
-    fprintf (fid_processing,'%s,%s,%s,%s,%s\n',... %header for OutputGaus output
-      'Protein_number', 'Protein_name','Number_of_Gausians_detected',...
-      'Number_of_Gausians_within_defined_boundaries',...
-      'Number_of_Gausians_filtered'); %Write Header
-    
-    for kk = 1:size(protgausI{ci},1)
-      ri = protgausI{ci}(kk,1);
-      if replicate(ri) == divider_counter1
-        fprintf(fid_processing, '%s,%s,%s,%s,%s\n', num2str(ri),...
-          txt_val{ci}{ri+1},...  % Protein_names
-          num2str(No_Gaus(ri)),...
-          num2str(length(Coef{ci,ri})/3),...
-          num2str(Gaussians_excluded_from_analysis_counter(ci,ri)));
+if 0
+  for ci = 1:Nchannels
+    Experimental_channel = user.silacratios{ci};
+    for divider_counter1 = 1:length(Unique_replicate)
+      %Create name of gaussian file to output divided gaus data to
+      Process_Summary_gausian_info_Name= [datadir Experimental_channel,'_Summary_Gausians_for_individual_proteins_rep',mat2str(divider_counter1),'.csv'];
+      
+      fid_processing= fopen(Process_Summary_gausian_info_Name,'wt'); % create the output file with the header infromation
+      fprintf (fid_processing,'%s,%s,%s,%s,%s\n',... %header for OutputGaus output
+        'Protein_number', 'Protein_name','Number_of_Gausians_detected',...
+        'Number_of_Gausians_within_defined_boundaries',...
+        'Number_of_Gausians_filtered'); %Write Header
+      
+      for kk = 1:size(protgausI{ci},1)
+        ri = protgausI{ci}(kk,1);
+        if replicate(ri) == divider_counter1
+          fprintf(fid_processing, '%s,%s,%s,%s,%s\n', num2str(ri),...
+            txt_val{ci}{ri+1},...  % Protein_names
+            num2str(No_Gaus(ri)),...
+            num2str(length(Coef{ci,ri})/3),...
+            num2str(Gaussians_excluded_from_analysis_counter(ci,ri)));
+        end
       end
+      fclose(fid_processing);
     end
-    fclose(fid_processing);
   end
 end
-
 
 
 %% *_Raw_data_maxquant_rep*.csv
@@ -310,7 +224,7 @@ for ci = 1:Nchannels
   for divider_counter1 = 1:length(Unique_replicate)
     
     %Create name of gaussian file to output divided gaus data for MvsL
-    Process_Replicate_raw_data1= [datadir user.silacratios{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv'];
+    Process_Replicate_raw_data1= [maindir '/Output/tmp/' user.silacratios{ci},'_Raw_data_maxquant_rep',mat2str(divider_counter1),'.csv'];
     
     fid_processing3= fopen(Process_Replicate_raw_data1,'wt'); % create the output file with the header infromation
     fprintf(fid_processing3,'%s, ', txt_val{ci}{1,1:end}); %header for OutputGaus output
