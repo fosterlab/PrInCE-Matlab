@@ -23,40 +23,36 @@ end
 % do the data files exist?
 % user.MQfiles
 for ii = 1:length(user.MQfiles)
-  if ~exist(user.MQfiles{ii},'file')
+  if ~exist([user.maindir '/Input/' user.MQfiles{ii}],'file')
     error('\n The following file could not be found: \n %s', user.MQfiles{ii})
+  else
+    user_new.MQfiles{ii} = [user.maindir '/Input/' user.MQfiles{ii}];
   end
 end
 % user.majorproteingroupsfile
-if ~exist(user.majorproteingroupsfile,'file')
+if ~exist([user.maindir '/Input/' user.majorproteingroupsfile],'file')
   error('\n The following file could not be found: \n %s', user.majorproteingroupsfile)
+else
+  user_new.majorproteingroupsfile = [user.maindir '/Input/' user.majorproteingroupsfile];
 end
-% user.mastergaussian
-% user.fastafile
-% user.omimfile
-% user.corumfile
-if ~exist(user.corumfile,'file')
+if ~exist([user.maindir '/Input/' user.corumfile],'file')
   error('\n The following file could not be found: \n %s', user.corumfile)
+else
+  user_new.corumfile = [user.maindir '/Input/' user.corumfile];
 end
 
 % Make user.corumpairwisefile
 fn_corumpair = [user.maindir '/Data/Corum_pairwise.csv'];
 if ~exist(fn_corumpair,'file')
   disp('cleanuser: Making Corum_pairwise.csv.')
-  try
-    corum2pairwise(user)
-  catch
-    error('cleanuser: Failed to make Corum_pairwise.csv. Aborting!')
-  end
+  corum2pairwise(user_new)
 end
 user_new.corumpairwisefile = fn_corumpair;
 
 % Make user.corumcomplexfile
 fn_corumcomplex = [user.maindir '/Data/Corum_complex.csv'];
 try
-  corumextractcomplex(user)
-catch
-  error('cleanuser: Failed to make Corum_complex.csv. Aborting!')
+  corumextractcomplex(user_new)
 end
 user_new.corumcomplexfile = fn_corumcomplex;
 

@@ -102,7 +102,9 @@ pairwiselist = pairwiselist(1:cxi,:);
 
 %% Write pairwise interactions to file
 
-fn = [user.maindir '/Data/Corum_pairwise.csv'];
+if ~exist([user.maindir '/Output'], 'dir'); mkdir([user.maindir '/Output']); end
+if ~exist([user.maindir '/Output/tmp'], 'dir'); mkdir([user.maindir '/Output/tmp']); end
+fn = [user.maindir '/Output/tmp/Corum_pairwise.csv'];
 fid = fopen(fn,'w');
 for ii = 1:size(pairwiselist,1)
   fprintf(fid,'%s,%s\n',pairwiselist{ii,1},pairwiselist{ii,2});

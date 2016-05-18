@@ -68,7 +68,7 @@ complexes = complexes(I);
 
 %% Write complexes to file
 
-fn = [user.maindir '/Data/Corum_complex.csv'];
+fn = [user.maindir '/Output/tmp/Corum_complex.csv'];
 fid = fopen(fn,'w');
 for ii = 1:size(complexes,1)
   cmplx = complexes{ii};
