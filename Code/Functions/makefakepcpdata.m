@@ -1,12 +1,14 @@
 
 %% Initialize
 
-datadir = [user.maindir 'Data/']; % where data files live
+datadir = [user.maindir 'Input/']; % where data files live
 if ~exist(datadir, 'dir'); mkdir(datadir); end
+if ~exist([user.maindir 'Output/'], 'dir'); mkdir([user.maindir 'Output/']); end
+if ~exist([user.maindir 'Output/tmp'], 'dir'); mkdir([user.maindir 'Output/tmp']); end
 
 Nproteins = 200; % per replicate
-Ninteractions = 20; % pairwise interactions
-Ndifferentcomparisons = 5;
+Ninteractions = 10; % pairwise interactions
+Ndifferentcomparisons = 3;
 x = 1:user.Nfraction;
 
 
@@ -54,9 +56,7 @@ for ii = 1:length(user.silacratios)
       kk = cc+(jj-1)*Nproteins;
       Proteins{ii}{kk} = ['A' num2str(mm)];
       replicate{ii}(kk) = jj;
-      
-      Chromatograms{ii}(kk,:) = chrom(mm,:) + rand(size(chrom(mm,:)))*max(chrom(mm,:))*.1;
-      Chromatograms{ii}(kk,:) = Chromatograms{ii}(kk,:) * compare_multiplier;
+      Chromatograms{ii}(kk,:) = chrom(mm,:);
     end
     
     % "B" protein
@@ -65,13 +65,11 @@ for ii = 1:length(user.silacratios)
       kk = cc+(jj-1)*Nproteins;
       Proteins{ii}{kk} = ['B' num2str(mm)];
       replicate{ii}(kk) = jj;
-      
-      Chromatograms{ii}(kk,:) = chrom(mm,:) + rand(size(chrom(mm,:)))*max(chrom(mm,:))*.1;
-      Chromatograms{ii}(kk,:) = Chromatograms{ii}(kk,:) * compare_multiplier;
+      Chromatograms{ii}(kk,:) = chrom(mm,:);
     end
   end
   
-  % Fill the remaining proteins, "Z" proteins
+  % "Z" proteins, i.e. all the rest
   for nn = cc+1:Nproteins
     for jj = 1:user.Nreplicate
       kk = nn+(jj-1)*Nproteins;
@@ -85,17 +83,20 @@ end
 
 
 %% Dirty up the chromatograms
-
-for ii = 1:length(user.silacratios)
-  for cc = 1:size(Chromatograms{ii},1)
-    
-    % add up to 15% nans
-    Nnan = floor(rand * user.Nfraction * 0.15);
-    I = randsample(user.Nfraction,Nnan);
-    Chromatograms{ii}(I) = nan;
-    
-  end
-end
+% 
+% for ii = 1:length(user.silacratios)
+%   for cc = 1:size(Chromatograms{ii},1)
+%     
+%     % add noise
+%     Chromatograms{ii}(cc,:) = Chromatograms{ii}(cc,:) + rand(size(Chromatograms{ii}(cc,:)))*max(Chromatograms{ii}(cc,:))*.1;
+%     
+%     % add up to 15% nans
+%     Nnan = floor(rand * user.Nfraction * 0.15);
+%     I = randsample(user.Nfraction,Nnan);
+%     Chromatograms{ii}(I) = nan;
+%     
+%   end
+% end
 
 
 
@@ -161,14 +162,20 @@ for jj = 1:length(user.MQfiles)
   fclose(chromid);
 end
 
-% Write 1/4 of the interactions in Corum pairwise file
+% Write the interactions in Corum pairwise file
+%   - skip one TP
+%   - add one FP
 corumfile = user.corumpairwisefile;
 corumfile = fopen(corumfile,'wt');
-for ii = 1:round(Ninteractions)
+for ii = 1:round(Ninteractions) - 1
   sA = ['A' num2str(ii)];
   sB = ['B' num2str(ii)];
   fprintf(corumfile,'%s,%s, \n', sA, sB);
 end
+% Write one FP
+sA = 'A1';
+sB = 'A2';
+fprintf(corumfile,'%s,%s, \n', sA, sB);
 % Write 100 junk/filler interactions
  symbols = ['a':'z' 'A':'Z' '0':'9'];
 for ii = 1:100
