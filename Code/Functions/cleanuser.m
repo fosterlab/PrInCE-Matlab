@@ -42,7 +42,7 @@ else
 end
 
 % Make user.corumpairwisefile
-fn_corumpair = [user.maindir '/Data/Corum_pairwise.csv'];
+fn_corumpair = [user.maindir '/Output/tmp/Corum_pairwise.csv'];
 if ~exist(fn_corumpair,'file')
   disp('cleanuser: Making Corum_pairwise.csv.')
   corum2pairwise(user_new)
@@ -50,7 +50,7 @@ end
 user_new.corumpairwisefile = fn_corumpair;
 
 % Make user.corumcomplexfile
-fn_corumcomplex = [user.maindir '/Data/Corum_complex.csv'];
+fn_corumcomplex = [user.maindir '/Output/tmp/Corum_complex.csv'];
 try
   corumextractcomplex(user_new)
 end
