@@ -224,7 +224,7 @@ xlabel('False positive rate, FP/(FP+TN)','fontsize',12)
 ylabel('True positive rate, TP/(TP+FN)','fontsize',12)
 axis([-0.01 1 0 1])
 legend('Interactions assessed globally','Interactions assessed per replicate','location','southeast')
-
+grid on
 % Save figure
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
 sf=[figdir 'Final_ROC_' precPlot '_GlobalPrecision'];

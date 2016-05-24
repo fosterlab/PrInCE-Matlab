@@ -16,7 +16,8 @@ spl = 0;
 % Load in New interactions
 %fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Final_Interactions_list_70_precisionb.csv';
 %fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Final_Interactions_list_47_precisionb.csv';
-fn = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis/Data/ROC/CombinedResults/Final_Interactions_list_47_precision.csv';
+%fn = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis/Data/ROC/CombinedResults/Final_Interactions_list_47_precision.csv';
+fn = '/Users/Mercy/Academics/Foster/NickCodeData/Old runs/GregPCP_20160517/Data/ROC/CombinedResults/Final_Interactions_list_70_precision.csv';
 dataNew.data = zeros(20000,9);
 dataNew.text = cell(20000,3);
 j = 0;
@@ -27,12 +28,12 @@ while 1
   if(~ischar(t)),break,end
   j = j+1;
   t1 = strsplit(t, ',');
-  dataNew.data(j,1) = str2num(t1{11}); % proteins in corum?
-  dataNew.data(j,2) = str2num(t1{12}); % interaction in corum?
+  dataNew.data(j,1) = str2num(t1{10}); % proteins in corum?
+  dataNew.data(j,2) = str2num(t1{11}); % interaction in corum?
   for ii=1:6
     dataNew.data(j,2+ii) = ismember(num2str(ii),t1{6}); % interaction in corum?
   end
-  dataNew.data(j,9) = str2num(t1{14});
+  dataNew.data(j,9) = str2num(t1{13});
   dataNew.text{j,1} = t1{1};
   dataNew.text{j,2} = t1{2};
   dataNew.text{j,3} = t1{3};
@@ -40,8 +41,8 @@ end
 dataNew.data = dataNew.data(1:j,:);
 dataNew.text = dataNew.text(1:j,:);
 % Load in Old interactions
-%fn = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Combined results/Final_Interactions_list_70_precision.csv';
-fn = '/Users/Mercy/Downloads/higer precision tissue data/Combined results/Final_Interactions_list_80_precision.csv';
+fn = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/Combined results/Final_Interactions_list_70_precision.csv';
+%fn = '/Users/Mercy/Downloads/higer precision tissue data/Combined results/Final_Interactions_list_80_precision.csv';
 dataOld.data = zeros(20000,8);
 dataOld.text = cell(20000,3);
 j = 0;
@@ -211,7 +212,7 @@ pause(.001)
 
 if spl
   set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-  graphdir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Figures/Test/';
+  graphdir = '/Users/Mercy/Desktop/';
   saveas(gcf,[graphdir 'ROC_fig2'],'jpg')
 end
 

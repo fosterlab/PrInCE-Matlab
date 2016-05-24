@@ -962,41 +962,44 @@ disp('--> G.A. is UNAFFECTED by larger complex sizes.')
 % O94967 - P50542  ?>  both found, but not interacting
 
 rawdata = cell(2,1);
-txt_val = cell(2,1);
 for ii = 1:2
-  [rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
+  data = importdata(user.MQfiles{ii});
   
   % Remove first column as the replicate
-  replicate = rawdata{ii}(:,1);
-  rawdata{ii} = rawdata{ii}(:,2:end);
-  
-  
-  
-  %   I1a = find(ismember(txt_val{ii}(:,1),'P46940')) - 1;
-  %   I1b = find(ismember(txt_val{ii}(:,1),'P60953')) - 1;
-  %   I2a = find(ismember(txt_val{ii}(:,1),'Q13043')) - 1;
-  %   I2b = find(ismember(txt_val{ii}(:,1),'O00429')) - 1;
-  %   I3a = find(ismember(txt_val{ii}(:,1),'O94967')) - 1;
-  %   I3b = find(ismember(txt_val{ii}(:,1),'P50542')) - 1;
-  I1a = strmatch('P46940', txt_val{ii}(:,1)) - 1;
-  I1b = strmatch('P60953', txt_val{ii}(:,1)) - 1;
-  I2a = strmatch('Q13043', txt_val{ii}(:,1)) - 1;
-  I2b = strmatch('O00429', txt_val{ii}(:,1)) - 1;
-  I3a = strmatch('O94967', txt_val{ii}(:,1)) - 1;
-  I3b = strmatch('P50542', txt_val{ii}(:,1)) - 1;
+  replicate = data.data(:,1);
+  rawdata{ii} = data.data(:,2:end);
+    
+  I1a = strmatch('P46940', data.textdata(:,1)) - 1;
+  I1b = strmatch('P60953', data.textdata(:,1)) - 1;
+  I2a = strmatch('Q13043', data.textdata(:,1)) - 1;
+  I2b = strmatch('O00429', data.textdata(:,1)) - 1;
+  I3a = strmatch('O94967', data.textdata(:,1)) - 1;
+  I3b = strmatch('P50542', data.textdata(:,1)) - 1;
   
   figure
   subplot(2,2,1),hold on
   plot(rawdata{ii}(I1a,:)','g')
   plot(rawdata{ii}(I1b,:)','r')
+  ylim([0 12])
+  xlabel('fraction')
+  title(['IQGAP1 - cdc42, ' user.silacratios{ii}])
   subplot(2,2,2),hold on
   plot(rawdata{ii}(I2a,:)','g')
   plot(rawdata{ii}(I2b,:)','r')
+  ylim([0 12])
+  xlabel('fraction')
+  title(['STK4/MST1 - DLP1, ' user.silacratios{ii}])
   subplot(2,2,3),hold on
   plot(rawdata{ii}(I3a,:)','g')
   plot(rawdata{ii}(I3b,:)','r')
-  
+  ylim([0 12])
+  xlabel('fraction')
+  title(['WD(l)rp47 - PTS1r, ' user.silacratios{ii}])
+
 end
+
+% RESULTS:
+% IQGAP1 - cdc42: 9373/13331, 58% precision
 
 
 
@@ -1214,4 +1217,224 @@ scatter(x2,y2,30,'b','filled')
 set(gca,'xtick',[14 28 38])
 grid on
 saveas(gcf,'fig2.png')
+
+
+
+
+%% Compare CORUM files
+% How does my binary corum file compare to Nick's (Corum_correctly_formated_Uniprot_IDs.csv)?
+
+fn1 = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis/Data/Corum_pairwise.csv';
+fn2 = '/Users/Mercy/Academics/Foster/NickCodeData/Old runs/GregPCP_20160517/Data/Corum_correctly_formated_Uniprot_IDs.csv';
+
+data1 = importdata(fn1);
+for ii = 1:length(data1)
+  t = strsplit(data1{ii}, ',');
+  t = sort(t);
+  data1{ii} = [t{1} '_' t{2}];
+end
+
+data2 = importdata(fn2);
+for ii = 1:length(data2)
+  t = strsplit(data2{ii}, ',');
+  t = sort(t);
+  data2{ii} = [t{1} '_' t{2}];
+end
+
+
+
+data1 = unique(data1);
+data2 = unique(data2);
+
+nnew = length(data1);
+nold = length(data2);
+overlap = length(intersect(data1,data2));
+
+figure,
+myVenn2([nnew nold],overlap)
+
+
+
+
+%% What happened?? I broke the ROC script
+
+tmp = cell(size(Protein.MajorIDs));
+for ii = 1:size(tmp,1)
+  for jj = 1:size(tmp,2)
+    if isempty(Protein.MajorIDs{ii,jj})
+      tmp{ii,jj} = 'fake';
+    else
+      tmp{ii,jj} = Protein.MajorIDs{ii,jj}{1};
+    end
+  end
+end
+
+% Test the TP_Matrix
+[ia, ib] = find(TP_Matrix==1);
+for iter = 1:100
+I = randsample(1:length(ia),1);
+  protA = Protein.Isoform{ia(I)};
+  protB = Protein.Isoform{ib(I)};
+  
+  % is protA_protB or protB_protA in Corum_Dataset?
+  Ic = strfind(Corum_Dataset, [protA '-' protB]);
+  Id1 = find(~cellfun('isempty', Ic));
+  Ic = strfind(Corum_Dataset, [protB '-' protA]);
+  Id2 = find(~cellfun('isempty', Ic));
+  if ~isempty(Id1) || ~isempty(Id2)
+    s = ['iter' num2str(iter) ', ' [protA '-' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ') FOUND in Corum'];
+    disp(s)
+  end
+
+  % if not, are any combinations of the protein group members in Corum_Dataset?
+  IgA = strfind(tmp,protA);
+  IgA2 = find(~cellfun('isempty', IgA));
+  [IgA2,~] = ind2sub(size(tmp),IgA2);
+  IgB = strfind(tmp,protB);
+  IgB2 = find(~cellfun('isempty', IgB));
+  [IgB2,~] = ind2sub(size(tmp),IgB2);
+  incor_dataset = zeros(10,10);
+  incor_protnames = zeros(10,10);
+  for ii = 1:10
+    for jj = 1:10
+      protAp = tmp{IgA2(1),ii};
+      protBp = tmp{IgB2(1),jj};
+      if isequal(protAp,'fake') || isequal(protBp,'fake'); continue;end
+      
+      % is protAp_protBp or protBp_protAp in Corum_Dataset?
+      Ic = strfind(Corum_Dataset, [protAp '-' protBp]);
+      Id1 = find(~cellfun('isempty', Ic));
+      Ic = strfind(Corum_Dataset, [protBp '-' protAp]);
+      Id2 = find(~cellfun('isempty', Ic));
+      incor_dataset(ii,jj) = ~isempty(Id1) || ~isempty(Id2);
+      
+      % is protAp_protBp or protBp_protAp in Corum_Protein_names?
+      Ic = strfind(Corum_Protein_names, protAp);
+      [Id1,x1] = find(~cellfun('isempty', Ic));
+      Ic = strfind(Corum_Protein_names, protBp);
+      [Id2,x2] = find(~cellfun('isempty', Ic));
+      incor_protnames(ii,jj) = ~isempty(intersect(Id1,Id2));
+    end
+  end
+  if sum(incor_dataset(:))==0 && sum(incor_protnames(:))==0
+    s = ['NOT in Corum_Dataset OR Corum_Protein_names: iter' num2str(iter) ', ' [protA '_' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ')'];
+    disp(s)
+  elseif sum(incor_dataset(:))==1 && sum(incor_protnames(:))==0
+    s = ['FOUND in Corum_Dataset but NOT in Corum_Protein_names: iter' num2str(iter) ', ' [protA '_' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ')'];
+    disp(s)
+  elseif sum(incor_dataset(:))==0 && sum(incor_protnames(:))==1
+    s = ['NOT in Corum_Dataset but FOUND in Corum_Protein_names: iter' num2str(iter) ', ' [protA '_' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ')'];
+    disp(s)
+  elseif sum(incor_dataset(:))==1 && sum(incor_protnames(:))==1
+    s = ['FOUND in Corum_Dataset AND in Corum_Protein_names: iter' num2str(iter) ', ' [protA '_' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ')'];
+    disp(s)
+  end
+  
+end
+
+
+
+%% What happened?? I broke the ROC script
+
+tmp = cell(size(Protein.MajorIDs));
+for ii = 1:size(tmp,1)
+  for jj = 1:size(tmp,2)
+    if isempty(Protein.MajorIDs{ii,jj})
+      tmp{ii,jj} = 'fake';
+    else
+      tmp{ii,jj} = Protein.MajorIDs{ii,jj}{1};
+    end
+  end
+end
+
+% Test the TP_Matrix
+[ia, ib] = find(TP_Matrix==1);
+for iter = 1:100
+I = randsample(1:length(ia),1);
+  protA = Protein.Isoform{ia(I)};
+  protB = Protein.Isoform{ib(I)};
+  
+  % is protA_protB or protB_protA in Corum_Dataset?
+  Ic = strfind(Corum_Dataset, [protA '-' protB]);
+  Id1 = find(~cellfun('isempty', Ic));
+  Ic = strfind(Corum_Dataset, [protB '-' protA]);
+  Id2 = find(~cellfun('isempty', Ic));
+  if ~isempty(Id1) || ~isempty(Id2)
+    s = ['iter' num2str(iter) ', ' [protA '-' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ') FOUND in Corum'];
+    disp(s)
+  end
+
+  % if not, are any combinations of the protein group members in Corum_Dataset?
+  IgA = strfind(tmp,protA);
+  IgA2 = find(~cellfun('isempty', IgA));
+  [IgA2,~] = ind2sub(size(tmp),IgA2);
+  IgB = strfind(tmp,protB);
+  IgB2 = find(~cellfun('isempty', IgB));
+  [IgB2,~] = ind2sub(size(tmp),IgB2);
+  incor_dataset = zeros(10,10);
+  incor_protnames = zeros(10,10);
+  for ii = 1:10
+    for jj = 1:10
+      protAp = tmp{IgA2(1),ii};
+      protBp = tmp{IgB2(1),jj};
+      if isequal(protAp,'fake') || isequal(protBp,'fake'); continue;end
+      
+      % is protAp_protBp or protBp_protAp in Corum_Dataset?
+      Ic = strfind(Corum_Dataset, [protAp '-' protBp]);
+      Id1 = find(~cellfun('isempty', Ic));
+      Ic = strfind(Corum_Dataset, [protBp '-' protAp]);
+      Id2 = find(~cellfun('isempty', Ic));
+      incor_dataset(ii,jj) = ~isempty(Id1) || ~isempty(Id2);
+      
+      % is protAp_protBp or protBp_protAp in Corum_Protein_names?
+      Ic = strfind(Corum_Protein_names, protAp);
+      [Id1,x1] = find(~cellfun('isempty', Ic));
+      Ic = strfind(Corum_Protein_names, protBp);
+      [Id2,x2] = find(~cellfun('isempty', Ic));
+      incor_protnames(ii,jj) = ~isempty(intersect(Id1,Id2));
+    end
+  end
+  if sum(incor_dataset(:))==0 && sum(incor_protnames(:))==0
+    s = ['NOT in Corum_Dataset OR Corum_Protein_names: iter' num2str(iter) ', ' [protA '_' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ')'];
+    disp(s)
+  elseif sum(incor_dataset(:))==1 && sum(incor_protnames(:))==0
+    s = ['FOUND in Corum_Dataset but NOT in Corum_Protein_names: iter' num2str(iter) ', ' [protA '_' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ')'];
+    disp(s)
+  elseif sum(incor_dataset(:))==0 && sum(incor_protnames(:))==1
+    s = ['NOT in Corum_Dataset but FOUND in Corum_Protein_names: iter' num2str(iter) ', ' [protA '_' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ')'];
+    disp(s)
+  elseif sum(incor_dataset(:))==1 && sum(incor_protnames(:))==1
+    s = ['FOUND in Corum_Dataset AND in Corum_Protein_names: iter' num2str(iter) ', ' [protA '_' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ')'];
+    disp(s)
+  end
+  
+end
+
+
+
+
+%% What happened? I broke the ROC script 2...
+
+% Clue 1: Score still does better any any individual feature
+figure
+subplot(3,3,1:3)
+plot(recRange,precRange)
+fn = fieldnames(Dist);
+for ii = 1:length(fn)
+  x = linspace(0,max(Dist.(fn{ii})(:)),201);
+  pp = nan(length(x));
+  for xi = 1:length(x)
+    TP = sum(Dist.(fn{ii})(:)<x(xi) & TP_Matrix(:) & possibleInts(:));
+    FP = sum(Dist.(fn{ii})(:)<x(xi) & FP_Matrix(:) & possibleInts(:));
+    pp(xi) = TP / (TP + FP);
+  end
+  subplot(3,3,ii+3)
+  plot(x,pp)
+  title(fn{ii})
+  pause(.01)
+end
+
+% Clue 2: "Estimated" and "per replicate" PR curves are totally different
+
+
 

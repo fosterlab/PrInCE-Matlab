@@ -16,18 +16,21 @@ x = 1:user.Nfraction;
 %% Make fake Chromatograms (chrom) to use as templates
 
 chrom = zeros(Ninteractions,user.Nfraction);
+Ngauss_fake = poissrnd(1,Ninteractions,1) + 1;
+Ngauss_fake(Ngauss_fake>5) = 5;
 for ii = 1:Ninteractions
   
   % chromatogram, shared between interactors and replicates
-  Ngauss = ceil(rand*3);
-  C = rand(Ngauss,1)*(user.Nfraction - 10) + 5; % [5 50]
-  H = rand(Ngauss,1)*15 + 3; % [3 18]
-  W = rand(Ngauss,1)*6 + 2; % [2 8]
-  for jj = 1:Ngauss
+  C = rand(Ngauss_fake(ii),1)*(user.Nfraction - 10) + 5; % [5 50]
+  H = rand(Ngauss_fake(ii),1)*15 + 3; % [3 18]
+  W = rand(Ngauss_fake(ii),1)*6 + 2; % [2 8]
+  for jj = 1:Ngauss_fake(ii)
     chrom(ii,:) = chrom(ii,:) + H(jj)*exp(-((x-C(jj))/W(jj)).^2);
   end
 end
 
+figure,
+hist(Ngauss_fake,1:7)
 
 
 %% Copy chrom into each replicate and channel
@@ -83,20 +86,20 @@ end
 
 
 %% Dirty up the chromatograms
-% 
-% for ii = 1:length(user.silacratios)
-%   for cc = 1:size(Chromatograms{ii},1)
-%     
-%     % add noise
-%     Chromatograms{ii}(cc,:) = Chromatograms{ii}(cc,:) + rand(size(Chromatograms{ii}(cc,:)))*max(Chromatograms{ii}(cc,:))*.1;
-%     
-%     % add up to 15% nans
-%     Nnan = floor(rand * user.Nfraction * 0.15);
-%     I = randsample(user.Nfraction,Nnan);
-%     Chromatograms{ii}(I) = nan;
-%     
-%   end
-% end
+
+for ii = 1:length(user.silacratios)
+  for cc = 1:size(Chromatograms{ii},1)
+    
+    % add noise
+    Chromatograms{ii}(cc,:) = Chromatograms{ii}(cc,:) + rand(size(Chromatograms{ii}(cc,:)))*max(Chromatograms{ii}(cc,:))*.1;
+    
+    % add up to 15% nans
+    Nnan = floor(rand * user.Nfraction * 0.15);
+    I = randsample(user.Nfraction,Nnan);
+    Chromatograms{ii}(I) = nan;
+    
+  end
+end
 
 
 
@@ -133,11 +136,11 @@ end
 %% Quick visualization
 
 figure
-subplot(2,1,1)
-imagesc(Chromatograms{1})
-subplot(2,1,2)
-imagesc(Chromatograms{2})
-pause(.001)
+for ii = 1:length(Chromatograms)
+  subplot(length(Chromatograms),1,ii)
+  imagesc(Chromatograms{ii})
+  pause(.001)
+end
 
 
 

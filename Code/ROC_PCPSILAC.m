@@ -79,8 +79,8 @@ else
       ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
     end
     
-    GaussIn = cell(size(dd));
     dd = dir([maindir 'Output/tmp/*Combined_OutputGaus*rep*csv']);
+    GaussIn = cell(size(dd));
     for di = 1:length(dd)
       GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
     end
@@ -216,12 +216,12 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   
   
   
-  %% 2. Pre-process gaussians, chromatograms. Get Dist
+  %% 2. Pre-process, make Protein.
   % - In chromatograms, replaces nans with 0.05
   % - Remove gaussians and chromatograms with C<5
   % - Make normalized gaussians, i.e. set height to 1
   tic
-  fprintf('        2. Clean gaussians and chromatograms, calculate Dist.')
+  fprintf('        2. Pre-process, make Protein.')
   
   % Pre-process data to remove Gaussian above fraction five
   % Create array to use for comparsions
@@ -269,82 +269,10 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Ngauss = sum(strcmp(X,X'),1)';
   clear X unique_names
   
-  % Co-Apex score = norm(C) / sqrt(length(C))
-  %   I = find(abs(diff(Ngauss))>0 | Ngauss(2:end)==1);
-  %   I = [1; I+1];
-  %   I0 = 0;
-  %   CoApex = zeros(size(Ngauss));
-  %   for ii = 1:length(I)
-  %     I2 = I0+1 : I0 + Ngauss(I(ii));
-  %     CoApex(I2) = norm(C(I2)) / sqrt(length(I2));
-  %     I0 = max(I2);
-  %   end
-  
-  % Co-Apex score = norm(C) / sqrt(length(C))
-  CoApex = zeros(size(Ngauss));
-  for ii = 2:size(Gaus_import,1)
-    protName = Gaus_import{ii,1};
-    I = find(ismember(Gaus_import(:,1),protName)) - 1;
-    CoApex(ii-1) = norm(C(I)) / sqrt(length(I));
-  end
-  
-  % Area under the chromatogram
-  auc = sum(Chromatograms,2);
-  
-  % Reduce variables from gaussian-level to protein-level
-  %   Ireduce = find(abs(diff(Ngauss))>0 | Ngauss(2:end)==1);
-  %   Ireduce = [1; Ireduce+1];
-  %   Chromatograms = Chromatograms(Ireduce,:);
-  %   C = C(Ireduce,:);
-  %   Ngauss = Ngauss(Ireduce);
-  %   CoApex = CoApex(Ireduce);
-  %   auc = auc(Ireduce,:);
-  %   Gaus_import_reshaped(2:end,:) = Gaus_import_reshaped(Ireduce+1,:);
-  
-  % Calculate distance matrices
-  clear Dist
-  Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));
-  Dist.Center = squareform(pdist(C,'euclidean'));
-  Dist.R2 = 1 - corr(Chromatograms').^2; % one minus R squared
-  Dist.Ngauss = squareform(pdist(Ngauss));
-  Dist.CoApex = squareform(pdist(CoApex));
-  Dist.AUC = squareform(pdist(auc));
-  [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
-  Dist.R2raw = 1 - R.^2;
-  Dist.Rpraw = p;
-  
-  % GRAVEYARD OF RELEGATED DIST MATRICES
-  %   Dist.RawOverlap = nan(size(Chromatograms_raw,1),size(Chromatograms_raw,1));
-  %   for ii = 1:size(Chromatograms_raw,1)
-  %     for jj = 1:size(Chromatograms_raw,1)
-  %       Dist.RawOverlap(ii,jj) = sum(~isnan(Chromatograms_raw(ii,:)) & ~isnan(Chromatograms_raw(jj,:)));
-  %     end
-  %   end
-  %   Dist.R2raw = corr(Chromatograms_raw','rows','pairwise').^2; % one minus R squared
-  %   Dist.R2raw2 = Dist.R2raw.*Noverlap;
-  %   Dist.Height = squareform(pdist(H,'euclidean'));
-  %   Dist.Width = squareform(pdist(W,'euclidean'));
-  %   Dist.Gaussian_fits = squareform(pdist(gaussian_fit,'euclidean'));
-  %   Dist.dtw = ones(size(Dist.R2))*100;
-  %    for ii = 1:size(Chromatograms,1)
-  %      if mod(ii,100)==0;disp(num2str(ii));end
-  %      for jj = 1:size(Chromatograms,1)
-  %        if Dist.R2(ii,jj)<0.4
-  %          Dist.dtw(ii,jj) = dtw(Chromatograms(ii,:)',Chromatograms(jj,:)');
-  %          %Dist.dtw(ii,jj) = dtw_old(Chromatograms(ii,:),Chromatograms(jj,:));
-  %        end
-  %      end
-  %    end
-  
-  tt = toc;
-  fprintf('  ...  %.2f seconds\n',tt)
   
   
-  
-  %% 3. Make Protein structure
+  % Make Protein structure
   % This summarizes the proteins in our sample
-  tic
-  fprintf('        3. Make Protein structure.')
   
   clear Protein
   
@@ -437,6 +365,68 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   end
   
   dimension_Protein_MajorID_NoIsoforms=size(Protein.MajorID_NoIsoforms);
+  
+  tt = toc;
+  fprintf('  ...  %.2f seconds\n',tt)
+  
+  
+  
+  %% 3. Reduce to protein level, make Dist
+  tic
+  fprintf('        3. Reduce to protein level, make Dist.')
+  
+  
+  % Co-Apex score = norm(C) / sqrt(length(C))
+  %   I = find(abs(diff(Ngauss))>0 | Ngauss(2:end)==1);
+  %   I = [1; I+1];
+  %   I0 = 0;
+  %   CoApex = zeros(size(Ngauss));
+  %   for ii = 1:length(I)
+  %     I2 = I0+1 : I0 + Ngauss(I(ii));
+  %     CoApex(I2) = norm(C(I2)) / sqrt(length(I2));
+  %     I0 = max(I2);
+  %   end
+  
+  % Co-Apex score = norm(C) / sqrt(length(C))
+  CoApex = zeros(size(Ngauss));
+  for ii = 2:size(Gaus_import,1)
+    protName = Gaus_import{ii,1};
+    I = find(ismember(Gaus_import(:,1),protName)) - 1;
+    CoApex(ii-1) = norm(C(I)) / sqrt(length(I));
+  end
+  
+  % Area under the chromatogram
+  auc = sum(Chromatograms,2);
+  
+  
+  % Reduce variables from gaussian-level to protein-level 
+  if 1
+    [~,Ireduce] = unique(Protein.Isoform);
+    Chromatograms = Chromatograms(Ireduce,:);
+    Chromatograms_raw = Chromatograms_raw(Ireduce,:);
+    C = C(Ireduce,:);
+    Ngauss = Ngauss(Ireduce);
+    CoApex = CoApex(Ireduce);
+    auc = auc(Ireduce,:);
+    fn = fieldnames(Protein);
+    for ii = 1:length(fn)
+      Protein.(fn{ii}) = Protein.(fn{ii})(Ireduce,:);
+    end
+    Dimensions_Gaus_import = length(Ireduce);
+  end
+  
+  
+  % Calculate distance matrices
+  clear Dist
+  Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));
+  Dist.Center = squareform(pdist(C,'euclidean'));
+  Dist.R2 = 1 - corr(Chromatograms').^2; % one minus R squared
+  Dist.Ngauss = squareform(pdist(Ngauss));
+  Dist.CoApex = squareform(pdist(CoApex));
+  Dist.AUC = squareform(pdist(auc));
+  %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+  %Dist.R2raw = 1 - R.^2;
+  %Dist.Rpraw = p;
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
@@ -566,7 +556,7 @@ clear Int_matrix
 %% 6. Find the score thresholds
 
 tic
-fprintf('    6. Find the score cutoff across all replicates')
+fprintf('    6. Find the score cutoff across all replicates\n')
 
 bad_desiredPrecision = 1;
 
@@ -585,15 +575,17 @@ while bad_desiredPrecision
   ff = rand(1,15);
   kk = 0;
   for rr = 1:(number_of_replicates*number_of_channels)
+    fprintf('        Replicate %d',rr)
     sf = [maindir '/Output/tmp/' 'score_rep' num2str(rr) '.mat'];
     load(sf)
+    
+    % Accumulate class, protein names, replicate, and score
     a = find(triu(possibleInts));
     [prot1i, prot2i] = ind2sub(size(possibleInts),a);
     I = kk+1 : kk+length(a);
     allScores(I,1) = TP_Matrix(a);           % Class label
     allScores(I,4) = rr;         % Replicate
-    allScores(I,5) = median(scoreMatrix(a),2);  % Median score (equivalent to ensemble voting)
-    
+    allScores(I,5) = scoreMatrix(a);  % Score
     % For space reasons, let's try converting Protein1, Protein2 into numeric
     kk0 = kk;
     for ii = 1:length(prot1i)
@@ -604,8 +596,7 @@ while bad_desiredPrecision
       allScores(kk,3) = sum(tmp .* ff(1:length(tmp)));
     end
     
-    % Check the name-to-numeric conversion
-    % Did we lose any unique names in the conversion?
+    % Check that the name-to-numeric conversion didn't lose anything
     N1a = length(unique(Protein.Isoform(prot1i)));
     N2a = length(unique(Protein.Isoform(prot2i)));
     N1b = length(unique(allScores(kk0+1:kk,2)));
@@ -635,6 +626,10 @@ while bad_desiredPrecision
       calcrec_rep(rr,di) = tmp.calcrec;
       ninteract_rep(rr,di) = tmp.calcrec * sum(class_rep==1);
     end
+    
+    tt = toc;
+    nn = sum(scoreMatrix>xcutoff_rep(rr)  & inverse_self(:));
+    fprintf(': %d interactions  ...  %.2f seconds\n',round(nn/2),tt)
     
     clear scoreMatrix inverse_self Protein possibleInts TP_Matrix scorestmp Dist
   end
@@ -718,7 +713,7 @@ while bad_desiredPrecision
     fprintf('\n\n -------------------------- WARNING --------------------------')
     fprintf('\n Desired precision %6.4f is not achievable with current settings.', desiredPrecision(bad_desiredPrecision1))
     fprintf('\n Lowering it to %6.4f and recalculating score threshold... \n\n', max_achievable_precision)
-    desiredPrecision(bad_desiredPrecision1) = round(max_achievable_precision*100)/100;
+    desiredPrecision(bad_desiredPrecision1) = floor(max_achievable_precision*100)/100;
     notei = length(notes);
     notes{notei+1} = ['Desired precision ' num2str(desiredPrecision(bad_desiredPrecision1)) ' was not achievable. It was lowered to ' num2str(max_achievable_precision) '.'];
   end
@@ -765,8 +760,8 @@ for di = 1:length(desiredPrecision)
   interaction_count = 0; % interaction counter, used in 7c
   
   binary_interaction_list = cell(2*10^6,15);
-  Neg_binary_interaction_list = zeros(10^7,3);
-  
+  %Neg_binary_interaction_list = zeros(10^7,3);
+  FN = zeros(number_of_replicates*number_of_channels,1);
   for replicate_counter = 1:number_of_replicates*number_of_channels
     
     % 7a. Calculate recall and precision, negative interactions
@@ -784,43 +779,53 @@ for di = 1:length(desiredPrecision)
     pos_repspecific = reshape(pos_repspecific,size(inverse_self,1),size(inverse_self,1));
     Final_interactions = (pos_global | pos_repspecific) & inverse_self;
     
-    % Calculate TP, FP, TN, FN
-    %TP = sum(Final_interactions(:) & TP_Matrix(:) & possibleInts(:));
-    %FP = sum(Final_interactions(:) & ~TP_Matrix(:) & possibleInts(:));
-    %TN = sum(~Final_interactions(:) & ~TP_Matrix(:) & possibleInts(:));
-    %FN = sum(~Final_interactions(:) & TP_Matrix(:) & possibleInts(:));
-    
-    
-    % Find "binary" NON interactions, both proteins in corum
     scoreMatrix = nanmedian(scoreMatrix,2);
     scoreMatrix = reshape(scoreMatrix,size(Final_interactions,1),size(Final_interactions,1));
+    
+    % Alternative to finding NON interactions:
+    %   just count them!
     Protein_elution = strcat(num2str(Protein.Center),'*',Protein.Isoform);
     U1 = triu(~((pos_global | pos_repspecific) & inverse_self) & possibleInts); 
     clear pos_global pos_repspecific
-    %U1 = triu(~Final_interactions & TP_Matrix); % Take half of matrix therefor unique interactions
     [ia,ib] = find(U1 == 1); % protein1, protein2 indices in false negatives
-    for ri=1:length(ia)
-      ri1 = ia(ri);
-      ri2 = ib(ri);
-      Int1=Protein_elution(ri1);
-      Int2=Protein_elution(ri2);
-      if Protein.Center(ri1)==Protein.Center(ri2) && ri1==ri2 % make sure it's not a self interaction
-      else
-        fn_count = fn_count+1;
-        tmp = double(Protein.Isoform{ri1});
-        tmpname1 = sum(tmp .* ff(1:length(tmp)));
-        tmp = double(Protein.Isoform{ri2});
-        tmpname2 = sum(tmp .* ff(1:length(tmp)));
-        Neg_binary_interaction_list(fn_count,1) = tmpname1; % Protein_interactions1
-        Neg_binary_interaction_list(fn_count,2) = tmpname2; % Protein_interactions2
-        Neg_binary_interaction_list(fn_count,3) = TP_Matrix(ri1,ri2); % Interaction_in_Corum
-        %Neg_binary_interaction_list(fn_count,4) = scoreMatrix(ri1,ri2)>xcutoff_rep(replicate_counter,di); % Replicate-specific interaction
-      end
-      % sanity check
-      if ~strcmp(Int1, Int2) && Protein.Center(ri1)==Protein.Center(ri2) && ri1==ri2
-        disp('uh oh!')
-      end
+    [~,~,x2] = unique(Protein.Isoform);
+    tmp = [x2(ia) x2(ib)];
+    [~,I] = unique(tmp,'rows');
+    ia = ia(I);
+    ib = ib(I);
+    clear x2 tmp
+    for ii = 1:length(ia)
+      FN(replicate_counter) = FN(replicate_counter) + TP_Matrix(ia(ii),ib(ii));
     end
+    
+%     % Find "binary" NON interactions, both proteins in corum
+%     Protein_elution = strcat(num2str(Protein.Center),'*',Protein.Isoform);
+%     U1 = triu(~((pos_global | pos_repspecific) & inverse_self) & possibleInts); 
+%     clear pos_global pos_repspecific
+%     %U1 = triu(~Final_interactions & TP_Matrix); % Take half of matrix therefor unique interactions
+%     [ia,ib] = find(U1 == 1); % protein1, protein2 indices in false negatives
+%     for ri=1:length(ia)
+%       ri1 = ia(ri);
+%       ri2 = ib(ri);
+%       Int1=Protein_elution(ri1);
+%       Int2=Protein_elution(ri2);
+%       if Protein.Center(ri1)==Protein.Center(ri2) && ri1==ri2 % make sure it's not a self interaction
+%       else
+%         fn_count = fn_count+1;
+%         tmp = double(Protein.Isoform{ri1});
+%         tmpname1 = sum(tmp .* ff(1:length(tmp)));
+%         tmp = double(Protein.Isoform{ri2});
+%         tmpname2 = sum(tmp .* ff(1:length(tmp)));
+%         Neg_binary_interaction_list(fn_count,1) = tmpname1; % Protein_interactions1
+%         Neg_binary_interaction_list(fn_count,2) = tmpname2; % Protein_interactions2
+%         Neg_binary_interaction_list(fn_count,3) = TP_Matrix(ri1,ri2); % Interaction_in_Corum
+%         %Neg_binary_interaction_list(fn_count,4) = scoreMatrix(ri1,ri2)>xcutoff_rep(replicate_counter,di); % Replicate-specific interaction
+%       end
+%       % sanity check
+%       if ~strcmp(Int1, Int2) && Protein.Center(ri1)==Protein.Center(ri2) && ri1==ri2
+%         disp('uh oh!')
+%       end
+%     end
     
     
     % Find "binary" interactions
@@ -857,11 +862,11 @@ for di = 1:length(desiredPrecision)
   end
   
   binary_interaction_list = binary_interaction_list(1:interaction_count,:);
-  Neg_binary_interaction_list = Neg_binary_interaction_list(1:fn_count,:);
+  %Neg_binary_interaction_list = Neg_binary_interaction_list(1:fn_count,:);
   
   % Neg_binary_interaction_list is a list of Gaussians. Reduce it to a list of proteins.
-  [~,x1] = unique(Neg_binary_interaction_list(:,1:2),'rows');
-  Neg_binary_interaction_list2 = Neg_binary_interaction_list(x1,:);
+  %[~,x1] = unique(Neg_binary_interaction_list(:,1:2),'rows');
+  %Neg_binary_interaction_list2 = Neg_binary_interaction_list(x1,:);
   
   clear Dist TP_Matrix scoreMatrix possibleInts inverse_self
   
@@ -1004,7 +1009,7 @@ for di = 1:length(desiredPrecision)
   
   True_proteinInCorum = interaction_final.proteinInCorum > 0;
   True_interactionInCorum = interaction_final.interactionInCorum > 0;
-  all_positives = sum(interaction_final.proteinInCorum & interaction_final.interactionInCorum) + sum(Neg_binary_interaction_list2(:,3));
+  all_positives = sum(interaction_final.proteinInCorum & interaction_final.interactionInCorum) + sum(FN);
   
   final_FP = nan(2,1);
   final_TP = nan(2,1);
@@ -1244,5 +1249,3 @@ end
 
 
 diary('off')
-
-
