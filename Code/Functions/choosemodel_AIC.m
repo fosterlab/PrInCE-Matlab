@@ -119,9 +119,9 @@ AICc = ones(5,1) * 10^9;
 BIC = ones(5,1) * 10^9;
 for ii=1:Ngaussmax
   k = length(coeffvalues(curveFit{ii}));
-  AIC(ii) = N*log(msse(ii)/N) + 2*k + 2*k;
-  AICc(ii) = N*log(msse(ii)/N) + 2*k + 2*k*(k+1)/(N-k-1) + 2*k;
-  BIC(ii) = N*log(msse(ii)/N) + k*log(N) + 2*k;
+  AIC(ii) = N*log(msse(ii)/N) + 2*k;
+  AICc(ii) = N*log(msse(ii)/N) + 2*k + 2*k*(k+1)/(N-k-1);
+  BIC(ii) = N*log(msse(ii)/N) + k*log(N);
 end
 
 % Throw out any models where the number of non-imputed data points, i.e. the real data, is less than
@@ -150,6 +150,28 @@ model.curveFit = curveFit{Ngauss};
 model.AIC = AIC;
 model.AICc = AICc;
 model.BIC = BIC;
+
+% Throw out Gaussians whose height is less than 10% of the max?
+if 0
+  I = find(model.coeffs(1:3:end) < max(cleanchrom)*0.2) * 3 - 2;
+  I2 = zeros(length(I)*3,1);
+  for ii = 1:length(I)
+    I2((ii-1)*3 + 1 : ii*3) = I(ii) + [0 1 2];
+  end
+  model.coeffs(I2) = [];
+  model.CIs(:,I2) = [];
+  Ngauss = Ngauss - length(I);
+  xfit = x;
+  yfit = zeros(size(xfit));
+  for kk = 1:Ngauss
+    H = model.coeffs(1 + (kk-1)*3);
+    C = model.coeffs(2 + (kk-1)*3);
+    W = model.coeffs(3 + (kk-1)*3);
+    yfit = yfit + H*exp(-((xfit-C)/W).^2);
+  end
+  tmp = corrcoef(yfit,cleanchrom);
+  model.adjrsquare = tmp(1,2).^2;
+end
 
 model.Ngauss = Ngauss;
 if model.Ngauss>0
