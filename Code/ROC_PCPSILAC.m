@@ -61,10 +61,10 @@ if user.nickflag==1
   HvsL_filename_gaus_rep1=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep1.csv'];
   HvsL_filename_gaus_rep2=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep2.csv'];
   HvsL_filename_gaus_rep3=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep3.csv'];
-  ChromatogramIn={MvsL_filename_Raw_rep1,MvsL_filename_Raw_rep2,MvsL_filename_Raw_rep3,...
-    HvsL_filename_Raw_rep1,HvsL_filename_Raw_rep2,HvsL_filename_Raw_rep3};
-  GaussIn={MvsL_filename_gaus_rep1,MvsL_filename_gaus_rep2,MvsL_filename_gaus_rep3,...
-    HvsL_filename_gaus_rep1,HvsL_filename_gaus_rep2,HvsL_filename_gaus_rep3};
+  ChromatogramIn={HvsL_filename_Raw_rep1,HvsL_filename_Raw_rep2,HvsL_filename_Raw_rep3,...
+    MvsL_filename_Raw_rep1,MvsL_filename_Raw_rep2,MvsL_filename_Raw_rep3};
+  GaussIn={HvsL_filename_gaus_rep1,HvsL_filename_gaus_rep2,HvsL_filename_gaus_rep3,...
+    MvsL_filename_gaus_rep1,MvsL_filename_gaus_rep2,MvsL_filename_gaus_rep3};
   
 else
   dd = dir([maindir '/Output/tmp/Adjusted_*_Combined_OutputGaus.csv']);
@@ -79,7 +79,7 @@ else
       ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
     end
     
-    dd = dir([maindir 'Output/tmp/*Combined_OutputGaus*rep*csv']);
+    dd = dir([maindir 'Output/tmp/*Combined_OutputGaus_rep*csv']);
     GaussIn = cell(size(dd));
     for di = 1:length(dd)
       GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
@@ -104,11 +104,11 @@ end
 number_of_replicates = length(ChromatogramIn) / number_of_channels;
 
 % Map each rep*channel to a channel
-rep2channel = zeros(length(dd),1);
-for ii = 1:length(dd)
+rep2channel = zeros(length(GaussIn),1);
+for ii = 1:length(GaussIn)
   ratioInFilename = zeros(length(user.silacratios),1);
   for jj = 1:length(user.silacratios)
-    if ~isempty(strfind(dd(ii).name,user.silacratios{jj}))
+    if ~isempty(strfind(GaussIn{ii},user.silacratios{jj}))
       ratioInFilename(jj) = 1;
     end
   end
