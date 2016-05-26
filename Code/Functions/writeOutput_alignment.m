@@ -15,6 +15,15 @@
 
 New_Fraction_numbering = -5:fraction_number+5;
 lenght_new_fraction = length(New_Fraction_numbering);
+for ci = 1:length(Experimental_channels)
+  Experimental_channel = Experimental_channels{ci};
+  for rr = 1:Nreplicates
+    Column_name = cell(lenght_new_fraction,1);
+    for column_counter=1:lenght_new_fraction
+      Column_name{column_counter}=strcat('Ratio_',Experimental_channel,'_',mat2str(New_Fraction_numbering(column_counter)));
+    end
+  end
+end
 
 
 
@@ -77,7 +86,7 @@ for ci = 1:length(Experimental_channels)
     fprintf (fid9B, [Column_header, '\n'],...
       'Protein name', 'Replicate', Column_name{:});  %Write Header
     for Roc_counter2 = 1:length(Irawdata)
-      fprintf(fid9B, '%s,', txt_val{ci}{Irawdata(Roc_counter2),1});
+      fprintf(fid9B, '%s,', txt_val{ci}{Irawdata(Roc_counter2)+1,1});
       fprintf(fid9B,'%6.4f,',rr);
       fprintf(fid9B,'%6.4f,', adjusted_raw_data{ci}(Irawdata(Roc_counter2),:));
       fprintf(fid9B,'\n');
@@ -86,7 +95,6 @@ for ci = 1:length(Experimental_channels)
     end
     fclose(fid9B);
     
-    figure,imagesc(tmp1)
   end
 end
 
