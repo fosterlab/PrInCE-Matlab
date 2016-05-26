@@ -19,39 +19,38 @@ lenght_new_fraction = length(New_Fraction_numbering);
 
 
 %%        'Adjusted_',Experimental_channel,'_Raw_data_maxquant_rep',mat2str(alignment_counter),'.csv'
-disp('        Adjusted_*vsL_Raw_data_maxquant_rep*.csv')
-
-for ci = 1:length(Experimental_channels)
-  Experimental_channel = Experimental_channels{ci};
-  for rr = 1:Nreplicates
-    Column_name = cell(lenght_new_fraction,1);
-    for column_counter=1:lenght_new_fraction
-      Column_name{column_counter}=strcat('Ratio_',Experimental_channel,'_',mat2str(New_Fraction_numbering(column_counter)));
-    end
-    
-    I = find(cleandata{1}(:,1) == rr);
-    
-    fid9_Name = [maindir '/Output/tmp/' 'Adjusted_' Experimental_channel '_Raw_data_maxquant_rep' mat2str(rr) '.csv'];
-    Column_header=repmat('%s,', 1, (lenght_new_fraction)+2);
-    
-    fid9 = fopen(fid9_Name,'at');
-    fprintf (fid9, [Column_header, '\n'],'Protein name', 'Replicate', Column_name{:});  %Write Header
-    for ri=1:length(I)
-      ii = I(ri);
-      
-      fprintf(fid9, '%s,', txt_val{ci}{ii+1});
-      fprintf(fid9,'%6.4f,', rr);
-      fprintf(fid9,'%6.4f,', adjusted_raw_data{ci}(ii,:));
-      fprintf(fid9,'\n');
-    end
-    fclose(fid9);
-    
-  end
-end
+% disp('        Adjusted_*vsL_Raw_data_maxquant_rep*.csv')
+% 
+% for ci = 1:length(Experimental_channels)
+%   Experimental_channel = Experimental_channels{ci};
+%   for rr = 1:Nreplicates
+%     Column_name = cell(lenght_new_fraction,1);
+%     for column_counter=1:lenght_new_fraction
+%       Column_name{column_counter}=strcat('Ratio_',Experimental_channel,'_',mat2str(New_Fraction_numbering(column_counter)));
+%     end
+%     
+%     I = find(cleandata{1}(:,1) == rr);
+%     
+%     fid9_Name = [maindir '/Output/tmp/' 'Adjusted_' Experimental_channel '_Raw_data_maxquant_rep' mat2str(rr) '.csv'];
+%     Column_header=repmat('%s,', 1, (lenght_new_fraction)+2);
+%     
+%     fid9 = fopen(fid9_Name,'at');
+%     fprintf (fid9, [Column_header, '\n'],'Protein name', 'Replicate', Column_name{:});  %Write Header
+%     for ri=1:length(I)
+%       ii = I(ri);
+%       
+%       fprintf(fid9, '%s,', txt_val{ci}{ii+1});
+%       fprintf(fid9,'%6.4f,', rr);
+%       fprintf(fid9,'%6.4f,', adjusted_raw_data{ci}(ii,:));
+%       fprintf(fid9,'\n');
+%     end
+%     fclose(fid9);
+%     
+%   end
+% end
 
 
 %%    'Adjusted_',Experimental_channel,'_Raw_for_ROC_analysis_rep',mat2str(alignment_counter),'.csv'
-disp('        Adjusted_*vsL_Raw_for_ROC_analysis_rep*.csv')
 
 for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
@@ -102,7 +101,6 @@ end
 
 
 %%    fid7_Name = strcat('Adjusted_Combined_OutputGaus_rep',mat2str(alignment_counter),'.csv');
-disp('        *vsLAdjusted_Combined_OutputGaus_rep*,.csv')
 
 for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
@@ -124,7 +122,6 @@ end
 
 
 %%  fid10_Name = strcat('Adjusted_',Experimental_channel,'_Combined_OutputGaus.csv');
-disp('        Adjusted_*vsL_Combined_OutputGaus,.csv')
 
 for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
@@ -133,7 +130,7 @@ for ci = 1:length(Experimental_channels)
   fid10 = fopen(fid7_Name,'at');
   fprintf (fid10,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',...
     'Protein name', 'Height', 'Center','Width','SSE','adjrsquare', 'Complex Size');  %Write Header
-    %'Guassian index number', 'Protein_number','Replicate',...
+  %'Guassian index number', 'Protein_number','Replicate',...
   
   for rr = 1:Nreplicates
     for combined_gaus_writeout = 1:size(Adjusted_Gaus_import{ci,rr}.data,1)
@@ -151,7 +148,6 @@ end
 
 
 %%  fid11_Name = strcat('Adjusted_',Experimental_channel,'_Raw_data_maxquant.csv');
-disp('        Adjusted_*vsL_Raw_data_maxquant.csv')
 
 for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
@@ -170,5 +166,4 @@ for ci = 1:length(Experimental_channels)
   end
   fclose(fid11);
 end
-
 
