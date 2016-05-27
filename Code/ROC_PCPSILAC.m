@@ -48,19 +48,19 @@ if ~exist(datadir, 'dir'); mkdir(datadir); end
 
 if user.nickflag==1
   %define Raw SILAC ratios data, This is the output from the alignment script
-  tmpdir = '/Users/Mercy/Academics/Foster/NickCodeData/4B_ROC_homologue_DB/Combined Cyto new DB/';
-  MvsL_filename_Raw_rep1=[tmpdir 'MvsL_alignment/Realignment/Adjusted_MvsL_Raw_for_ROC_analysis_rep1.csv'];
-  MvsL_filename_Raw_rep2=[tmpdir 'MvsL_alignment/Realignment/Adjusted_MvsL_Raw_for_ROC_analysis_rep2.csv'];
-  MvsL_filename_Raw_rep3=[tmpdir 'MvsL_alignment/Realignment/Adjusted_MvsL_Raw_for_ROC_analysis_rep3.csv'];
-  HvsL_filename_Raw_rep1=[tmpdir 'HvsL_alignment/Realignment/Adjusted_HvsL_Raw_for_ROC_analysis_rep1.csv'];
-  HvsL_filename_Raw_rep2=[tmpdir 'HvsL_alignment/Realignment/Adjusted_HvsL_Raw_for_ROC_analysis_rep2.csv'];
-  HvsL_filename_Raw_rep3=[tmpdir 'HvsL_alignment/Realignment/Adjusted_HvsL_Raw_for_ROC_analysis_rep3.csv'];
-  MvsL_filename_gaus_rep1=[tmpdir 'MvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep1.csv'];
-  MvsL_filename_gaus_rep2=[tmpdir 'MvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep2.csv'];
-  MvsL_filename_gaus_rep3=[tmpdir 'MvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep3.csv'];
-  HvsL_filename_gaus_rep1=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep1.csv'];
-  HvsL_filename_gaus_rep2=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep2.csv'];
-  HvsL_filename_gaus_rep3=[tmpdir 'HvsL_alignment/Realignment/Adjusted_Combined_OutputGaus_rep3.csv'];
+  tmpdir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/LegacyData/';
+  MvsL_filename_Raw_rep1=[tmpdir 'Adjusted_MvsL_Raw_for_ROC_analysis_rep1.csv'];
+  MvsL_filename_Raw_rep2=[tmpdir 'Adjusted_MvsL_Raw_for_ROC_analysis_rep2.csv'];
+  MvsL_filename_Raw_rep3=[tmpdir 'Adjusted_MvsL_Raw_for_ROC_analysis_rep3.csv'];
+  HvsL_filename_Raw_rep1=[tmpdir 'Adjusted_HvsL_Raw_for_ROC_analysis_rep1.csv'];
+  HvsL_filename_Raw_rep2=[tmpdir 'Adjusted_HvsL_Raw_for_ROC_analysis_rep2.csv'];
+  HvsL_filename_Raw_rep3=[tmpdir 'Adjusted_HvsL_Raw_for_ROC_analysis_rep3.csv'];
+  MvsL_filename_gaus_rep1=[tmpdir 'Adjusted_MvsL_Combined_OutputGaus_rep1.csv'];
+  MvsL_filename_gaus_rep2=[tmpdir 'Adjusted_MvsL_Combined_OutputGaus_rep2.csv'];
+  MvsL_filename_gaus_rep3=[tmpdir 'Adjusted_MvsL_Combined_OutputGaus_rep3.csv'];
+  HvsL_filename_gaus_rep1=[tmpdir 'Adjusted_HvsL_Combined_OutputGaus_rep1.csv'];
+  HvsL_filename_gaus_rep2=[tmpdir 'Adjusted_HvsL_Combined_OutputGaus_rep2.csv'];
+  HvsL_filename_gaus_rep3=[tmpdir 'Adjusted_HvsL_Combined_OutputGaus_rep3.csv'];
   ChromatogramIn={HvsL_filename_Raw_rep1,HvsL_filename_Raw_rep2,HvsL_filename_Raw_rep3,...
     MvsL_filename_Raw_rep1,MvsL_filename_Raw_rep2,MvsL_filename_Raw_rep3};
   GaussIn={HvsL_filename_gaus_rep1,HvsL_filename_gaus_rep2,HvsL_filename_gaus_rep3,...

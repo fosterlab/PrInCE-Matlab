@@ -81,14 +81,14 @@ if ~skipflag
   % for now, read files in from Nick's data
   % in the future read them in from my data
   if user.nickflag %nick's output
-    pw = '/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/MvsL/';
+    tmpdir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/LegacyData/';
     GaussInputFile = cell(Nchannels, Nreplicates);
     GassSumInputFile = cell(Nchannels, Nreplicates);
     for ei=1:Nchannels
       tmp = Experimental_channels{ei};
       for replicates= 1:Nreplicates
-        GaussInputFile{ei,replicates} = ['/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/' tmp '_alignment/Processed Gaussian/' tmp '_Combined_OutputGaus_rep' num2str(replicates) '.csv'];
-        GassSumInputFile{ei,replicates} = ['/Users/Mercy/Academics/Foster/NickCodeData/2_Alignment processing/' tmp '_alignment/Processed Gaussian/' tmp '_Summary_Gausians_for_individual_proteins_rep' num2str(replicates) '.csv'];
+        GaussInputFile{ei,replicates} = [tmpdir tmp '_Combined_OutputGaus_rep' num2str(replicates) '.csv'];
+        GassSumInputFile{ei,replicates} = [tmpdir tmp '_Summary_Gausians_for_individual_proteins_rep' num2str(replicates) '.csv'];
       end
     end
   else %my output
