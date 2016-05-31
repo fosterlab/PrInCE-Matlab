@@ -1,6 +1,6 @@
 
 
-precPlot = num2str(round(desiredPrecision(precision_write_out_counter)*100));
+precPlot = num2str(round(desiredPrecision(di)*100));
 
 
 %% How many interactions were found in at least N replicates?

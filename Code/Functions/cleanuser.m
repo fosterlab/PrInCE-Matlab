@@ -73,7 +73,7 @@ end
 
 % ensure that treatmentcondition is part of every comparisonpairs
 
-% ensure that 
+% ensure that user.organism is right
 
 
 

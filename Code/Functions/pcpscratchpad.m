@@ -968,7 +968,7 @@ for ii = 1:2
   % Remove first column as the replicate
   replicate = data.data(:,1);
   rawdata{ii} = data.data(:,2:end);
-    
+  
   I1a = strmatch('P46940', data.textdata(:,1)) - 1;
   I1b = strmatch('P60953', data.textdata(:,1)) - 1;
   I2a = strmatch('Q13043', data.textdata(:,1)) - 1;
@@ -995,7 +995,7 @@ for ii = 1:2
   ylim([0 12])
   xlabel('fraction')
   title(['WD(l)rp47 - PTS1r, ' user.silacratios{ii}])
-
+  
 end
 
 % RESULTS:
@@ -1272,7 +1272,7 @@ end
 % Test the TP_Matrix
 [ia, ib] = find(TP_Matrix==1);
 for iter = 1:100
-I = randsample(1:length(ia),1);
+  I = randsample(1:length(ia),1);
   protA = Protein.Isoform{ia(I)};
   protB = Protein.Isoform{ib(I)};
   
@@ -1285,7 +1285,7 @@ I = randsample(1:length(ia),1);
     s = ['iter' num2str(iter) ', ' [protA '-' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ') FOUND in Corum'];
     disp(s)
   end
-
+  
   % if not, are any combinations of the protein group members in Corum_Dataset?
   IgA = strfind(tmp,protA);
   IgA2 = find(~cellfun('isempty', IgA));
@@ -1350,7 +1350,7 @@ end
 % Test the TP_Matrix
 [ia, ib] = find(TP_Matrix==1);
 for iter = 1:100
-I = randsample(1:length(ia),1);
+  I = randsample(1:length(ia),1);
   protA = Protein.Isoform{ia(I)};
   protB = Protein.Isoform{ib(I)};
   
@@ -1363,7 +1363,7 @@ I = randsample(1:length(ia),1);
     s = ['iter' num2str(iter) ', ' [protA '-' protB] ' (' num2str(ia(I)) ' ' num2str(ib(I)) ') FOUND in Corum'];
     disp(s)
   end
-
+  
   % if not, are any combinations of the protein group members in Corum_Dataset?
   IgA = strfind(tmp,protA);
   IgA2 = find(~cellfun('isempty', IgA));
@@ -1434,7 +1434,247 @@ for ii = 1:length(fn)
   pause(.01)
 end
 
-% Clue 2: "Estimated" and "per replicate" PR curves are totally different
+
+%% Clue 2: "Estimated" and "per replicate" PR curves are totally different
+
+% manually calculate precision / recall from class_rep, score_rep
+
+% try the real ones
+score_rep2 = score;
+class_rep2 = class;
+
+x_coarse = linspace(0,1,11);
+x_fine = score_rep2(score_rep2 > 0.95)';
+x = sort([x_coarse x_fine]);
+rec = nan(size(x));
+prec = nan(size(x));
+for xi = 1:length(x)
+  disp(num2str(round(xi/length(x)*1000)/10))
+  TP = sum(score_rep2>x(xi) & class_rep2==1);
+  FP = sum(score_rep2>x(xi) & class_rep2==0);
+  FN = sum(score_rep2<x(xi) & class_rep2==1);
+  
+  rec(xi) = TP / (TP + FN);
+  prec(xi) = TP / (TP + FP);
+end
+
+
+% manually calculate precision / recall precision dropout
+
+pos = interaction_final.proteinInCorum(:)==1 & interaction_final.interactionInCorum(:)==1 & interaction_final.global;
+neg = interaction_final.proteinInCorum(:)==1 & interaction_final.interactionInCorum(:)==0 & interaction_final.global;
+class_pd = nan(size(pos));
+class_pd(pos) = 1;
+class_pd(neg) = 0;
+I = ~isnan(class_pd);
+class_pd = class_pd(I);
+score_pd = interaction_final.score(I);
+
+x_coarse = linspace(0,1,11);
+x_fine = score_pd(score_pd > 0.95)';
+x = sort([x_coarse x_fine]);
+rec = nan(size(x));
+prec = nan(size(x));
+for xi = 1:length(x)
+  disp(num2str(round(xi/length(x)*1000)/10))
+  TP = sum(score_pd>x(xi) & class_pd==1);
+  FP = sum(score_pd>x(xi) & class_pd==0);
+  FN = sum(score_pd<x(xi) & class_pd==1);
+  
+  rec(xi) = TP / (TP + FN);
+  prec(xi) = TP / (TP + FP);
+end
+
+
+%% Okay! Solved!! (??)
+% It looks like it's the corumpairwisefile!
+% Question: how does my file differ from nick's?
+
+f1 = '/Users/Mercy/Academics/Foster/NickCodeData/Old runs/GregPCP_20160517/Data/Corum_correctly_formated_Uniprot_IDs.csv';
+f2 = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Output/tmp/Corum_pairwise.csv';
+
+% Corum binary interactions
+fid=fopen(f1, 'rt');    %Input corum data base.
+Corum_Import= textscan(fid,'%s\t', 'Delimiter',',');
+fclose(fid);
+No=length(Corum_Import{1})/2;
+corum2_nick = reshape(Corum_Import{1,1},2,No)';
+% sort the rows
+for ii = 1:size(corum2_nick,1)
+  corum2_nick(ii,:) = sort(corum2_nick(ii,:));
+end
+% take unique rows
+[~,idx]=unique(cell2mat(corum2_nick),'rows');
+corum2_nick =  corum2_nick(idx,:);
+
+fid=fopen(f2, 'rt');    %Input corum data base.
+Corum_Import= textscan(fid,'%s\t', 'Delimiter',',');
+fclose(fid);
+No=length(Corum_Import{1})/2;
+corum2_me = reshape(Corum_Import{1,1},2,No)';
+% sort the rows
+for ii = 1:size(corum2_me,1)
+  corum2_me(ii,:) = sort(corum2_me(ii,:));
+end
+% take unique rows
+[~,idx]=unique(cell2mat(corum2_me),'rows');
+corum2_me =  corum2_me(idx,:);
+
+
+% Aha! Mine is reduced to just A-B.
+% Nick's can contain A-B and B-A.
+
+% DOUBLE AHA
+% TP_Matrix is not symmetric!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+%% Check that both corumpairwisefiles make about the same symmetric TP_Matrix
+% Apoptosis corum files
+
+clear ff TP
+
+ff{1} = '/Users/Mercy/Academics/Foster/NickCodeData/Old runs/GregPCP_20160517/Data/Corum_correctly_formated_Uniprot_IDs.csv';
+ff{2} = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Output/tmp/Corum_pairwise.csv';
+
+for ffi = 1:2
+  
+  % Corum binary interactions
+  fid=fopen(ff{ffi}, 'rt');    %Input corum data base.
+  Corum_Import= textscan(fid,'%s\t', 'Delimiter',',');
+  fclose(fid);
+  No=length(Corum_Import{1})/2;
+  Corum_Protein_names = (reshape(Corum_Import{1,1},2,No)');
+  Unique_Corum = unique(Corum_Protein_names);
+  
+  % Make Pos_Corum_proteins, which is all individual proteins that are in corum and our dataset
+  try
+    Unique_MajorProteinIDs = unique(vertcat(Protein.MajorID_NoIsoforms{:}),'rows');
+  catch
+    Unique_MajorProteinIDs = unique(vertcat(Protein.MajorID_NoIsoforms(:)));
+  end
+  Pos_Corum_proteins = Unique_Corum(ismember(Unique_Corum, Unique_MajorProteinIDs));
+  
+  % Make Corum_Dataset, which is all interactions that are in corum and our dataset
+  cc = 0;
+  Corum_Dataset = cell(1000,1);
+  for jj = 1:length(Corum_Protein_names); %Write out values as i
+    Prot1 = Corum_Protein_names(jj,1);
+    Prot2 = Corum_Protein_names(jj,2);
+    
+    % find these protein names in our sample
+    tmp1 = sum(strcmp(Prot1,Pos_Corum_proteins));
+    tmp2 = sum(strcmp(Prot2,Pos_Corum_proteins));
+    
+    if tmp1>0 && tmp2>0
+      cc = cc+1;
+      Corum_Dataset{cc} = [Prot1{1},'-',Prot2{1}];
+    end
+  end
+  
+  % Expand Corum_Dataset to deal with protein groups
+  % This all has to do with Major_protein_groups.xlsx.
+  % In effect, some proteins have multiple names.
+  % e.g. Interaction A-B is not in corum, but A-C is, and B and C are in the same protein group, so
+  %   treat A-B as a true positive interaction.
+  
+  TP_Matrix= zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
+  %Corum_Dataset_expanded = cell(size(Corum_Dataset));
+  ii = 0;
+  for cc=1:size(Corum_Dataset,1)
+    I_hyphen = strfind(Corum_Dataset{cc},'-');
+    Prot1 = Corum_Dataset{cc}(1:I_hyphen-1);
+    Prot2 = Corum_Dataset{cc}(I_hyphen+1:end);
+    
+    % find where Prot1 and Prot2 are in Protein.MajorID_NoIsoforms
+    ind1 = find(strcmp(Prot1,Protein.MajorID_NoIsoforms));
+    [i1,j1] = ind2sub(size(Protein.MajorID_NoIsoforms),ind1);
+    ind2 = find(strcmp(Prot2,Protein.MajorID_NoIsoforms));
+    [i2,j2] = ind2sub(size(Protein.MajorID_NoIsoforms),ind2);
+    
+    TP_Matrix(i1,i2) = 1;
+    TP_Matrix(i2,i1) = 1;
+  end
+  
+  TP{ffi} = TP_Matrix;
+  
+end
+
+A = TP{1} - TP{2};
+sum(A(:)~=0)
 
 
 
+
+
+%% Check that both corumpairwisefiles make about the same symmetric TP_Matrix
+
+clear ff TP
+
+ff{1} = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis/Input/Mapped_mouse_Corum_list_20150109.csv';
+ff{2} = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis/Output/tmp/Corum_pairwise.csv';
+
+for ffi = 1:2
+  ffi
+  % Corum binary interactions
+  fid=fopen(ff{ffi}, 'rt');    %Input corum data base.
+  Corum_Import= textscan(fid,'%s\t', 'Delimiter',',');
+  fclose(fid);
+  No=length(Corum_Import{1})/2;
+  Corum_Protein_names = (reshape(Corum_Import{1,1},2,No)');
+  Unique_Corum = unique(Corum_Protein_names);
+  
+  % Make Pos_Corum_proteins, which is all individual proteins that are in corum and our dataset
+  try
+    Unique_MajorProteinIDs = unique(vertcat(Protein.MajorID_NoIsoforms{:}),'rows');
+  catch
+    Unique_MajorProteinIDs = unique(vertcat(Protein.MajorID_NoIsoforms(:)));
+  end
+  Pos_Corum_proteins = Unique_Corum(ismember(Unique_Corum, Unique_MajorProteinIDs));
+  
+  % Make Corum_Dataset, which is all interactions that are in corum and our dataset
+  cc = 0;
+  Corum_Dataset = cell(1000,1);
+  for jj = 1:length(Corum_Protein_names); %Write out values as i
+    Prot1 = Corum_Protein_names(jj,1);
+    Prot2 = Corum_Protein_names(jj,2);
+    
+    % find these protein names in our sample
+    tmp1 = sum(strcmp(Prot1,Pos_Corum_proteins));
+    tmp2 = sum(strcmp(Prot2,Pos_Corum_proteins));
+    
+    if tmp1>0 && tmp2>0
+      cc = cc+1;
+      Corum_Dataset{cc} = [Prot1{1},'-',Prot2{1}];
+    end
+  end
+  
+  % Expand Corum_Dataset to deal with protein groups
+  % This all has to do with Major_protein_groups.xlsx.
+  % In effect, some proteins have multiple names.
+  % e.g. Interaction A-B is not in corum, but A-C is, and B and C are in the same protein group, so
+  %   treat A-B as a true positive interaction.
+  
+  TP_Matrix= zeros(Dimensions_Gaus_import,Dimensions_Gaus_import);
+  %Corum_Dataset_expanded = cell(size(Corum_Dataset));
+  ii = 0;
+  for cc=1:size(Corum_Dataset,1)
+    I_hyphen = strfind(Corum_Dataset{cc},'-');
+    Prot1 = Corum_Dataset{cc}(1:I_hyphen-1);
+    Prot2 = Corum_Dataset{cc}(I_hyphen+1:end);
+    
+    % find where Prot1 and Prot2 are in Protein.MajorID_NoIsoforms
+    ind1 = find(strcmp(Prot1,Protein.MajorID_NoIsoforms));
+    [i1,j1] = ind2sub(size(Protein.MajorID_NoIsoforms),ind1);
+    ind2 = find(strcmp(Prot2,Protein.MajorID_NoIsoforms));
+    [i2,j2] = ind2sub(size(Protein.MajorID_NoIsoforms),ind2);
+    
+    TP_Matrix(i1,i2) = 1;
+    TP_Matrix(i2,i1) = 1;
+  end
+  
+  TP{ffi} = TP_Matrix;
+  
+end
+
+A = TP{1} - TP{2};
+sum(A(:)~=0)
