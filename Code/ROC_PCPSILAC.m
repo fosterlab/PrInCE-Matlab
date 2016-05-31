@@ -483,6 +483,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     [i2,j2] = ind2sub(size(Protein.MajorID_NoIsoforms),ind2);
     
     TP_Matrix(i1,i2) = 1;
+    TP_Matrix(i2,i1) = 1;
   end
   %I = unique(cell2mat(Corum_Dataset_expanded),'rows');
   %Corum_Dataset_expanded = unique(Corum_Dataset_expanded{ii});
@@ -540,7 +541,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   scoreMatrix = nanmedian(scoreMatrix,2);
   
   sf = [maindir '/Output/tmp/' 'score_rep' num2str(replicate_counter) '.mat'];
-  save(sf,'scoreMatrix','TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms','Dist')
+  save(sf,'scoreMatrix','TP_Matrix','FP_Matrix','possibleInts','Protein','inverse_self','Chromatograms','Dist')
   clear scoreMatrix TP_Matrix possibleInts Protein inverse_self Chromatograms Dist
   
   tt = toc;
@@ -583,6 +584,7 @@ while bad_desiredPrecision
     a = find(triu(possibleInts));
     [prot1i, prot2i] = ind2sub(size(possibleInts),a);
     I = kk+1 : kk+length(a);
+    
     allScores(I,1) = TP_Matrix(a);           % Class label
     allScores(I,4) = rr;         % Replicate
     allScores(I,5) = scoreMatrix(a);  % Score
@@ -617,6 +619,7 @@ while bad_desiredPrecision
     end
     class_rep = allScores2(:,1);
     score_rep = max(allScores2(:,2:end),[],2);      % i) max score
+    %score_rep2 = nanmean(allScores2(:,2:end),2);      % ii) mean score
     Nclass1_rep(rr) = sum(class_rep==1);
     
     % Find replicate-specific threshold
@@ -993,7 +996,7 @@ for di = 1:length(desiredPrecision)
     
     %Determine if multiple gaussians within the same replicate were indentified
     testA = interaction_final.replicate_numbers(ii,:);
-    testA = testA(~isnan(testA));
+    testA(testA==0) = [];
     unique_testA = unique(testA);
     number_of_unique = length(unique_testA);
     number_unique_interaction(ii) = number_of_unique;
@@ -1171,7 +1174,7 @@ for di = 1:length(desiredPrecision)
   Recall_plot = nan(Total_unique_interactions,1);
   FPR_plot = nan(Total_unique_interactions,1);
   for ii = 1:Total_unique_interactions
-    cutoff = interaction_final.score(ii) - 10e-10;
+    cutoff = interaction_final.score(ii) - 10e-20;
     I = interaction_final.score >= cutoff;
     TP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==1);
     FP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==0);
