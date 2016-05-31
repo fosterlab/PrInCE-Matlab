@@ -5,55 +5,66 @@ colsr = rand(Nreplicates,3);
 
 %% Bar alignment figures
 % use pfit from Alignment.m
-Image=figure; hold on
+Image=figure; 
 
-ci = 1;
-x = 1:55;
-
-x_rep = nan(Nreplicates,length(x));
-for rr = 1:Nreplicates
-  b = pfit(ci,rr,1); % intercept
-  m = pfit(ci,rr,2); % slope
-  x_rep(rr,:) = x*m + b;
-end
-
-% make initial patches for legend
-for rr = 1:Nreplicates
-  patch([-1 -1 -2 -2]*.01 - 100,[-2 -1 -1 -2]*.01 -100,colsr(rr,:))
-end
-
-for rr = 1:Nreplicates
-  for pp = 1:length(x)-1
-    if mod(pp,5) == 0;
-      cc = [.5 .5 .5];
+for kk = 1:2
+  subplot(2,1,kk)
+  hold on
+  
+  ci = 1;
+  x = 1:55;
+  
+  x_rep = nan(Nreplicates,length(x));
+  for rr = 1:Nreplicates
+    if kk == 1
+      x_rep(rr,:) = x;
     else
-      cc = colsr(rr,:);
+      b = pfit(ci,rr,1); % intercept
+      m = pfit(ci,rr,2); % slope
+      x_rep(rr,:) = x*m + b;
     end
-    patch([x_rep(rr,pp) x_rep(rr,pp) x_rep(rr,pp+1) x_rep(rr,pp+1)],[rr rr+1 rr+1 rr],cc)
   end
-  patch([x_rep(rr,end) x_rep(rr,end) x_rep(rr,end)+1 x_rep(rr,end)+1],[rr rr+1 rr+1 rr],cc)
+  
+  % make initial patches for legend
+  for rr = 1:Nreplicates
+    patch([-1 -1 -2 -2]*.01 - 100,[-2 -1 -1 -2]*.01 -100,colsr(rr,:))
+  end
+  
+  for rr = 1:Nreplicates
+    for pp = 1:length(x)-1
+      if mod(pp,5) == 0;
+        cc = [.5 .5 .5];
+      else
+        cc = colsr(rr,:);
+      end
+      patch([x_rep(rr,pp) x_rep(rr,pp) x_rep(rr,pp+1) x_rep(rr,pp+1)],[rr rr+1 rr+1 rr],cc)
+    end
+    patch([x_rep(rr,end) x_rep(rr,end) x_rep(rr,end)+1 x_rep(rr,end)+1],[rr rr+1 rr+1 rr],cc)
+  end
+  
+  %Figure details
+  axis([-3 60 0.5 Nreplicates+1.5]);
+  if kk == 1
+    title('Before alignment','FontSize', 12);
+  else
+    title('After alignment','FontSize', 12);
+  end
+  ylabel('Replicates','FontSize', 12);
+  xlabel('Fractions','FontSize', 12);
+  sleg = cell(Nreplicates,1);
+  for jj = 1:Nreplicates
+    sleg{jj} = ['Replicate ' num2str(jj)];
+  end
+  legend(sleg, 'Orientation', 'horizontal','Location', 'South')
+  
+  set(gca,'YTickLabel',[],'ytick',[]);
+  
+  %generate image name
+  Image_name = [figdir 'Bar_alignment_image.png'];
+  
+  %Save image
+  saveas(Image, Image_name)
 end
-
-%Figure details
-axis([-3 60 0.5 Nreplicates+1.5]);
-title_name_plot=strcat('Alignment of Replicate data');
-title(title_name_plot,'FontSize', 14);
-ylabel('Replicates','FontSize', 12);
-xlabel('Fractions','FontSize', 12);
-sleg = cell(Nreplicates,1);
-for jj = 1:Nreplicates
-  sleg{jj} = ['Replicate ' num2str(jj)];
-end
-legend(sleg, 'Orientation', 'horizontal','Location', 'SouthOutside')
-
-set(gca,'YTickLabel',[]);
-set(gca,'XAxisLocation','top');
-
-%generate image name
-Image_name = [figdir 'Bar_alignment_image.png'];
-
-%Save image
-saveas(Image, Image_name)
 
 
 
