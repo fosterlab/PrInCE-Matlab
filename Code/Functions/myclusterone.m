@@ -1,4 +1,4 @@
-function [Members, Connections] = myclusterone(M, pp, density_threshold)
+function [Members, Density] = myclusterone(M, pp, density_threshold)
 
 %MYCLUSTERONE Creates a list of protein complexes using the
 %    ClusterONE algorithm (Nepusz 2012).
@@ -51,8 +51,11 @@ if sum(M(:)<0) >= 1
 end
 
   
-
+% Count how many interactions each node is in
 Nprot = size(M,1);
+Nconnections = sum(M>0,2);
+
+
 
 % Binary vector
 % Used to keep track of which proteins have already been assigned to a complex
@@ -61,13 +64,11 @@ inacomplex = zeros(Nprot,1);
 
 
 % 1. Grow complexes
-Members = cell(1000,1);
-Connections = cell(1000,1);
+Members = cell(100000,1);
 cmplxcount = 0;
 while sum(inacomplex)<Nprot
 
   % Choose protein with most number of connections as starting seed, V0
-  Nconnections = sum(M>0,2);
   Nconnections(inacomplex==1) = -1;
   [~,V] = max(Nconnections);
   inacomplex(V) = 1;
@@ -129,7 +130,7 @@ Members = Members(1:cmplxcount);
 % Remove complexes of length 1 and 2 
 % These can't be merged using the threshold score of 0.8 and they slow things down.
 for ii = 1:size(Members)
-  if length( Members{ii})<3
+  if length( Members{ii})<2
     Members{ii} = [];
   end
 end
@@ -160,15 +161,14 @@ Members = Members(~cellfun('isempty',Members));
 
 
 % 3. Remove small or low-density complexes
-dens = nan(size(Members));
+Density = nan(size(Members));
 for ii = 1:size(Members)
   I = Members{ii};
   m = M(I,I);
   n = length(I);
-  dens(ii) = sum(m(:)) / (n * (n-1)/2);
-  
-  if n<3 | dens(ii)<density_threshold
-    Members{ii} = [];
-  end
+  Density(ii) = sum(m(:)) / (n * (n-1)/2);
 end
+I = Density(ii)<density_threshold;
+Density(I) = [];
+Members(I) = [];
 Members = Members(~cellfun('isempty',Members));

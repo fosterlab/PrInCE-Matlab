@@ -121,14 +121,14 @@ if ~skipflag
     else
       % If Alignment was not skipped, use Alignment output
       
-      dd = dir([maindir '/Output/Data/Alignment/Adjusted_*_Raw_data_maxquant.csv']);
+      dd = dir([maindir '/Output/tmp/Adjusted_*_Raw_data_maxquant.csv']);
       for di = 1:length(dd)
-        ChromatogramIn{di} = [maindir '/Output/Data/Alignment/' dd(di).name];
+        ChromatogramIn{di} = [maindir '/Output/tmp/' dd(di).name];
       end
       
-      dd = dir([maindir '/Output/Data/Alignment//Adjusted_*_Combined_OutputGaus.csv']);
+      dd = dir([maindir '/Output/tmp/Adjusted_*_Combined_OutputGaus.csv']);
       for di = 1:length(dd)
-        GaussIn{di} = [maindir '/Output/Data/Alignment/' dd(di).name];
+        GaussIn{di} = [maindir '/Output/tmp/' dd(di).name];
       end
     end
   end
@@ -166,19 +166,42 @@ if ~skipflag
   num_val = cell(Nchannels,1);
   txt_val = cell(Nchannels,1);
   for ii = 1:Nchannels
-    tmp = importdata(ChromatogramIn{ii}); % from Alignment
-    if isfield(tmp.data,'Sheet1')
-      num_val{ii} = tmp.data.Sheet1;
-      txt_val{ii} = tmp.textdata.Sheet1;
-    else
-      num_val{ii} = tmp.data;
-      txt_val{ii} = tmp.textdata;
-    end
+    %     tmp = importdata(ChromatogramIn{ii}); % from Alignment
+    %     if isfield(tmp.data,'Sheet1')
+    %       num_val{ii} = tmp.data.Sheet1;
+    %       txt_val{ii} = tmp.textdata.Sheet1;
+    %     else
+    %       num_val{ii} = tmp.data;
+    %       txt_val{ii} = tmp.textdata;
+    %     end
+    %
     
+    fid = fopen(ChromatogramIn{ii});
+    cc = 0;
+    txt_val{ii} = cell(10^6,1);
+    % put header in the first row of txt_val
+    t = fgetl(fid);
+    txt_val{ii}{1} = t;
+    while ~feof(fid)
+      cc = cc+1;
+      t = fgetl(fid);
+      t1 = strsplit(t,',');
+      if cc ==1
+        num_val{ii} = nan(10^6,length(t1)-1);
+      end
+      
+      txt_val{ii}{cc+1} = t1{1};
+      for kk = 1:size(num_val{ii},2)
+        num_val{ii}(cc,kk) = str2double(t1{kk+1});
+      end
+    end
+    txt_val{ii} = txt_val{ii}(1:cc+1);
+    num_val{ii} = num_val{ii}(1:cc,:);
+
     % Confirm that the 'Replicate' column is in the header
     Ihead = strfind(lower(txt_val{ii}(1,:)),'replicate');
-    replicate_in_header = find(~cellfun('isempty', Ihead));
-    if isempty(replicate_in_header)
+    %replicate_in_header = find(~cellfun('isempty', Ihead));
+    if isempty(Ihead)
       error('Comparison: Chromatogram numerical and text data mismatch.')
     end
     
@@ -325,9 +348,9 @@ if ~skipflag
     for gg = 1:NuniqueGauss
       
       %define protein to look for
-      Protein_name=All_guassians_identified_nonredunent_list(gg);
+      Protein_name = All_guassians_identified_nonredunent_list(gg);
       %find the position in MvsL
-      internal_location_guassians = ind2sub(size(GaussData{ii}), strmatch(Protein_name, GaussData{ii}(:,2), 'exact'));
+      internal_location_guassians = find(strcmp(Protein_name, GaussData{ii}(:,2)));
       number_counter1=length(internal_location_guassians);
       gcount=0;
       for kk = 1:number_counter1
@@ -590,28 +613,6 @@ if ~skipflag
     end
   end
   
-  % %Arrange trend data to group by proteins across replicates
-  % Protein_information.Trend_compare_between_replicates=cell(number_of_unique_protein_with_gaussians,6);
-  % for count_shared_guassians4= 1:number_of_unique_protein_with_gaussians
-  %   %find location of proteins within master protein table
-  %   [internal_location_of_protein_of_interest]=ind2sub(NuniqueGauss, strmatch(Unique_protein_names(count_shared_guassians4), Combined_Gaussians.Protein_name, 'exact'));
-  %
-  %   Number_of_times_seen=length(internal_location_of_protein_of_interest);
-  %   for Number_of_times_seen_counter1= 1:Number_of_times_seen
-  %     if Combined_Gaussians.Replicate(internal_location_of_protein_of_interest(Number_of_times_seen_counter1)) == 1
-  %       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,1}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),1);
-  %       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,4}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),2);
-  %     elseif Combined_Gaussians.Replicate(internal_location_of_protein_of_interest(Number_of_times_seen_counter1)) == 2
-  %       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,2}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),1);
-  %       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,5}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),2);
-  %     elseif Combined_Gaussians.Replicate(internal_location_of_protein_of_interest(Number_of_times_seen_counter1)) == 3
-  %       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,3}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),1);
-  %       Protein_information.Trend_compare_between_replicates{count_shared_guassians4,6}= Combined_Gaussians.Trend(internal_location_of_protein_of_interest(Number_of_times_seen_counter1),2);
-  %     end
-  %   end
-  % end
-  
-  
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
@@ -760,12 +761,16 @@ if ~skipflag
   I1 = find(ismember(user.silacratios,user.comparisonpairs{1})); % treatment, numerator
   I2 = find(ismember(user.silacratios,user.comparisonpairs{2})); % non-treatment, denominator
   
-  foldLabel = cell(length(Unique_protein_names),10);
-  foldChange = nan(length(Unique_protein_names),10);
+  foldLabel = cell(length(Unique_protein_names),30);
+  foldChange = nan(length(Unique_protein_names),30);
   foldChange_byreplicate = nan(length(Unique_protein_names),10,replicate_num);
   foldLabel_byreplicate = cell(length(Unique_protein_names),10,replicate_num);
   for ii = 1:length(Unique_protein_names)
     protName = Finalised_Master_Gaussian_list.Protein_name{ii,1};
+    if isempty(protName)
+      continue
+    end
+    tmp = strfind(Combined_Gaussians.Protein_name,protName);
     for hh = 1:nnz(Finalised_Master_Gaussian_list.Center(ii,:))
       for rep = 1:replicate_num
         %rep = Finalised_Master_Gaussian_list.Replicate(ii,hh);
@@ -777,7 +782,7 @@ if ~skipflag
         %Reset rounded_center if Gaussian found in replicate
         %Check if a Gaussian peak was detected within two fractions of this master Gaussian value?
         %Find protein in Combined_Gaussian analysis
-        tmp = strfind(Combined_Gaussians.Protein_name,protName);
+        
         location_Protein_in_combined_Gaus = find(~cellfun('isempty',tmp));
         for find_rep_counter=1:length(location_Protein_in_combined_Gaus) %As Combined Gaussian is used to create Final will also have atleast one value
           if rep==Combined_Gaussians.Replicate(location_Protein_in_combined_Gaus(find_rep_counter))
@@ -856,6 +861,7 @@ if ~skipflag
   
   Finalised_Master_Gaussian_list.foldLabel = foldLabel;
   Finalised_Master_Gaussian_list.foldChange = foldChange;
+  Finalised_Master_Gaussian_list.foldChange_normalized = foldChange - nanmedian(foldChange(:));
   Finalised_Master_Gaussian_list.foldChange_byreplicate = foldChange_byreplicate;
   Finalised_Master_Gaussian_list.foldLabel_byreplicate = foldLabel_byreplicate;
   Finalised_Master_Gaussian_list.Increase_and_Decrease_protein_persaus_input = Increase_and_Decrease_protein_persaus_input;
@@ -878,11 +884,11 @@ if ~skipflag
   fprintf('    8. MWW Test and T-test across replicates')
   
   countMaster = 0;
-  p_tt = nan(length(Unique_protein_names),10);
-  df_tt = nan(length(Unique_protein_names),10);
-  p_mww = nan(length(Unique_protein_names),10);
-  u_mww = nan(length(Unique_protein_names),10);
-  nobs = nan(length(Unique_protein_names),10);
+  p_tt = nan(length(Unique_protein_names),30);
+  df_tt = nan(length(Unique_protein_names),30);
+  p_mww = nan(length(Unique_protein_names),30);
+  u_mww = nan(length(Unique_protein_names),30);
+  nobs = nan(length(Unique_protein_names),30);
   for ii = 1:length(Unique_protein_names) % Protein
     protName = Finalised_Master_Gaussian_list.Protein_name{ii};
     
@@ -895,7 +901,7 @@ if ~skipflag
       Center_to_test = round(Finalised_Master_Gaussian_list.Center(ii,jj)) + 6;
       
       % Is Center out of bounds?
-      if Center_to_test-2<2+1 || Center_to_test+2>Nfraction+1
+      if Center_to_test<1 || Center_to_test>Nfraction
         foldLabel{ii,hh} = 'Unquantifiable_Not_observed_in_replicate';
         continue;
       end
@@ -904,7 +910,7 @@ if ~skipflag
       data = cell(Nchannels,1);
       nobs(ii,jj) = 10^6; % keep track of how many data points are in each channel
       for kk = 1:Nchannels % Channel
-        tmp = num_val{kk}(location_Protein_in_raw_textdata,(-2:2)+Center_to_test);
+        tmp = log(num_val{kk}(location_Protein_in_raw_textdata,Center_to_test));
         tmp = tmp(~isnan(tmp)); % Remove nans from data
         data{kk} = tmp;
         

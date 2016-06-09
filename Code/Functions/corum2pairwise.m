@@ -10,7 +10,7 @@ function corum2pairwise(user)
 
 
 %% Read raw CORUM file
-fid = fopen(user.corumfile,'r');
+fid = fopen(user.stringfile,'r');
 
 % check header is correctly formatted
 header = fgetl(fid);

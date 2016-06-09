@@ -135,22 +135,21 @@ for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
   
   fid7_Name = [maindir '/Output/tmp/' 'Adjusted_' Experimental_channel '_Combined_OutputGaus.csv'];
-  fid10 = fopen(fid7_Name,'at');
-  fprintf (fid10,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',...
+  fid = fopen(fid7_Name,'wt');
+  fprintf (fid,'%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',...
+    'Guassian index number', 'Protein_number','Replicate',...
     'Protein name', 'Height', 'Center','Width','SSE','adjrsquare', 'Complex Size');  %Write Header
-  %'Guassian index number', 'Protein_number','Replicate',...
   
+  cc = 0;
   for rr = 1:Nreplicates
     for combined_gaus_writeout = 1:size(Adjusted_Gaus_import{ci,rr}.data,1)
-      %fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.data{combined_gaus_writeout+1,1}));
-      %fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.data{combined_gaus_writeout+1,2}));
-      %fprintf(fid10, '%6f,', str2num(Adjusted_Gaus_import{ci,rr}.data{combined_gaus_writeout+1,3}));
-      fprintf(fid10, '%s,', Adjusted_Gaus_import{ci,rr}.textdata{combined_gaus_writeout,1});
-      fprintf(fid10,'%6.4f,', Adjusted_Gaus_import{ci,rr}.data(combined_gaus_writeout,:));
-      fprintf(fid10,'\n');
+      fprintf(fid,'%6.4f,%6.4f,%6.4f,',cc,0,rr); % index information
+      fprintf(fid, '%s,', Adjusted_Gaus_import{ci,rr}.textdata{combined_gaus_writeout,1});
+      fprintf(fid,'%6.4f,', Adjusted_Gaus_import{ci,rr}.data(combined_gaus_writeout,:));
+      fprintf(fid,'\n');
     end
   end
-  fclose(fid10);
+  fclose(fid);
 end
 
 
@@ -160,8 +159,8 @@ end
 for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
   
-  fid11_Name = [maindir '/Output/tmp/' 'Adjusted_' Experimental_channel '_Raw_data_maxquantb.csv'];
-  fid11 = fopen(fid11_Name,'at');
+  fid11_Name = [maindir '/Output/tmp/' 'Adjusted_' Experimental_channel '_Raw_data_maxquant.csv'];
+  fid11 = fopen(fid11_Name,'wt');
   %fprintf (fid11,[Column_header, '\n'], Title_import2{:});  %Write Header
   % protein name, replicate, data(:)
   fprintf(fid11,'%s,%s,%s\n','Protein name','Replicate','Ratios');

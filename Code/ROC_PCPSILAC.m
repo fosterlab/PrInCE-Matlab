@@ -352,7 +352,7 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
     Array_to_check1 = Protein_IDs(Check_counter1,:);
     Array_to_check_empty1 = cellfun(@isempty,Array_to_check1);
     for jj = 1:nnz(~Array_to_check_empty1)
-      Protein.MajorIDs{ii,jj} = {Protein_IDs{Check_counter1,jj}};
+      Protein.MajorIDs{ii,jj} = Protein_IDs{Check_counter1,jj};
     end
     
     %copy names to MajorID_NoIsoforms from Protein_IDS_no_isoform_no_dup_processed
@@ -717,6 +717,7 @@ while bad_desiredPrecision
     fprintf('\n Desired precision %6.4f is not achievable with current settings.', desiredPrecision(bad_desiredPrecision1))
     fprintf('\n Lowering it to %6.4f and recalculating score threshold... \n\n', max_achievable_precision)
     desiredPrecision(bad_desiredPrecision1) = floor(max_achievable_precision*100)/100;
+    user.desiredPrecision = desiredPrecision;
     notei = length(notes);
     notes{notei+1} = ['Desired precision ' num2str(desiredPrecision(bad_desiredPrecision1)) ' was not achievable. It was lowered to ' num2str(max_achievable_precision) '.'];
   end
@@ -727,6 +728,7 @@ while bad_desiredPrecision
     fprintf('\n Desired precision %6.4f is not achievable with current settings.', desiredPrecision(bad_desiredPrecision1))
     fprintf('\n Raising it to %6.4f and recalculating score threshold... \n\n', min_achievable_precision)
     desiredPrecision(bad_desiredPrecision1) = round(min_achievable_precision*100)/100;
+    user.desiredPrecision = desiredPrecision;
     notei = length(notes);
     notes{notei+1} = ['Desired precision ' num2str(desiredPrecision(bad_desiredPrecision1)) ' was not achievable. It was raised to ' num2str(min_achievable_precision) '.'];
   end
@@ -736,6 +738,7 @@ while bad_desiredPrecision
     fprintf('\n Desired precision contains some duplicates, likely due to ')
     fprintf('\n multiple levels being unachievable. Removing duplicate entries. \n\n')
     desiredPrecision = unique(desiredPrecision);
+    user.desiredPrecision = desiredPrecision;
   end
   
 end

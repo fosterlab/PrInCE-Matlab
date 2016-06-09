@@ -24,10 +24,6 @@
 %    values. Should we do more?
 
 
-%%%%%%%%%%%%%%% BUG BUG BUG BUG UBGSS BUGGGGGSSS!!!!
-% 1. My Alignment numbers are off. Nick's are closer to the raw data (mine are quite far away).
-% 2. I'm adding too many leading nans (two too many?).
-
 
 
 diary([user.maindir 'logfile.txt'])

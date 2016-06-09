@@ -1,20 +1,44 @@
 
-Precision_values = round(user.desiredPrecision * 100);
+Precision_values = round(desiredPrecision * 100);
+
+Names = cell(size(csplit,1),1);
+for ii = 1:size(csplit,1)
+  if csplit(ii,1)==0 && csplit(ii,2)==0
+    name = 'All_interactions_';
+  else
+    if csplit(ii,1)==0
+      name1 = '';
+    else
+      rep = num2str(csplit(ii,1));
+      name1 = ['Replicate_' rep '_'];
+    end
+    if csplit(ii,2)==0
+      name2 = '';
+    else
+      rep = user.silacratios{csplit(ii,2)};
+      name2 = ['Channel_' num2str(rep) '_'];
+    end
+    name = [name1  name2];
+  end
+  name = name(1:end-1);
+  Names{ii} = name;
+end
 
 
-%% Final_complexes_precision*.csv
+%% Complexes_*.csv
 
-for ci = 1:countPrec
-  fn = strcat([datadir 'Complexes/Final_complexes_precision' num2str(Precision_values(ci)) '.csv']);
+for ci = 1:size(csplit,1)
+  fn = strcat([datadir 'Complexes_' Names{ci} '.csv']);
   
   fid3 = fopen(fn,'w');
   %Write Header
-  fprintf (fid3,'%s,%s,%s,%s,%s,%s,%s,\n',...
-    'Predicted complex number','Predicted complex', 'Novel complex?', 'Best CORUM match',...
+  fprintf (fid3,'%s,%s,%s,%s,%s,%s,%s,%s,\n',...
+    'Predicted complex ID','Predicted complex', 'Size of complex', 'Novel complex?', 'Best CORUM match',...
     'Overlapping proteins', 'N overlap', 'CORUM coverage');
   
-  for ii = 1:size(ComplexList(ci).Members,1)    
-    predComplex = strjoin(uniqueProteins(ComplexList(ci).Members{ii}), ' ');
+  for ii = 1:size(CL(ci).Members,1)    
+    predComplex = strjoin(uniqueProteins(CL(ci).Members{ii}), ' ');
+    sizePredComplex = length(CL(ci).Members{ii});
 
     Icorummatch = find(corumMatches{ci}(:,1)==ii & corumMatches{ci}(:,3)==1);
     corumComplex = '';
@@ -25,21 +49,22 @@ for ci = 1:countPrec
       Icorummatch = Icorummatch(1);
       corumI = corumMatches{ci}(Icorummatch,2);
       corumComplex = strjoin(uniqueProteins(corumComplex2{corumI}), ' ');
-      overlap = strjoin(uniqueProteins(intersect(ComplexList(ci).Members{ii},corumComplex2{corumI})));
+      overlap = strjoin(uniqueProteins(intersect(CL(ci).Members{ii},corumComplex2{corumI})));
     end
     
-    fprintf (fid3,'%d, %s, %d, %s, %s, %d, %6.3f,\n',...
-      ii, predComplex, novel, corumComplex, overlap, ...
+    fprintf (fid3,'%d, %s, %d, %d, %s, %s, %d, %6.3f,\n',...
+      ii, predComplex, sizePredComplex, novel, corumComplex, overlap, ...
       corumMatches{ci}(Icorummatch,4), corumMatches{ci}(Icorummatch,5) );
   end
   fclose(fid3);
 end
 
 
+
 %% Corum_best_match_*prec.csv
 
-for ci = 1:countPrec
-  fn = strcat([datadir 'Complexes/Corum_best_match_precision' num2str(Precision_values(ci)) '.csv']);
+for ci = 1:size(csplit,1)
+  fn = strcat([datadir 'More_corum_matches_' Names{ci} '.csv']);
   
   fid3 = fopen(fn,'w');
   %Write Header
@@ -50,9 +75,9 @@ for ci = 1:countPrec
   for ii = 1:size(corumMatches{ci},1)
     cmplxI = corumMatches{ci}(ii,1);
     corumI = corumMatches{ci}(ii,2);
-    predComplex = strjoin(uniqueProteins(ComplexList(ci).Members{cmplxI}), ' ');
+    predComplex = strjoin(uniqueProteins(CL(ci).Members{cmplxI}), ' ');
     corumComplex = strjoin(uniqueProteins(corumComplex2{corumI}), ' ');
-    overlap = strjoin(uniqueProteins(intersect(ComplexList(ci).Members{cmplxI},corumComplex2{corumI})));
+    overlap = strjoin(uniqueProteins(intersect(CL(ci).Members{cmplxI},corumComplex2{corumI})));
     if corumMatches{ci}(ii,3)==1
       s = 'Best';
     elseif corumMatches{ci}(ii,3)==2
@@ -62,7 +87,7 @@ for ci = 1:countPrec
     end
     
     % sanity check
-    if length(intersect(ComplexList(ci).Members{cmplxI},corumComplex2{corumI})) ~= corumMatches{ci}(ii,4)
+    if length(intersect(CL(ci).Members{cmplxI},corumComplex2{corumI})) ~= corumMatches{ci}(ii,4)
       error('writeOutput_complexes: badly formatted corumMatches')
     end
     
@@ -72,3 +97,34 @@ for ci = 1:countPrec
   end
   fclose(fid3);
 end
+
+
+
+
+%% Corum_best_match_*prec.csv
+
+fn = strcat([datadir 'Summary_complexes.csv']);
+
+fid3 = fopen(fn,'w');
+%Write Header
+fprintf (fid3,'%s,%s,%s,%s,%s,%s,\n',...
+  'Name', 'Number of complexes', 'Median complex size', 'Avg complex density',...
+  'Geometric accuracy', 'Matching ratio');
+
+for ii = 1:size(csplit,1)
+  
+  name = Names{ii};
+  Nmembers = length(CL(ii).Members);
+  tmp = nan(Nmembers,1);
+  for jj = 1:Nmembers
+    tmp(jj) = length(CL(ii).Members{jj});
+  end
+  medsize = median(tmp);
+  avgdens = mean(CL(ii).Density);
+  
+  fprintf (fid3,'%s,%d,%d,%6.3f,%6.3f,%6.3f,\n',...
+    name, Nmembers, medsize, avgdens, ...
+    CL(ii).GeomAcc,CL(ii).MatchRatio);
+end
+fclose(fid3);
+
