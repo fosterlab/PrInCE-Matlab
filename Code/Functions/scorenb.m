@@ -15,18 +15,18 @@ end
 Nd = size(X,2);
 
 % Set NaN's to maxiumum value
-for ii = 1:Nd
-  nanelements = isnan(X(:,ii));
-  X(nanelements,ii) = max(X(~nanelements,ii));
-end
+%for ii = 1:Nd
+%  nanelements = isnan(X(:,ii));
+%  X(nanelements,ii) = max(X(~nanelements,ii));
+%end
 
 % Soft whiten data
 eps = 2e-16;
 wmu = zeros(Nd,1);
 wstd = zeros(Nd,1);
 for ii = 1:Nd
-  wmu(ii) = mean(X(:,ii));
-  wstd(ii) = std(X(:,ii));
+  wmu(ii) = nanmean(X(:,ii));
+  wstd(ii) = nanstd(X(:,ii));
   X(:,ii) = (X(:,ii) - wmu(ii)) / 2 / (wstd(ii) + eps);
 end
 
@@ -55,8 +55,8 @@ for iter = 1:Nmodel
     % Ensure no class-variable pair has zero variance
     testvar = nan(2,Nd);
     for jj = 1:Nd
-      testvar(1,jj) = var(Xtr(ytr>0,jj));
-      testvar(2,jj) = var(Xtr(ytr<0,jj));
+      testvar(1,jj) = nanvar(Xtr(ytr>0,jj));
+      testvar(2,jj) = nanvar(Xtr(ytr<0,jj));
     end
     
   else
@@ -81,8 +81,8 @@ for iter = 1:Nmodel
       % Ensure no class-variable pair has zero variance
       testvar = nan(2,Nd);
       for jj = 1:Nd
-        testvar(1,jj) = var(Xtr(ytr>0,jj));
-        testvar(2,jj) = var(Xtr(ytr<0,jj));
+        testvar(1,jj) = nanvar(Xtr(ytr>0,jj));
+        testvar(2,jj) = nanvar(Xtr(ytr<0,jj));
       end
       go2 = sum(testvar(1,:)~=0) == 0 | sum(testvar(2,:)~=0) == 0;
       
