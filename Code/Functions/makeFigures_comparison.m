@@ -31,6 +31,9 @@ if user.fastcomparison==0
       
       % Find this replicate + protein in Combined_Gaussians
       Icg = find(Combined_Gaussians.Replicate == rep & strcmp(protName,Combined_Gaussians.Protein_name));
+      if isempty(Icg)
+        continue
+      end
       [C_comp,Iccomp] = sort(Combined_Gaussians.Center(Icg));
       
       % Get channel names and indices

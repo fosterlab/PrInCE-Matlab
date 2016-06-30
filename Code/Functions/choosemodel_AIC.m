@@ -1,10 +1,14 @@
 function [model,ics] = choosemodel_AIC(cleanchrom,x,aicstring,Ngaussmax)
 
-% Selects the number of Gaussians that best fits a single chromatogram.
+%CHOOSEMODEL_AIC  Selects the number of Gaussians that best fit
+% a single chromatogram.
 %
-% This code fits 5 models (1 Gaussian, 2 Gaussians, ... , 5 Gaussians) and picks the most
-% appropriate model via AIC. Each model is fit using different initial parameter guesses until a
-% good fit is achieved.
+% model = choosemodel_AIC(cleanchrom,x,aicstring,Ngaussmax)
+%
+% Fits 5 models (1 Gaussian, 2 Gaussians, ... , 5 Gaussians) 
+% and picks the most appropriate model via AIC. Each model is 
+% fit using different initial parameter guesses until a good 
+% fit is achieved.
 %
 % Input:
 %   cleanchrom: nx1 cleaned chromatogram, where n is the number of fractions.
@@ -31,9 +35,11 @@ end
 
 if nargin<2
   x = 1:length(cleanchrom);
+  x = x';
 end
 if isempty(x)
   x = 1:length(cleanchrom);
+  x = x';
 end
 
 if nargin<3

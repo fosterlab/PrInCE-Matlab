@@ -424,9 +424,11 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   Dist.Ngauss = squareform(pdist(Ngauss));
   Dist.CoApex = squareform(pdist(CoApex));
   Dist.AUC = squareform(pdist(auc));
-  %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
-  %Dist.R2raw = 1 - R.^2;
-  %Dist.Rpraw = p;
+  [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+  Dist.R2raw = 1 - R.^2;
+  Dist.Rpraw = p;
+  [~,mx] = max(Chromatograms,[],2);
+  Dist.CoApex2 = squareform(pdist(mx));
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)

@@ -1130,8 +1130,8 @@ set(gca,'visible','off')
 
 % Run up to Load Data in Gauss_Build for apoptosis
 
-%protName = 'Q86UA1';
-protName = 'Q86X55-1';
+protName = 'Q86UA1';
+%protName = 'Q86X55-1';
 
 I1 = strfind(txt_val{1}(:,1),protName);
 I1 = find(~cellfun('isempty', I1)) - 1;
@@ -1158,7 +1158,7 @@ xlabel('Time','fontsize',10)
 ylabel('Intensity','fontsize',10)
 set(gca,'xtick',[14 28 38])
 grid on
-saveas(gcf,'fig1.png')
+%saveas(gcf,'fig1.png')
 
 
 % Fit models
@@ -1216,7 +1216,7 @@ scatter(x1,y1,30,'r','filled')
 scatter(x2,y2,30,'b','filled')
 set(gca,'xtick',[14 28 38])
 grid on
-saveas(gcf,'fig2.png')
+%saveas(gcf,'fig2.png')
 
 
 

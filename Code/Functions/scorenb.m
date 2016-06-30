@@ -33,6 +33,7 @@ end
 % what training length do we need to expect to get 5 class == 1?
 classratio = sum(y==1) / sum(y==-1);
 trainingLength = max([8000 round(5/classratio)]);
+trainingLength = min([trainingLength sum(I)/2]);
 
 Nmodel = 15;
 score = nan(size(X,1),Nmodel);
