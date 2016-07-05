@@ -236,6 +236,7 @@ for ci = 1:Nchannels
       end
     end
   end
+  protgausI{ci} = protgausI{ci}(1:gausscount,:);
   Ngauss(ci) = gausscount;
 end
 
