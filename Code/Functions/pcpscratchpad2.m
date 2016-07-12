@@ -783,3 +783,255 @@ for ii = 101:1000%size(txt_val{1},1)
   disp(s)
   
 end
+
+
+
+%% Look for Mike Carlson's gold standard TP
+
+sf = [maindir '/Output/tmp/' 'score_rep' num2str(1) '.mat'];
+load(sf)
+scoreMatrix = reshape(scoreMatrix,sqrt(length(scoreMatrix)), sqrt(length(scoreMatrix)));
+
+nameGold = {'b0408' 'b0409';'b0177' 'b2512'; 'b0722' 'b0723'; 'b0722' 'b0724'; 'b0723' 'b0724'};
+
+tmp = cell(size(Unique_MajorProteinIDs,1),1);
+for ii = 1:length(tmp)
+  tmp{ii} = Unique_MajorProteinIDs(ii,:);
+end
+
+Igold = zeros(size(nameGold,1),2);
+for ii = 1:size(nameGold,1)
+  I1 = find(ismember(tmp, nameGold{ii,1}));
+  I2 = find(ismember(tmp, nameGold{ii,2}));
+  if ~isempty(I1)
+    Igold(ii,1) = I1;
+  end
+  if ~isempty(I2)
+    Igold(ii,2) = I2;
+  end
+end
+
+figure
+for ii = 1:5
+  subplot(2,3,ii),hold on
+  plot(Chromatograms(Igold(ii,1),:))
+  plot(Chromatograms(Igold(ii,2),:))
+  title(num2str(scoreMatrix(Igold(ii,1),Igold(ii,2))))
+  legend(nameGold{ii,1},nameGold{ii,2})
+  xlim([0 66])
+end
+%subplot(2,3,1),title('Gold standards')
+
+maxscores = sort(scoreMatrix(:),'descend');
+maxscores = maxscores([1 5 10 15 20 25]);
+figure
+for ii = 1:6
+  I = find(scoreMatrix(:) == maxscores(ii));
+  [I1,I2] = ind2sub(size(scoreMatrix),I);
+  I1 = I1(randsample(length(I1),1));
+  I2 = I2(randsample(length(I2),1));
+  subplot(2,3,ii),hold on
+  plot(Chromatograms(I1,:)')
+  plot(Chromatograms(I2,:)')
+  title(num2str(scoreMatrix(I1,I2)))
+  legend(tmp{I1},tmp{I2})
+end
+
+figure
+I1 = possibleInts(:) & TP_Matrix(:)==1;
+I2 = possibleInts(:) & FP_Matrix(:)==1;
+fn = fieldnames(Dist);
+for ii = 1:length(fn)
+  subplot(3,3,ii),hold on
+  x1 = min([Dist.(fn{ii})(I1)' Dist.(fn{ii})(I2)']);
+  x2 = max([Dist.(fn{ii})(I1)' Dist.(fn{ii})(I2)']);
+  xi = linspace(x1,x2,101);
+  if ii == 4
+    xi = 1:8;
+  end
+  h1 = hist(Dist.(fn{ii})(I1),xi);
+  h2 = hist(Dist.(fn{ii})(I2),xi);
+  plot(xi,h1/sum(h1))
+  plot(xi,h2/sum(h2))
+  xlim([x1 x2])
+  title(fn{ii})
+  
+  if ii==1
+    legend('Pos.','Neg.')
+  end
+end
+
+
+
+%% Make PR curve from different Dist fields
+
+figure
+
+fn = fieldnames(Dist);
+I1 = possibleInts(:) & TP_Matrix(:)==1;
+I2 = possibleInts(:) & FP_Matrix(:)==1;
+for ii = 1:length(fn)
+  
+  x1 = min([Dist.(fn{ii})(I1)' Dist.(fn{ii})(I2)']);
+  x2 = max([Dist.(fn{ii})(I1)' Dist.(fn{ii})(I2)']);
+  xi = linspace(x1,x2,101);
+  
+  prec = nan(size(xi));
+  rec = nan(size(xi));
+  Nint = nan(size(xi));
+  for jj = 1:length(xi)
+    TP = sum(Dist.(fn{ii})(:) < xi(jj) & I1);
+    FP = sum(Dist.(fn{ii})(:) < xi(jj) & I2);
+    FN = sum(Dist.(fn{ii})(:) >= xi(jj) & I1);
+    prec(jj) = TP / (TP + FP);
+    rec(jj) = TP / (TP + FN);
+    Nint(jj) = TP + FP;
+  end
+  
+  subplot(3,3,ii)
+  plot(rec,prec)
+  axis([0 1 0 1])
+  title(fn{ii})
+end
+
+
+
+%%  Mike Carlson's myterious data: Figure out why Dist.(all fields) does worse than just Dist.R2
+% Look at feats.
+
+ff = '/Users/Mercy/Academics/Foster/MikeCarlson/Data_files/feats_20160710.mat';
+load(ff)
+fn{11} = 'All';
+
+figure
+bar([Ninter Ninter_all])
+set(gca,'xtick',1:length(Ninter)+1,'xticklabel',fn)
+
+feats_individually = zeros(15,10);
+for ii = 1:10
+  feats_individually(:,ii) = Feats{ii};
+end
+
+s1 = std(Feats_all) / sqrt(15);
+m1 = mean(Feats_all);
+I = repmat((1:10),15,1);
+
+figure,hold on
+%errorbar(1:10,m2,m2-s2,m2+s2)
+errorbar(1:10,m1,m1-s1,m1+s1,'m')
+boxplot(feats_individually(:),I(:))
+legend('Together')
+set(gca,'xtick',1:length(Ninter)+1,'xticklabel',fn)
+
+
+figure,subplot(1,2,1)
+imagesc(Feats_all>5)
+colorbar;
+cx = caxis;
+set(gca,'xtick',1:length(Ninter)+1,'xticklabel',fn);
+title('Together'), 
+subplot(1,2,2),
+imagesc(feats_individually>5),
+caxis(cx);
+colorbar,
+title('By themselves'),
+set(gca,'xtick',1:length(Ninter)+1,'xticklabel',fn)
+
+
+
+%%  Mike Carlson's myterious data: play around with pairwise file
+% ROC_PCPSILAC has only Dist.R2 selected
+
+stringRange = [300 500 700 800 825 850 900 950 975 990 995 997 998];
+Ninter = [129 136 149 251 221 252 251 210 149 150 130 130 136];
+
+figure
+plot(stringRange,Ninter)
+xlabel('STRING cutoff')
+ylabel('Number of predicted interactions @ precision = 50%')
+
+
+% tissue data
+Ninteractions_all = [13977 21681 20273 16741 16827 24449];
+Ninteractions_justR2 = [14057 20229 20293 24080 18549 25158];
+
+
+
+%%  Mike Carlson's myterious data: Possible explanation
+% Two things going on:
+%   1. R^2 does better by itself. This may be a feature selection problem (asked on SE). Ignore now
+%   2. STRING is not as informative as CORUM
+%
+% Compare string-separation to corum-separation
+% For each feature, calculate AUC between feature(class==1) and feature(class==0)
+
+% CORUM-separation for tissue data
+dir1 = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis/';
+featauc = zeros(6,9);
+dm = zeros(size(featauc));
+for ii = 1:6
+  ii
+  sf = [dir1 '/Output/tmp/' 'score_rep' num2str(ii) '.mat'];
+  load(sf)
+  I = possibleInts(:);
+  fn = fieldnames(Dist);
+  for jj = 1:length(fn)
+    jj
+    clear x
+    x(:,1) = Dist.(fn{jj})(I);
+    x(:,2) = TP_Matrix(I)==1;
+    I2 = ~isnan(x(:,1)) & ~isinf(x(:,1));
+    x = x(I2,:);
+    tmp = roc(x);
+    featauc(ii,jj) = tmp.AUC;
+    
+    dm(ii,jj) = nanmean(x(x(:,2)==0,1)) - nanmean(x(x(:,2)==1,1));
+  end
+end
+
+
+dir2 = '/Users/Mercy/Academics/Foster/MikeCarlson/PCPSILAC_analysis/';
+sf = [dir2 '/Output/tmp/' 'score_rep1.mat'];
+load(sf)
+I = possibleInts(:);
+fn = fieldnames(Dist);
+featauc_string = zeros(9,1);
+dm_string = zeros(9,1);
+for jj = 1:length(fn)
+  jj
+  clear x
+  x(:,1) = Dist.(fn{jj})(I);
+  x(:,2) = TP_Matrix(I)==1;
+  I2 = ~isnan(x(:,1)) & ~isinf(x(:,1));
+  x = x(I2,:);
+  x = x(1:10:end,:);
+  tmp = roc(x);
+  featauc_string(jj) = tmp.AUC;
+  
+  dm_string(jj) = nanmean(x(x(:,2)==0,1)) - nanmean(x(x(:,2)==1,1));
+end
+
+
+figure,
+
+subplot(2,1,1),hold on
+[~,I] = sort(featauc_string,'descend');
+X = repmat(1:9,6,1);
+X = X(:,:);
+y = featauc(:,I);
+scatter(X(:),y(:))
+plot(featauc_string(I))
+set(gca,'xtick',1:9,'xticklabel',fn(I))
+legend('CORUM','STRING')
+
+subplot(2,1,2),hold on
+[~,I] = sort(dm_string,'descend');
+X = repmat(1:9,6,1);
+X = X(:,:);
+y = dm(:,I);
+scatter(X(:),y(:))
+plot(dm_string(I))
+set(gca,'xtick',1:9,'xticklabel',fn(I))
+legend('CORUM','STRING')
+
+
