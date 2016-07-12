@@ -67,15 +67,14 @@ while calcTol>Tol && iter<maxIter && deltaPrec>1e-3
   %     mn = ds(i2(end));
   %   end
   
-  % Check if desiredPrecision is reached exactly
+  % Ensure that prec = desiredPrecision counts as a "zero-crossing"
   tmp = prec - desiredPrecision;
   if sum(tmp==0)>0
-    I = find(tmp==0);
-    dsi = I(end);
-    break
+    tmp = tmp + 10e-6;
   end
   
-  % If not, zoom in on the region of interest
+  % Zoom in on the region of interest
+  % Either i) top end, ii) bottom end, iii) first zero-crossing.
   zeroCross = find(sign(tmp(1:end-1)) .* sign(tmp(2:end)) == -1);
   if isempty(zeroCross) % prec never crosses desiredPrecision
     i1 = find(prec>desiredPrecision);
@@ -92,9 +91,9 @@ while calcTol>Tol && iter<maxIter && deltaPrec>1e-3
       error('calcPPIthreshold: error in algorithm')
     end
   else
-    mn = ds(zeroCross(end));
-    mx = ds(zeroCross(end)+1);
-    dsI = [zeroCross(end) zeroCross(end)+1];
+    mn = ds(zeroCross(1));
+    mx = ds(zeroCross(1)+1);
+    dsI = [zeroCross(1) zeroCross(end)+1];
   end
   
   % Calculate how close to desiredPrecision(di) you got
