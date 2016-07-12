@@ -44,6 +44,7 @@ else
   
   Protein_IDs = cell(Nprot, 1000);
   Nmembers = 0;
+  Nprot2 = 1;
   for ii = 2:Nprot
     
     % check if line has commas
