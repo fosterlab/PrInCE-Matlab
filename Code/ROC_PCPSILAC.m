@@ -1,4 +1,4 @@
-%%%%%%%%%%%%%%% Logic:
+ %%%%%%%%%%%%%%% Logic:
 %   0. Initialize
 %   for replicate
 %       1. Read input
@@ -371,64 +371,67 @@ for replicate_counter = 1:number_of_replicates*number_of_channels
   
   
   
-  %% 3. Reduce to protein level, make Dist
+  %% 3. Make chromatogram-chromatogram distance matrices, Dist
   tic
   fprintf('        3. Reduce to protein level, make Dist.')
   
+  % Co-Apex 1: minimum distance between Gaussian parameter doublets (C, W)
+  % soft-whiten C and W parameters
+  Csw = (C - nanmean(C)) / nanstd(C);
+  Wsw = (W - nanmean(W)) / nanstd(W);
+  gaussParamDist = squareform(pdist([Csw Wsw],'euclidean')); % distance between every (C,W) pair
+  chromNames = Protein.Isoform; % save the protein ID of each Gaussian
   
-  % Co-Apex score = norm(C) / sqrt(length(C))
-  %   I = find(abs(diff(Ngauss))>0 | Ngauss(2:end)==1);
-  %   I = [1; I+1];
-  %   I0 = 0;
-  %   CoApex = zeros(size(Ngauss));
-  %   for ii = 1:length(I)
-  %     I2 = I0+1 : I0 + Ngauss(I(ii));
-  %     CoApex(I2) = norm(C(I2)) / sqrt(length(I2));
-  %     I0 = max(I2);
-  %   end
-  
-  % Co-Apex score = norm(C) / sqrt(length(C))
-  CoApex = zeros(size(Ngauss));
-  for ii = 2:size(Gaus_import,1)
-    protName = Gaus_import{ii,1};
-    I = find(ismember(Gaus_import(:,1),protName)) - 1;
-    CoApex(ii-1) = norm(C(I)) / sqrt(length(I));
+  % Reduce variables from gaussian-level to protein-level
+  [~,Ireduce] = unique(Protein.Isoform);
+  Chromatograms = Chromatograms(Ireduce,:);
+  Chromatograms_raw = Chromatograms_raw(Ireduce,:);
+  C = C(Ireduce,:);
+  Ngauss = Ngauss(Ireduce);
+  fn = fieldnames(Protein);
+  for ii = 1:length(fn)
+    Protein.(fn{ii}) = Protein.(fn{ii})(Ireduce,:);
   end
+  Dimensions_Gaus_import = length(Ireduce);
   
   % Area under the chromatogram
   auc = sum(Chromatograms,2);
-  
-  
-  % Reduce variables from gaussian-level to protein-level 
-  if 1
-    [~,Ireduce] = unique(Protein.Isoform);
-    Chromatograms = Chromatograms(Ireduce,:);
-    Chromatograms_raw = Chromatograms_raw(Ireduce,:);
-    C = C(Ireduce,:);
-    Ngauss = Ngauss(Ireduce);
-    CoApex = CoApex(Ireduce);
-    auc = auc(Ireduce,:);
-    fn = fieldnames(Protein);
-    for ii = 1:length(fn)
-      Protein.(fn{ii}) = Protein.(fn{ii})(Ireduce,:);
-    end
-    Dimensions_Gaus_import = length(Ireduce);
-  end
-  
-  
+    
   % Calculate distance matrices
   clear Dist
+  % Euclidean distance
   Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));
-  Dist.Center = squareform(pdist(C,'euclidean'));
+  % Distance between Gaussian centers (C)
+  %Dist.Center = squareform(pdist(C,'euclidean'));
+  % Cleaned chromatogram R^2
   Dist.R2 = 1 - corr(Chromatograms').^2; % one minus R squared
-  Dist.Ngauss = squareform(pdist(Ngauss));
-  Dist.CoApex = squareform(pdist(CoApex));
-  Dist.AUC = squareform(pdist(auc));
+  % Raw chromatogram R^2
   [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
   Dist.R2raw = 1 - R.^2;
+  % Raw chromatogram correlation p-value
   Dist.Rpraw = p;
+  % Difference in number of fitted Gaussians
+  Dist.Ngauss = squareform(pdist(Ngauss,'euclidean'));
+  % Difference in area-under-the-chromatogram
+  Dist.AUC = squareform(pdist(auc,'euclidean'));
+  % Co-Apex score 1
+  Dist.CoApex = zeros(length(Protein.Isoform),length(Protein.Isoform));
+  I = cell(size(Protein.Isoform));
+  for ii = 1:length(Protein.Isoform)
+    I{ii} = ismember(chromNames,Protein.Isoform{ii});
+  end
+  for ii = 1:length(Protein.Isoform)
+    for jj = 1:length(Protein.Isoform)
+      if ii == jj; continue; end
+      tmp = gaussParamDist(I{ii},I{jj});
+      Dist.CoApex(ii,jj) = min(tmp(:));
+    end
+  end
+  % Co-Apex score 2
   [~,mx] = max(Chromatograms,[],2);
-  Dist.CoApex2 = squareform(pdist(mx));
+  Dist.CoApex2 = squareform(pdist(mx,'euclidean'));
+  
+  clear gaussParamDist
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
@@ -754,7 +757,7 @@ end
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
-
+mySound,pause
 
 %% 7. Find and concatenate interactions at desired precision
 
@@ -850,7 +853,7 @@ for di = 1:length(desiredPrecision)
       interaction_count=1+interaction_count;
       binary_interaction_list{interaction_count,1} = strcat(Int1,'-',Int2); % Interactions
       binary_interaction_list{interaction_count,2} = Dist.Euc(vii,viii); % Euc
-      binary_interaction_list{interaction_count,3} = Dist.Center(vii,viii); % Co-apex
+      binary_interaction_list{interaction_count,3} = Dist.CoApex2(vii,viii); % Co-apex
       binary_interaction_list{interaction_count,4} = Dist.R2(vii,viii); % R^2
       binary_interaction_list{interaction_count,5} = 0; % empty for now
       binary_interaction_list{interaction_count,6} = possibleInts(vii,viii); % Both_proteins_Corum
