@@ -1,24 +1,33 @@
 function [score, feats] = scorenb(Dist,possibleInts,TP_Matrix)
+
 % Use a Naive Bayes classifier to predict protein interactions.
+% Can take NxN square matrices OR a 2D table.
 
 % Get data
-I = possibleInts(:);
-%labels = TP_Matrix(:);
+if isstruct(Dist)
+  % Dist is a structure with NxN fields
+  fn = fieldnames(Dist);
+  X = nan(length(Dist.(fn{1})(:)),length(fn));
+  for ii = 1:length(fn);
+    X(:,ii) = Dist.(fn{ii})(:);
+  end
+else
+  % Dist is a table
+  X = Dist;
+end
+
+I = possibleInts(:)==1 & sum(isnan(Dist),2)==0;
 y = TP_Matrix(:);
 y(y>0) = 1;
 y(y~=1) = -1;
-fn = fieldnames(Dist);
-X = nan(length(Dist.(fn{1})(:)),length(fn));
-for ii = 1:length(fn);
-  X(:,ii) = Dist.(fn{ii})(:);
-end
 Nd = size(X,2);
 
-% Set NaN's to maxiumum value
-%for ii = 1:Nd
-%  nanelements = isnan(X(:,ii));
-%  X(nanelements,ii) = max(X(~nanelements,ii));
-%end
+% Impute missing values
+for ii = 1:size(X,2)
+  im = isnan(X(:,ii)); % rows with missing values
+  X(im & y==1,ii) = randsample(X(~im & y==1,ii),sum(im & y==1),1);
+  X(im & y==-1,ii) = randsample(X(~im & y==-1,ii),sum(im & y==-1),1);
+end
 
 % Soft whiten data
 eps = 2e-16;

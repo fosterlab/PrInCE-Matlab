@@ -1,14 +1,25 @@
 function [threshold, varoutput] = calcPPIthreshold(score, class, desiredPrecision)
 
-%CALCPPITHRESHOLD calculates the threshold needed to
-%    determine interactions at the desired precision.
+%CALCPPITHRESHOLD calculates the score threshold that 
+%    results in a desired precision level.
 %
-%    Calculates precision as a function of a range of
-%    score values, and detects when precision crosses
-%    the desired level. "Zooms in" on that score
-%    value to obtain finer esimate of the required
-%    score. In the case of multiple scores leading to
-%    the same precision, pick the largest score.
+%    Calculates precision as a function of score,
+%    detects when when precision crosses the desired
+%    level. "Zooms in" on that score value to obtain 
+%    finer esimate of the required score.
+%
+%    score, an Nx1 vector is a measure of interaction 
+%    confidence and ranges between 0 and 1. Score = 1 
+%    denotes highest confidence in the interaction, 
+%    score = 0 denotes lowest confidence. Score is 
+%    often the output of a binary classifier.
+%   
+%    class is binary Nx1 vector. class = 1 denotes a
+%    known interaction. class = 0 denotes a known
+%    non-interaction.
+%
+%    desiredPrecision is the desired precision level,
+%    expressed as a fraction between 0 and 1.
 %
 %    Created by R. Greg Stacey, March 2016.
 
