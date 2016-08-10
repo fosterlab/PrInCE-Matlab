@@ -72,7 +72,8 @@ rawdata = cell(size(experimental_channels));
 txt_val = cell(size(experimental_channels));
 for ii = 1:Nchannels
   %[rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
-  tmp = importdata(user.MQfiles{ii});
+  %tmp = importdata(user.MQfiles{ii});
+  tmp = readchromatogramfile2(user.MQfiles{ii});
   
   % remove 'sheet1' fields
   if isfield(tmp,'Sheet1')
