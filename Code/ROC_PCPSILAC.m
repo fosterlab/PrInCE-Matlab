@@ -719,7 +719,6 @@ for channel_counter = 1:number_of_channels
   fprintf('... %d interactions  ...  %.2f seconds\n',interaction_count,tt)
   
 end
-mySound,pause
 
 clear Dist TP_Matrix scoreMatrix possibleInts inverse_self
 
@@ -861,28 +860,6 @@ final_Precision = final_TP/(final_TP+final_FP);
 clearvars Neg_binary_interaction_list Ineg Ipos
 
 
-%Crete list of replicates, note ensure strjoin function is avalible
-interaction_final.Replicates_formated=cell(Total_unique_interactions,1);
-for format_loop=1:Total_unique_interactions
-  Replicates_2bformated1 = interaction_final.replicate_numbers(format_loop,:);
-  Replicates_2bformated1(Replicates_2bformated1==0) = [];
-  
-  % turn rep*channel into just rep
-  Replicates_2bformated1 = mod(Replicates_2bformated1,number_of_replicates) + 1;
-  
-  Replicates_2bformated1 = num2cell(Replicates_2bformated1);
-  
-  %Test if the array is longer then one entry
-  if length(Replicates_2bformated1)==1
-    interaction_final.Replicates_formated{format_loop} = mat2str(Replicates_2bformated1{1});
-  elseif length(Replicates_2bformated1)>=2
-    for jj= 1:length(Replicates_2bformated1)
-      Replicates_2bformated1{jj} = num2str(Replicates_2bformated1{jj});
-    end
-    interaction_final.Replicates_formated{format_loop}= strjoin(Replicates_2bformated1,' ; ');
-  end
-end
-
 %Crete list of scores, note ensure strjoin function is avalible
 interaction_final.scores_formated=cell(Total_unique_interactions,1);
 for format_loop=1:Total_unique_interactions
@@ -971,7 +948,6 @@ for ii = 1:Total_unique_interactions
 end
 
 
-pause
 
 tic
 fprintf('    11. Write output files')
