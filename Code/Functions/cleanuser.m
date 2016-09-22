@@ -65,6 +65,11 @@ if ischar(user.silacratios)
   user_new.silacratios = {user.silacratios};
 end
 
+% ensure that desiredPrecision is a scalar
+if ~isnumeric(user.desiredPrecision) || length(user.desiredPrecision)~=1
+  error('\n user.desiredPrecision must be a scalar, and it is not.')
+end
+
 % ensure that fractions are between 0 and 1, not 0% and 100%
 
 % ensure that user.Dilution_factor exists

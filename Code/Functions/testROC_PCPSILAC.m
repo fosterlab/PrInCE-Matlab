@@ -18,7 +18,7 @@ spl = 0;
 %fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/ROC/CombinedResults/Final_Interactions_list_47_precisionb.csv';
 %fn = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis/Data/ROC/CombinedResults/Final_Interactions_list_47_precision.csv';
 %fn = '/Users/Mercy/Academics/Foster/NickCodeData/Old runs/GregPCP_20160517/Data/ROC/CombinedResults/Final_Interactions_list_70_precision.csv';
-fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Data/Output/Interactions/Final_Interactions_list_47_precision.csv';
+fn = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Output/Data/Interactions/Final_Interactions_list_47_precision.csv';
 dataNew.data = zeros(20000,9);
 dataNew.text = cell(20000,3);
 j = 0;
@@ -29,8 +29,8 @@ while 1
   if(~ischar(t)),break,end
   j = j+1;
   t1 = strsplit(t, ',');
-  dataNew.data(j,1) = str2num(t1{10}); % proteins in corum?
-  dataNew.data(j,2) = str2num(t1{11}); % interaction in corum?
+  dataNew.data(j,1) = str2num(t1{11}); % proteins in corum?
+  dataNew.data(j,2) = str2num(t1{12}); % interaction in corum?
   for ii=1:6
     dataNew.data(j,2+ii) = ismember(num2str(ii),t1{6}); % interaction in corum?
   end

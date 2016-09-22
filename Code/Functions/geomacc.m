@@ -1,4 +1,4 @@
-function ga = geomacc(predComplex, refComplex)
+function [ga,Sn,PPV] = geomacc(predComplex, refComplex)
 
 %GEOMACC Calculates the geometric accuracy between two
 %    groups of complexes (predicted and reference).

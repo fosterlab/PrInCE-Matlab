@@ -1,6 +1,6 @@
 function [model,ics] = choosemodel_AIC(cleanchrom,x,aicstring,Ngaussmax)
 
-%CHOOSEMODEL_AIC  Selects the number of Gaussians that best fit
+%CHOOSEMODEL_AIC selects the number of Gaussians that best fit
 % a single chromatogram.
 %
 % model = choosemodel_AIC(cleanchrom,x,aicstring,Ngaussmax)
@@ -132,11 +132,11 @@ end
 
 % Throw out any models where the number of non-imputed data points, i.e. the real data, is less than
 % the number of parameters.
-Ngood = sum(cleanchrom>0.01);
-maxModelSize = floor(Ngood/3);
-AIC(maxModelSize:end) = inf;
-AICc(maxModelSize:end) = inf;
-BIC(maxModelSize:end) = inf;
+% Ngood = sum(cleanchrom>0.01);
+% maxModelSize = floor(Ngood/3);
+% AIC(maxModelSize:end) = inf;
+% AICc(maxModelSize:end) = inf;
+% BIC(maxModelSize:end) = inf;
 
 if strcmp(aicstring,'AIC')
   [~,Ngauss] = min(AIC);
@@ -193,7 +193,7 @@ end
 function ics = makeics(cleanchrom,Ngauss)
 
 % Make initial conditions, ics
-[pks, pksI] = findpeaks(cleanchrom);
+[pks, pksI] = findpeaks([0;cleanchrom;0],[0 1:length(cleanchrom)+1]');
 d = diff(pksI);
 [~,I] = sort(d,'descend');
 pks = pks([1; I+1]);

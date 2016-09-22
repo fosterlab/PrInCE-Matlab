@@ -929,7 +929,7 @@ imagesc(Feats_all>5)
 colorbar;
 cx = caxis;
 set(gca,'xtick',1:length(Ninter)+1,'xticklabel',fn);
-title('Together'), 
+title('Together'),
 subplot(1,2,2),
 imagesc(feats_individually>5),
 caxis(cx);
@@ -1035,3 +1035,504 @@ set(gca,'xtick',1:9,'xticklabel',fn(I))
 legend('CORUM','STRING')
 
 
+
+%% Woo! Try a decoy search to estimate FPs
+
+sf_real = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis//Output/tmp/score_rep1.mat';
+load(sf_real)
+score_real = scoreMatrix;
+
+sf_shuffled = '/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis//Output/tmp/score_rep1_shuffledIDs.mat';
+load(sf_shuffled)
+score_shuffled = scoreMatrix;
+
+ds = linspace(0,1,501);
+prec = zeros(size(ds));
+Ninter = zeros(size(ds));
+for ii = 1:length(ds)
+  ii
+  FP = sum(score_shuffled > ds(ii));
+  Ninter(ii) = sum(score_shuffled > ds(ii) | score_real > ds(ii));
+  prec(ii) = 1 - FP / Ninter(ii);
+end
+
+x = linspace(0,1,501);
+h1 = hist(score_real,x);
+h2 = hist(score_shuffled,x);
+figure,hold on
+plot(x,h1)
+plot(x,h2)
+legend('Real','Shuffled')
+
+
+
+
+%% Reference-less FPs, take 2
+
+% Make R_raw and p_raw for any replicate
+
+I = Rraw==1 | Rraw==-1;
+Rraw(I) = nan;
+praw(I) = nan;
+N = sum(~isnan(Chromatograms_raw),2);
+I = N<=10;
+Rraw(I,I) = nan;
+praw(I,I) = nan;
+Rraw(abs(Rraw)>.999) = nan;
+
+ds = exp(-(0:50));
+Ninter = zeros(size(ds));
+fdr = zeros(size(ds));
+for ii = 1:length(ds)
+  I = praw(:)<ds(ii);
+  TP = sum(I & Rraw(:)>0);
+  FP = sum(I & Rraw(:)<0);
+  
+  Ninter(ii) = TP + FP;
+  fdr(ii) = FP / (TP + FP);
+end
+
+
+figure
+plot(fdr,Ninter)
+
+
+[~,I] = min(abs(fdr - 0.01));
+pcut01 = ds(I);
+[~,I] = min(abs(fdr - 0.05));
+pcut05 = ds(I);
+
+I01 = praw(:)<pcut01;
+I05 = praw(:)>=pcut01 & praw(:)<pcut05;
+
+x = linspace(-1.1,1.1,101);
+h01 = hist(Rraw(I01),x);
+h05 = hist(Rraw(I05),x);
+h0 = hist(Rraw(~I01 & ~I05),x);
+
+figure
+b = bar(x,[h01;h05;h0]','stacked');
+b(1).FaceColor = 'c';
+b(1).EdgeColor = 'c';
+b(2).FaceColor = 'b';
+b(2).EdgeColor = 'b';
+b(3).FaceColor = [.7 .7 .7];
+b(3).EdgeColor = [.7 .7 .7];
+xlabel('Correlation coefficient','fontsize',14)
+ylabel('Count','fontsize',14)
+xlim([-1 1])
+s1 = ['1% FDR, N = ' num2str(sum(I01)/2)];
+s2 = ['5% FDR, N = ' num2str(sum(I05 | I01)/2)];
+legend(s1,s2,'Non-sig.')
+set(gca,'fontsize',14)
+
+
+
+%% Now, compare the predicted interactors to CORUM
+
+jj = 3;
+clear Chromatograms_raw Dist TP_Matrix FP_Matrix possibleInts
+%sf = ['/Users/Mercy/Academics/Foster/Tissue_PCPSILAC/PCPSILAC_analysis//Output/tmp/score_rep' num2str(jj) '.mat'];
+%sf = ['/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Output/tmp/score_rep' num2str(jj) '.mat'];
+sf = '/Users/Mercy/Academics/Foster/MikeCarlson/PCPSILAC_analysis//Output/tmp/score_rep1.mat';
+load(sf)
+%RR = reshape(RR,sqrt(length(RR)),sqrt(length(RR)));
+
+%[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+
+% Remove nans from Rpraw, since can never be found to interact
+% I = ~isnan(Dist.Rpraw);
+% Dist.Rpraw = Dist.Rpraw(I);
+% TP_Matrix = TP_Matrix(I);
+% possibleInts = possibleInts(I);
+% FP_Matrix = FP_Matrix(I);
+% RR = RR(I);
+
+randTP_Matrix = zeros(size(TP_Matrix));
+I = randsample(length(TP_Matrix(:)==1 & possibleInts(:)==1),sum(TP_Matrix(:)==1 & possibleInts(:)==1)*1);
+randTP_Matrix(I) = 1;
+
+ds = exp(-(0:2:200));
+recallTP_cor = zeros(size(ds));
+recallFP_cor = zeros(size(ds));
+recallFPrand = zeros(size(ds));
+fdr_apms = zeros(size(ds));
+prec_cor = zeros(size(ds));
+Ninter = zeros(size(ds));
+for ii = 1:length(ds)
+  ii
+  % CORUM TP
+  I_data = Dist.Rpraw<ds(ii);
+  I_corum = TP_Matrix==1 & possibleInts==1;
+  I_overlap = I_data & I_corum;
+  recallTP_cor(ii) = sum(I_overlap(:)) / sum(I_corum(:));
+  
+  % fdr, CORUM method
+  TP = sum(Dist.Rpraw(:)<ds(ii) & TP_Matrix(:)==1 & possibleInts(:)==1);
+  FP = sum(Dist.Rpraw(:)<ds(ii) & TP_Matrix(:)==0 & possibleInts(:)==1);
+  prec_cor(ii) = TP / (TP + FP);
+  
+  % CORUM "FP"
+  I_corum = FP_Matrix==1 & possibleInts==1;
+  I_overlap = I_data & I_corum;
+  recallFP_cor(ii) = sum(I_overlap(:)) / sum(I_corum(:));
+  
+  % Random "FP"
+  I_overlap = I_data & randTP_Matrix==1;
+  recallFPrand(ii) = sum(I_overlap(:)) / sum(randTP_Matrix(:));
+  
+  % fdr, AP-MS method
+  TP = sum(Dist.Rpraw(:)<ds(ii) & RR(:)>0);
+  FP = sum(Dist.Rpraw(:)<ds(ii) & RR(:)<0);
+  fdr_apms(ii) = FP / (TP + FP);
+  
+  Ninter(ii) = TP + FP;
+end
+
+figure
+subplot(2,2,1)
+semilogx(ds,recallTP_cor)
+hold on
+semilogx(ds,recallFP_cor,'r')
+semilogx(ds,recallFPrand,'m')
+%plot([1 1]*(pcut01),y,'--k')
+%plot([1 1]*(pcut05),y,'--k')
+legend('CORUM TP','CORUM FP','Random','location','northwest')
+grid on
+set(gca,'fontsize',14)
+xlabel('P-value threshold','fontsize',14)
+ylabel('Recall','fontsize',14)
+x = xlim;
+
+subplot(2,2,3)
+semilogx(ds,1-prec_cor)
+%hold on
+%semilogx(ds,1-prec_cor)
+xlim(x)
+grid on
+legend('CORUM TP','location','northwest')
+ylabel('FDR','fontsize',14)
+xlabel('P-value threshold','fontsize',14)
+
+
+% Make precision-recall curve from score
+I = possibleInts(:)==1;
+score = scoreMatrix(I);
+class = TP_Matrix(I);
+[~, tmp] = calcPPIthreshold(score,class,0.9);
+
+subplot(2,2,[2 4]),hold on
+plot(recallTP_cor,prec_cor)
+plot(tmp.recRange,tmp.precRange,'r')
+title('Precision-Recall, CORUM TP')
+legend('AP-MS method','Our method')
+ylabel('Precision','fontsize',14)
+xlabel('Recall','fontsize',14)
+mySound
+pause(.01)
+
+
+%% Try to explain the hump at R = -0.5
+
+x = 1:55;
+rr = nan(5000,1);
+for iter = 1:5000
+  y1 = normpdf(x,ceil(rand*55),ceil(rand*10));
+  y1 = y1 / max(y1);
+  I = randsample(55,5);
+  y1(I) = nan;
+  y2 = normpdf(x,ceil(rand*55),ceil(rand*10));
+  y2 = y2 / max(y2);
+  I = randsample(55,5);
+  y2(I) = nan;
+  y1(y1<.1) = nan;
+  y2(y2<.1) = nan;
+  y1 = y1+rand(size(y1))*.95;
+  y2 = y2+rand(size(y2))*.95;
+  I = ~isnan(y1) & ~isnan(y2);
+  if sum(I) ==0
+    continue
+  end
+  rr(iter) = corr(y1(I)',y2(I)');
+end
+
+figure,hist(rr,linspace(-1,1,26))
+
+
+
+%% Predict Mike Carlson's interactions with AP-MS method
+
+sf = '/Users/Mercy/Academics/Foster/MikeCarlson/PCPSILAC_analysis//Output/tmp/score_rep1.mat';
+
+
+
+%% Sanity check: compare all-replicate-scoreMatrix to just R^2
+
+% scoreMatrix
+%[xcutoff, tmp] = calcPPIthreshold(scoreMatrix(possList==1),classList(possList==1)',desiredPrecision);
+
+N = 51;
+dR = 10.^(linspace(-5,0,N));
+rec1 = nan(N,1);
+prec1 = nan(N,1);
+rec2 = nan(N,1);
+prec2 = nan(N,1);
+rec3 = nan(N,1);
+prec3 = nan(N,1);
+dS = 1 - 40.^(linspace(-5,0,N));
+rec0 = nan(N,1);
+prec0 = nan(N,1);
+for ii = 1:length(dR)
+  ii
+  TP = sum(possList'==1 & classList'==1 & DistList(:,2)<dR(ii));
+  FP = sum(possList'==1 & classList'==0 & DistList(:,2)<dR(ii));
+  FN = sum(possList'==1 & classList'==1 & DistList(:,2)>dR(ii));
+  prec1(ii) = TP / (TP + FP);
+  rec1(ii) = TP / (TP + FN);
+  
+  TP = sum(possList'==1 & classList'==1 & DistList(:,7)<dR(ii));
+  FP = sum(possList'==1 & classList'==0 & DistList(:,7)<dR(ii));
+  FN = sum(possList'==1 & classList'==1 & DistList(:,7)>dR(ii));
+  prec2(ii) = TP / (TP + FP);
+  rec2(ii) = TP / (TP + FN);
+  
+  TP = sum(possList'==1 & classList'==1 & DistList(:,12)<dR(ii));
+  FP = sum(possList'==1 & classList'==0 & DistList(:,12)<dR(ii));
+  FN = sum(possList'==1 & classList'==1 & DistList(:,12)>dR(ii));
+  prec3(ii) = TP / (TP + FP);
+  rec3(ii) = TP / (TP + FN);
+  
+  TP = sum(possList'==1 & classList'==1 & score>dS(ii));
+  FP = sum(possList'==1 & classList'==0 & score>dS(ii));
+  FN = sum(possList'==1 & classList'==1 & score<dS(ii));
+  prec0(ii) = TP / (TP + FP);
+  rec0(ii) = TP / (TP + FN);
+end
+
+figure,hold on,
+plot(rec0,prec0,'linewidth',2,'color','k')
+plot(rec1,prec1,'g')
+plot(rec2,prec2,'r')
+plot(rec3,prec3,'m')
+legend('classifier','R2 1','R2 2 ','R2 3')
+
+
+%% Something is off
+% test the idea that NEW interactions for each replicate are good
+% but the overlapping ones are bad
+
+Ifirstnan = [1 0 0 0];
+for ii = 1:3
+  Ifirstnan(ii+1) = find(~isnan(DistList(:,ii*5 -3)),1,'last');
+end
+
+I = 1:size(DistList,1);
+dR = 10.^(linspace(-5,0,51));
+
+for ii = 1:3
+  I0 = Ifirstnan(ii) : Ifirstnan(ii+1);
+  I1 = ismember(I,I0); % new
+  
+  figure,hold on
+  rec1 = zeros(size(dR));
+  rec2 = zeros(size(dR));
+  prec1 = zeros(size(dR));
+  prec2 = zeros(size(dR));
+  for jj = 1:length(dR)
+    jj
+    
+    % New interactions
+    TP = nansum(possList(I1)'==1 & classList(I1)'==1 & DistList(I1,2 + (ii-1)*5)<dR(jj));
+    FP = nansum(possList(I1)'==1 & classList(I1)'==0 & DistList(I1,2 + (ii-1)*5)<dR(jj));
+    FN = nansum(possList(I1)'==1 & classList(I1)'==1 & DistList(I1,2 + (ii-1)*5)>dR(jj));
+    prec1(jj) = TP / (TP + FP);
+    rec1(jj) = TP / (TP + FN);
+    
+    % Overlapping interactions
+    TP = nansum(possList(~I1)'==1 & classList(~I1)'==1 & DistList(~I1,2 + (ii-1)*5)<dR(jj));
+    FP = nansum(possList(~I1)'==1 & classList(~I1)'==0 & DistList(~I1,2 + (ii-1)*5)<dR(jj));
+    FN = nansum(possList(~I1)'==1 & classList(~I1)'==1 & DistList(~I1,2 + (ii-1)*5)>dR(jj));
+    prec2(jj) = TP / (TP + FP);
+    rec2(jj) = TP / (TP + FN);
+  end
+  
+  plot(rec1,prec1,'g')
+  plot(rec2,prec2,'r')
+  legend('new','overlapping')
+  title(num2str(replicatesThisChannel(ii)))
+  grid on
+  pause(.001)
+end
+
+
+%% Why is Inew worse than ~Inew??
+
+Ifirstnan = [1 0 0 0];
+for ii = 1:3
+  Ifirstnan(ii+1) = find(~isnan(DistList(:,ii*5 -3)),1,'last') + 1;
+end
+
+ii = 2;
+I = 1:size(DistList,1);
+I0 = Ifirstnan(ii) : Ifirstnan(ii+1);
+I1 = ismember(I,I0); % new
+  
+figure
+subplot(2,1,1)
+hist(DistList(classList==1 & ~I1,7))
+title('Positive class, overlapping')
+subplot(2,1,2)
+hist(DistList(classList==1 & I1,7))
+title('Positive class, new')
+
+
+%% Manual check
+% get Inew for replicate 6, replicatesThisChannel = [5 6 4]
+% keep [indexList(I1,:) classList(I1)' possList(I1)' DistList(I1,:)]
+% compare to the same interactions, but for [6 5 4], replicate 6
+
+
+% * run w/ replicatesThisChannel = [4 5 6]
+% Matnew5 = [indexList(I1,:) classList(I1)' possList(I1)' DistList(I1,:)];
+% DistList5 = DistList;
+% protAll_save = proteinAll;
+
+% * run w/ replicatesThisChannel = [6 5 4]
+
+% try it for a single line
+I = find(Matnew5(:,4)==1)';
+Imat = zeros(size(I));
+cc = 0;
+for ii = I
+  ii
+  cc = cc+1;
+  i1 = Matnew5(ii,1);
+  i2 = Matnew5(ii,2);
+  protA = protAll_save{i1};
+  protB = protAll_save{i2};
+  i3(1) = find(ismember(proteinAll,protA));
+  i3(2) = find(ismember(proteinAll,protB));
+  i3 = sort(i3);
+  Imat(cc) = find(indexList(:,1)==i3(1) & indexList(:,2)==i3(2));
+  %tmp1 = Matnew5(ii,[3 4 10:14]);
+  %tmp2 = [classList(Imat) possList(Imat) DistList(Imat,6:10)];
+  
+  %if sum(tmp1 - tmp2)~=0
+  %  pause
+  %end
+end
+
+
+
+%% Oooookay.
+% I'm making DistList correctly.
+% But then why does the R^2 outperform the score?
+% It must be a badly performing classifier
+
+% try it without any nans
+%I = find(sum(isnan(DistList),2) == 0);
+I = 1:size(DistList,1);
+
+score2 = scorenb(DistList(I,:),possList(I),classList(I));
+score2 = nanmedian(score2,2);
+
+
+N = 51;
+dR = 10.^(linspace(-5,0,N));
+dS = 1 - 100.^(linspace(-5,0,N));
+clear rec1 prec1 rec2 prec2 rec3 prec3
+for ii = 1:length(dR)
+  ii
+  TP = sum(possList(I)'==1 & classList(I)'==1 & DistList(I,2)<dR(ii));
+  FP = sum(possList(I)'==1 & classList(I)'==0 & DistList(I,2)<dR(ii));
+  FN = sum(possList(I)'==1 & classList(I)'==1 & DistList(I,2)>dR(ii));
+  prec1(ii) = TP / (TP + FP);
+  rec1(ii) = TP / (TP + FN);
+  
+  TP = sum(possList(I)'==1 & classList(I)'==1 & DistList(I,7)<dR(ii));
+  FP = sum(possList(I)'==1 & classList(I)'==0 & DistList(I,7)<dR(ii));
+  FN = sum(possList(I)'==1 & classList(I)'==1 & DistList(I,7)>dR(ii));
+  prec2(ii) = TP / (TP + FP);
+  rec2(ii) = TP / (TP + FN);
+  
+  TP = sum(possList(I)'==1 & classList(I)'==1 & DistList(I,12)<dR(ii));
+  FP = sum(possList(I)'==1 & classList(I)'==0 & DistList(I,12)<dR(ii));
+  FN = sum(possList(I)'==1 & classList(I)'==1 & DistList(I,12)>dR(ii));
+  prec3(ii) = TP / (TP + FP);
+  rec3(ii) = TP / (TP + FN);
+  
+  TP = sum(possList(I)'==1 & classList(I)'==1 & score2>dS(ii));
+  FP = sum(possList(I)'==1 & classList(I)'==0 & score2>dS(ii));
+  FN = sum(possList(I)'==1 & classList(I)'==1 & score2<dS(ii));
+  prec0(ii) = TP / (TP + FP);
+  rec0(ii) = TP / (TP + FN);
+end
+
+figure,hold on,
+plot(rec0,prec0,'linewidth',2,'color','k')
+plot(rec1,prec1,'g')
+plot(rec2,prec2,'r')
+plot(rec3,prec3,'m')
+legend('classifier','R2 1','R2 2 ','R2 3')
+grid on
+
+
+%% Check Ali's skewed histograms
+
+% make ratio data with mean 2
+yy = ones(10000,1);
+xx = yy + randn(10000,1);
+
+data = exp(xx./yy)*2;
+log2data = log2(data);
+dataNorm = log2data - nanmedian(log2data);
+
+figure
+subplot(1,3,1)
+hist(data,0:.5:300)
+xlim([-1 30])
+title('data')
+subplot(1,3,2)
+hist(log2data,-5:.5:8)
+xlim([-5 8])
+title('log2 data')
+subplot(1,3,3)
+hist(dataNorm,-5:.5:8)
+xlim([-5 8])
+title('log2 normalized data')
+
+
+%% Check the output of Anna's file
+
+fn = '/Users/Mercy/Academics/Foster/Anna/shRNA searching/AW_TRC_9K_locations.csv';
+fid = fopen(fn,'r');
+fgetl(fid);
+cc = 0;
+ids9k = cell(9656,1);
+nn9k = zeros(9656,1);
+while ~feof(fid)
+  t = fgetl(fid);
+  t1 = strsplit(t,',');
+  cc = cc+1;
+  ids9k{cc} = t1{1};
+  nn9k(cc) = length(t1);
+end
+ids9k = ids(1:cc);
+nn9k = nn9k(1:cc);
+
+
+fn = '/Users/Mercy/Academics/Foster/Anna/shRNA searching/AW_id_locations.csv';
+fid = fopen(fn,'r');
+fgetl(fid);
+cc = 0;
+ids3k = cell(9656,1);
+nn3k = zeros(9656,1);
+while ~feof(fid)
+  t = fgetl(fid);
+  t1 = strsplit(t,',');
+  cc = cc+1;
+  ids3k{cc} = t1{1};
+  nn3k(cc) = length(t1);
+end
+ids3k = ids3k(1:cc);
+nn3k = nn3k(1:cc);

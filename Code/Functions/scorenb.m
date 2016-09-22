@@ -11,12 +11,13 @@ if isstruct(Dist)
   for ii = 1:length(fn);
     X(:,ii) = Dist.(fn{ii})(:);
   end
+  I = possibleInts(:)==1;
 else
   % Dist is a table
   X = Dist;
+  I = possibleInts(:)==1 & sum(isnan(Dist),2)==0;
 end
 
-I = possibleInts(:)==1 & sum(isnan(Dist),2)==0;
 y = TP_Matrix(:);
 y(y>0) = 1;
 y(y~=1) = -1;
