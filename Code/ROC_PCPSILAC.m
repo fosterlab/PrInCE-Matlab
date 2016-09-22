@@ -388,10 +388,7 @@ for channel_counter = 1:number_of_channels
     fprintf('        3. Reduce to protein level, make Dist.')
     
     % Co-Apex 1: minimum distance between Gaussian parameter doublets (C, W)
-    % soft-whiten C and W parameters
-    Csw = (C - nanmean(C)) / nanstd(C);
-    Wsw = (W - nanmean(W)) / nanstd(W);
-    gaussParamDist = squareform(pdist([Csw Wsw],'euclidean')); % distance between every (C,W) pair
+    gaussParamDist = squareform(pdist([C W],'euclidean')); % distance between every (C,W) pair
     chromNames = Protein.Isoform; % save the protein ID of each Gaussian
     
     % Reduce variables from gaussian-level to protein-level
@@ -399,6 +396,7 @@ for channel_counter = 1:number_of_channels
     Chromatograms = Chromatograms(Ireduce,:);
     Chromatograms_raw = Chromatograms_raw(Ireduce,:);
     C = C(Ireduce,:);
+    W = W(Ireduce,:);
     Ngauss = Ngauss(Ireduce);
     fn = fieldnames(Protein);
     for ii = 1:length(fn)
@@ -418,18 +416,18 @@ for channel_counter = 1:number_of_channels
     %Dist.Rpraw = p;                                                       % 4. Raw chromatogram correlation p-value
     Dist.Ngauss = squareform(pdist(Ngauss,'euclidean'));                  % 5. Difference in number of fitted Gaussians
     Dist.AUC = squareform(pdist(auc,'euclidean'));                        % 6. Difference in area-under-the-chromatogram
-    %   Dist.CoApex = zeros(length(Protein.Isoform),length(Protein.Isoform));
-    %   I = cell(size(Protein.Isoform));
-    %   for ii = 1:length(Protein.Isoform)
-    %     I{ii} = ismember(chromNames,Protein.Isoform{ii});
-    %   end
-    %   for ii = 1:length(Protein.Isoform)
-    %     for jj = 1:length(Protein.Isoform)
-    %       if ii == jj; continue; end
-    %       tmp = gaussParamDist(I{ii},I{jj});
-    %       Dist.CoApex(ii,jj) = min(tmp(:));                                 % 7. Co-Apex score 1
-    %     end
-    %   end
+    Dist.CoApex = zeros(length(Protein.Isoform),length(Protein.Isoform));
+%     I = cell(size(Protein.Isoform));
+%     for ii = 1:length(Protein.Isoform)
+%       I{ii} = ismember(chromNames,Protein.Isoform{ii});
+%     end
+%     for ii = 1:length(Protein.Isoform)
+%       for jj = 1:length(Protein.Isoform)
+%         if ii == jj; continue; end
+%         tmp = gaussParamDist(I{ii},I{jj});
+%         Dist.CoApex(ii,jj) = min(tmp(:));                                 % 7. Co-Apex score 1
+%       end
+%     end
     [~,mx] = max(Chromatograms,[],2);
     Dist.CoApex2 = squareform(pdist(mx,'euclidean'));                     % 8. Co-Apex score 2
     fn = fieldnames(Dist);
@@ -537,9 +535,8 @@ for channel_counter = 1:number_of_channels
     Inverse_TP_matrix = ~TP_Matrix;
     %FP_Matrix = (Int_matrix & Inverse_TP_matrix);
     
-    
     % Save and clear replicate-specific variables
-    sf = [maindir '/Output/tmp/' 'score_rep' num2str(replicate_counter) '_chan' num2str(channel_counter) '.mat'];
+    sf = [maindir '/Output/tmp/' 'data_rep' num2str(replicate_counter) '_chan' num2str(channel_counter) '.mat'];
     save(sf,'TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms','Dist')
     clear TP_Matrix possibleInts Protein inverse_self Chromatograms Dist
     
@@ -564,7 +561,7 @@ for channel_counter = 1:number_of_channels
   kk = 0;
   for ii = 1:length(replicatesThisChannel)
     replicate_counter = replicatesThisChannel(ii);
-    sf = [maindir '/Output/tmp/' 'score_rep' num2str(replicate_counter) '_chan' num2str(channel_counter) '.mat'];
+    sf = [maindir '/Output/tmp/' 'data_rep' num2str(replicate_counter) '_chan' num2str(channel_counter) '.mat'];
     load(sf,'Dist','TP_Matrix','possibleInts','Protein','inverse_self')
     
     fn = fieldnames(Dist);
@@ -616,8 +613,8 @@ for channel_counter = 1:number_of_channels
     if ii>1
       tmp = indexList(1:size(indexList0,1),:);
       x1 = sum(indexList0(:) - tmp(:));
-      x2 = sum(classList0(:)' - classList(1:size(indexList0,1)));
-      x3 = sum(possList0(:)' - possList(1:size(indexList0,1)));
+      x2 = sum(classList0(:) - classList(1:size(indexList0,1)));
+      x3 = sum(possList0(:) - possList(1:size(indexList0,1)));
       x4 = sum(~ismember(proteinAll(1:length(proteinAll0)), proteinAll0));
       if x1~=0 || x2~=0 || x3~=0 || x4~=0
         error('Error combining distance measures across replicates')
@@ -641,7 +638,11 @@ for channel_counter = 1:number_of_channels
   tic
   fprintf('\n    6. Calculate score threshold')
   
-  [xcutoff, tmp] = calcPPIthreshold(score(possList==1),classList(possList==1)',desiredPrecision);
+  [xcutoff, tmp] = calcPPIthreshold(score(possList==1),classList(possList==1),desiredPrecision);
+  
+  % save score for Complexes.m
+  sf = [maindir '/Output/tmp/' 'score_chan' num2str(channel_counter) '.mat'];
+  save(sf,'score','proteinAll','possList','classList','indexList','feats_new','xcutoff')
   
   precRange = tmp.precRange;
   recRange = tmp.recRange;
@@ -686,7 +687,7 @@ for channel_counter = 1:number_of_channels
   s = ['    7. Find and concatenate interactions at precision = ' num2str(desiredPrecision(di)) '\n'];
   fprintf(s)
   
-  FN = sum(score(:)<xcutoff & possList'==1 & classList'==1);
+  FN = sum(score(:)<xcutoff & possList==1 & classList==1);
   
   % Find binary interactions
   Final_interactions = find(score > xcutoff);
@@ -889,17 +890,29 @@ interaction_final.precisionDropout = nan(Total_unique_interactions,1);
 Recall_plot = nan(Total_unique_interactions,1);
 FPR_plot = nan(Total_unique_interactions,1);
 for ii = 1:Total_unique_interactions
+  % global precision
   cutoff = interaction_final.score(ii) - 10e-20;
   I = interaction_final.score >= cutoff;
   TP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==1);
   FP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==0);
-  
   if TP==0 && FP==0
     prec = 1;
   else
     prec = TP / (TP + FP);
   end
+  interaction_final.precisionDropout(ii) = prec;
+  Recall_plot(ii) = TP / all_positives;
   
+  % precision for individual channels
+  cutoff = interaction_final.score(ii) - 10e-20;
+  I = interaction_final.score >= cutoff;
+  TP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==1);
+  FP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==0);
+  if TP==0 && FP==0
+    prec = 1;
+  else
+    prec = TP / (TP + FP);
+  end
   interaction_final.precisionDropout(ii) = prec;
   Recall_plot(ii) = TP / all_positives;
 end
@@ -956,7 +969,7 @@ tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
-
+mySound
 tic
 fprintf('    12. Make figures')
 makeFigures_ROC
