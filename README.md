@@ -2,15 +2,15 @@
 Bioinformatics pipeline for analyzing PCP-SILAC and other co-elution experiments. Original versions of the analysis were written by Anders Kristensen<sup>1</sup> and Nichollas Scott<sup>2</sup>.
 
 
-### How to use
+# How to use
 
-# 1. Download pipeline.
+### 1. Download pipeline.
 
-# 2. Format data.
+### 2. Format data.
 
-# 3. Organize files.
+### 3. Organize files.
 
-# 4. Run analysis.
+### 4. Run analysis.
 
 
 
