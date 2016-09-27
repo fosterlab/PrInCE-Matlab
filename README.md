@@ -40,11 +40,16 @@ Note: protein IDs in data files must match a subset of protein IDs in the refere
 
 Create a folder for storing pipeline output (e.g. "PCPanalysis/"). Unpack the zipped folder downloaded in step 1. From this unzipped directory, copy the Code/ folder and pcpsilac.m into the PCPanalysis/ folder. In PCPanalysis/, create a folder called "Input". Place all data files (one for each condition) and the reference database file in the PCPanalysis/Input/ folder. The resulting file structure should look like this:
 
-* ... PCPanalysis/
-* ... ... Code/
-* ... ... Input
-* ... ... ... Reference database file (e.g *allComplexes.csv*)
-* ...... pcpsilac.m
+  * PCPanalysis/
+    * Code/
+    * Input/
+    * Code/
+      * Reference database file (e.g *allComplexes.csv*)
+      * Data file 1 (e.g *condition1.csv*)
+      * Data file 2 (e.g *condition2.csv*)
+      * Data file 3 (e.g *condition1.csv*)
+      * ...
+    * pcpsilac.m
 
 
 
