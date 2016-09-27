@@ -10,9 +10,13 @@ In a browser, go to to [https://github.com/fosterlab/PCP-SILAC](https://github.c
 
 ![Download pipeline from github](/ReadmeFigures/01download.jpg?raw=true)
 
-### 2. Format data.
+### 2. Format your data.
 
-### 3. Organize files.
+#### csv files
+This pipeline is designed to work on multiple csv files. Each file contains data from a single biological condition and one or more replicates. For example, data from a PCP-SILAC experiment with M/L and H/L ratios would be formatted into two csv files.
+
+
+### 3. Organize your files.
 
 ### 4. Run analysis.
 
