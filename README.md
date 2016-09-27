@@ -17,13 +17,17 @@ This pipeline is designed to work on multiple csv files. Each data file contains
 
 Columns 1 and 2 are *protein ID* and *replicate number*, respectively. *protein ID* must be a string that matches to the reference database file (see below). *replicate number* must be an integer. Subsequent columns are protein amounts (e.g. isotopologue ratio for PCP-SILAC experiments) from fractionated data. For example, an experiment with 50 fractions would have files with 52 columns.
 
-The first row in each file is reserved for the header. Each subsequent row is a chromatogram from a protein (or protein group) from a replicate and condition.
+The first row in each file is reserved for the header. Each subsequent row is a chromatogram from a protein (or protein group) from a replicate and condition. An example data file for an experiment with two replicates and four protein IDs is below. Note: Real data should have many more proteins and fractions!
 
-![Format your data files](/ReadmeFigures/examplefile1.jpg?raw=true)
+![Format your data files like this](/ReadmeFigures/examplefile1.jpg?raw=true)
 
-#### Reference database of interactions
-This pipeline needs a reference database of known interactions, e.g. CORUM. This reference database must be a csv file in the same format as CORUM's *allComplexes.csv* file, downloadable [here](http://mips.helmholtz-muenchen.de/genre/proj/corum/).
+#### Reference database of known complexes
+This pipeline needs a reference database of known interactions, e.g. CORUM. This reference database must be a csv file in the same format as CORUM's *allComplexes.csv* file (downloadable [here](http://mips.helmholtz-muenchen.de/genre/proj/corum/)). That is, the reference database file must:
+* have a header
+* be **semicolon-separated**
+* each reference complex must be on a separate line in the **fourth column**
 
+**Note: protein IDs in data files must match a subset of protein IDs in the reference database.**
 
 ### 3. Organize your files.
 
