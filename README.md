@@ -6,6 +6,10 @@ Bioinformatics pipeline for analyzing PCP-SILAC and other co-elution experiments
 
 ### 1. Download pipeline.
 
+In a browser, go to to [https://github.com/fosterlab/PCP-SILAC](https://github.com/fosterlab/PCP-SILAC). Click the green "Clone or Download" button in the top right. Then click "Download ZIP".
+
+![Download pipeline from github](/ReadmeFigures/01download.pdf)
+
 ### 2. Format data.
 
 ### 3. Organize files.
