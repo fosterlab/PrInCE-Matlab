@@ -1,5 +1,11 @@
 # PCP-SILAC
-Bioinformatics pipeline for analyzing PCP-SILAC and other co-elution experiments. Original versions of the analysis were written by Anders Kristensen<sup>1</sup> and Nichollas Scott<sup>2</sup>.
+Bioinformatics pipeline for analyzing PCP-SILAC and other co-elution experiments.
+
+* Predict protein-protein interactions
+* Predict protein complexes
+* Calculate protein abundance differences
+
+Original versions of the analysis were written by Anders Kristensen<sup>1</sup> and Nichollas Scott<sup>2</sup>.
 
 
 # How to use
@@ -24,14 +30,28 @@ The first row in each file is reserved for the header. Each subsequent row is a 
 #### Reference database of known complexes
 This pipeline needs a reference database of known interactions, e.g. CORUM. This reference database must be a csv file in the same format as CORUM's *allComplexes.csv* file (downloadable [here](http://mips.helmholtz-muenchen.de/genre/proj/corum/)). That is, the reference database file must:
 * have a header
-* be **semicolon-separated**
-* each reference complex must be on a separate line in the **fourth column**
+* be semicolon-separated
+* each reference complex must be on a separate line in the fourth column
 
-**Note: protein IDs in data files must match a subset of protein IDs in the reference database.**
+Note: protein IDs in data files must match a subset of protein IDs in the reference database.
+
 
 ### 3. Organize your files.
 
-### 4. Run analysis.
+Create a folder for storing pipeline output (e.g. "PCPanalysis/"). Unpack the zipped folder downloaded in step 1. From this unzipped directory, copy the Code/ folder and pcpsilac.m into the PCPanalysis/ folder. In PCPanalysis/, create a folder called "Input". Place all data files (one for each condition) and the reference database file in the PCPanalysis/Input/ folder. The resulting file structure should look like this:
+
+... PCPanalysis/
+...... Code/
+...... Input
+......... Reference database file (e.g *allComplexes.csv*)
+...... pcpsilac.m
+
+
+
+### 4. Enter the details of your experiment in pcpsilac.m.
+
+
+### 5. Run analysis.
 
 
 
