@@ -43,7 +43,6 @@ Create a folder for storing pipeline output (e.g. "PCPanalysis/"). Unpack the zi
   * PCPanalysis/
     * Code/
     * Input/
-    * Code/
       * Reference database file (e.g *allComplexes.csv*)
       * Data file 1 (e.g *condition1.csv*)
       * Data file 2 (e.g *condition2.csv*)
@@ -57,7 +56,11 @@ Create a folder for storing pipeline output (e.g. "PCPanalysis/"). Unpack the zi
 
 
 ### 5. Run analysis.
+Open Matlab. In Matlab, *cd* to the PCPanalysis/ folder. In the command line type
 
+```
+pcpsilac.m
+```
 
 
 ## References
