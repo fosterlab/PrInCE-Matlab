@@ -35,13 +35,14 @@ Here's a simple dataset with one condition, two replicates, and five fractions:
 
 ![Format your data files like this](/ReadmeFigures/examplefile1.jpg?raw=true)
 
-**Important: Ensure that files are "saved as csv", e.g. Excel --> "Save as" --> "Save as csv"**
+Important: Ensure that files are "saved as csv", e.g. Excel --> "Save as" --> "Save as csv"
 
 #### Reference database of known complexes
-This pipeline needs a reference database of known protein complexes, e.g. CORUM. This reference database must be a csv file in the same format as CORUM's *allComplexes.csv* file (downloadable [here](http://mips.helmholtz-muenchen.de/genre/proj/corum/)). That is, the reference database file must:
-* have a header
-* be semicolon-separated
-* each reference complex must be on a separate line in the fourth column
+This pipeline needs a reference database of known protein complexes, e.g. CORUM. For now, this reference database must be a file in the same format as CORUM's *allComplexes.csv* file (downloadable [here](http://mips.helmholtz-muenchen.de/genre/proj/corum/)), and we recommend this for mammalian datasets. In case a custom reference must be made, it must follow this format:
+
+* must be a csv file
+* must have a header
+* reference complexes are in the fourth column, and each member is semicolon-separated
 
 Note: protein IDs in data files must match a subset of protein IDs in the reference database.
 
@@ -59,17 +60,19 @@ Before running the pipeline, organize experiment files and code like this:
       * ...
     * pcpsilac.m
 
-To accomplish this, create a home folder (e.g. "Pipeline/"). Unzip the code downloaded from [https://github.com/fosterlab/PCP-SILAC](https://github.com/fosterlab/PCP-SILAC) and copy pcpsilac.m and the Code/ folder into the working directory. In the working directory, create a folder called "Input" and place all data files (one for each condition) and the reference database file in this Input/ folder.
+To accomplish this, first create a working folder (name doesn't matter). Unzip the [code](https://github.com/fosterlab/PCP-SILAC) and copy pcpsilac.m and the Code/ folder into the working directory. In the working directory, create a folder called "Input" and place all data files (one for each condition) and the reference database file in this Input/ folder.
 
 ### 4. Enter the details of your experiment in pcpsilac.m.
 
 
 ### 5. Run analysis.
-Open Matlab. In Matlab, *cd* to the PCPanalysis/ folder. In the command line type
+Open Matlab. In Matlab, *cd* to the folder that contains pcpsilac.m, i.e. the working directory you made in 3. In the command line type
 
 ```
 pcpsilac.m
 ```
+
+As the pipeline runs, output figures and tables will be deposited in the automatically generated Output/ folder.
 
 
 ## References
