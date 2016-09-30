@@ -10,6 +10,12 @@ Original versions of the analysis were written by Anders Kristensen<sup>1</sup> 
 
 # How to use
 
+1. Download pipeline.
+2. Format your data.
+3. Organize your files.
+4. Enter youre experiment details in pcpsilac.m.
+5. Run pcpsilac.m.
+
 ### 1. Download pipeline.
 
 In a browser, go to to [https://github.com/fosterlab/PCP-SILAC](https://github.com/fosterlab/PCP-SILAC). Click the green "Clone or Download" button in the top right. Then click "Download ZIP".
@@ -53,7 +59,7 @@ Before running the pipeline, organize experiment files and code like this:
       * ...
     * pcpsilac.m
 
-To accomplish this, create a home folder (e.g. "Pipeline/"). Unzip the code downloaded from [https://github.com/fosterlab/PCP-SILAC](https://github.com/fosterlab/PCP-SILAC) and copy pcpsilac.m and the Code/ folder into the home directory. In the home directory, create a folder called "Input", then place all data files (one for each condition) and the reference database file in this Input/ folder. The resulting file structure should look like this:
+To accomplish this, create a home folder (e.g. "Pipeline/"). Unzip the code downloaded from [https://github.com/fosterlab/PCP-SILAC](https://github.com/fosterlab/PCP-SILAC) and copy pcpsilac.m and the Code/ folder into the working directory. In the working directory, create a folder called "Input" and place all data files (one for each condition) and the reference database file in this Input/ folder.
 
 ### 4. Enter the details of your experiment in pcpsilac.m.
 
