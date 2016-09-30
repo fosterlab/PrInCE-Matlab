@@ -19,13 +19,13 @@ In a browser, go to to [https://github.com/fosterlab/PCP-SILAC](https://github.c
 ### 2. Format your data.
 
 #### Data files
-You may be making multiple csv files. They contain data from a single biological condition and one or more replicates. Each row (except for the header) is a chromatogram in the case of chromatographic experiments, but generally needs to be protein amount as measured across a fractionated gradient. Each file is formatted like this:
+You will be making multiple csv files, each containing data for all replicates and a one single biological condition. Each row, except for the header, is co-fractionation data for a single protein, e.g. a chromatogram. Each file is formatted like this:
 
 * Column 1: Protein ID (must match with reference)
 * Column 2: Replicate number (integer)
-* Columns 3-end: Protein amounts from co-fractionation data, e.g. isotopologue ratio for PCP-SILAC
+* Columns 3-end: Co-fractionated protein amount, e.g. isotopologue ratio for PCP-SILAC
 
-An example (very simplified) data set with one condtion, two replicates, and five fractions is shown below.
+A simple example dataset with one condtion, two replicates, and five fractions is shown below.
 
 ![Format your data files like this](/ReadmeFigures/examplefile1.jpg?raw=true)
 
