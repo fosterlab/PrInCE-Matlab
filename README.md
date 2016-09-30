@@ -25,11 +25,11 @@ You will be making multiple csv files, one for each biological condition. Each r
 * Column 2: Replicate number (integer)
 * Columns 3-end: Co-fractionated protein amount, e.g. isotopologue ratio for PCP-SILAC
 
-A simple example dataset with one condtion, two replicates, and five fractions is shown below.
+Here's a simple dataset with one condition, two replicates, and five fractions:
 
 ![Format your data files like this](/ReadmeFigures/examplefile1.jpg?raw=true)
 
-**Important: Ensure that files are "saved as csv" in whatever program you use, e.g. Excel.**
+**Important: Ensure that files are "saved as csv", e.g. Excel --> "Save as" --> "Save as csv"**
 
 #### Reference database of known complexes
 This pipeline needs a reference database of known interactions, e.g. CORUM. This reference database must be a csv file in the same format as CORUM's *allComplexes.csv* file (downloadable [here](http://mips.helmholtz-muenchen.de/genre/proj/corum/)). That is, the reference database file must:
