@@ -44,17 +44,16 @@ Note: protein IDs in data files must match a subset of protein IDs in the refere
 
 Before running the pipeline, organize experiment files and code like this:
 
-  * <working directory>/
+  * a working directory/
     * Code/
     * Input/
       * Reference database file (e.g *allComplexes.csv*)
       * Data file 1 (e.g *condition1.csv*)
       * Data file 2 (e.g *condition2.csv*)
-      * Data file 3 (e.g *condition1.csv*)
       * ...
     * pcpsilac.m
 
-That is, inside a working directory, the code goes in the Code/ folder and each input file goes in the Input/ folder. The master script, pcpsilac.m, goes in the working directory. To accomplish this, create a home folder (e.g. "Pipeline/"). Unzip the code downloaded from [https://github.com/fosterlab/PCP-SILAC](https://github.com/fosterlab/PCP-SILAC) and copy pcpsilac.m and the Code/ folder into the home directory. In the home directory, create a folder called "Input", then place all data files (one for each condition) and the reference database file in this Input/ folder. The resulting file structure should look like this:
+To accomplish this, create a home folder (e.g. "Pipeline/"). Unzip the code downloaded from [https://github.com/fosterlab/PCP-SILAC](https://github.com/fosterlab/PCP-SILAC) and copy pcpsilac.m and the Code/ folder into the home directory. In the home directory, create a folder called "Input", then place all data files (one for each condition) and the reference database file in this Input/ folder. The resulting file structure should look like this:
 
 ### 4. Enter the details of your experiment in pcpsilac.m.
 
