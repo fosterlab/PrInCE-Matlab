@@ -19,13 +19,17 @@ In a browser, go to to [https://github.com/fosterlab/PCP-SILAC](https://github.c
 ### 2. Format your data.
 
 #### Data files
-This pipeline is designed to work on multiple csv files. Each data file contains data from a single biological condition and one or more replicates. For example, data from a PCP-SILAC experiment with M/L and H/L ratios would be formatted into two csv files. **Important: Ensure that files are "saved as csv" in whatever program you use, e.g. Excel.**
+You may be making multiple csv files. They contain data from a single biological condition and one or more replicates. Each row (except for the header) is a chromatogram in the case of chromatographic experiments, but generally needs to be protein amount as measured across a fractionated gradient. Each file is formatted like this:
 
-Columns 1 and 2 are *protein ID* and *replicate number*, respectively. *protein ID* must be a string that matches to the reference database file (see below). *replicate number* must be an integer. Subsequent columns are protein amounts (e.g. isotopologue ratio for PCP-SILAC experiments) from fractionated data. For example, an experiment with 50 fractions would have files with 52 columns.
+* Column 1: Protein ID (must match with reference)
+* Column 2: Replicate number (integer)
+* Columns 3-end: Protein amounts from co-fractionation data, e.g. isotopologue ratio for PCP-SILAC
 
-The first row in each file is reserved for the header. Each subsequent row is a chromatogram from a protein (or protein group) from a replicate and condition. An example data file for an experiment with two replicates and four protein IDs is below. Note: Real data should have many more proteins and fractions!
+An example (very simplified) data set with one condtion, two replicates, and five fractions is shown below.
 
 ![Format your data files like this](/ReadmeFigures/examplefile1.jpg?raw=true)
+
+**Important: Ensure that files are "saved as csv" in whatever program you use, e.g. Excel.**
 
 #### Reference database of known complexes
 This pipeline needs a reference database of known interactions, e.g. CORUM. This reference database must be a csv file in the same format as CORUM's *allComplexes.csv* file (downloadable [here](http://mips.helmholtz-muenchen.de/genre/proj/corum/)). That is, the reference database file must:
