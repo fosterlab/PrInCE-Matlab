@@ -19,7 +19,7 @@ In a browser, go to to [https://github.com/fosterlab/PCP-SILAC](https://github.c
 ### 2. Format your data.
 
 #### Data files
-You will be making multiple csv files, one for each biological condition. Each row, except for the header, is co-fractionation data for a single protein and replicate, e.g. a chromatogram. Each file is formatted like this:
+You will be making one csv file for each biological condition. Each row, except for the header, is co-fractionation data from a single protein and replicate, e.g. a chromatogram. Each file is formatted like this:
 
 * Column 1: Protein ID (must match with reference)
 * Column 2: Replicate number (integer)
@@ -32,7 +32,7 @@ Here's a simple dataset with one condition, two replicates, and five fractions:
 **Important: Ensure that files are "saved as csv", e.g. Excel --> "Save as" --> "Save as csv"**
 
 #### Reference database of known complexes
-This pipeline needs a reference database of known interactions, e.g. CORUM. This reference database must be a csv file in the same format as CORUM's *allComplexes.csv* file (downloadable [here](http://mips.helmholtz-muenchen.de/genre/proj/corum/)). That is, the reference database file must:
+This pipeline needs a reference database of known protein complexes, e.g. CORUM. This reference database must be a csv file in the same format as CORUM's *allComplexes.csv* file (downloadable [here](http://mips.helmholtz-muenchen.de/genre/proj/corum/)). That is, the reference database file must:
 * have a header
 * be semicolon-separated
 * each reference complex must be on a separate line in the fourth column
@@ -42,7 +42,7 @@ Note: protein IDs in data files must match a subset of protein IDs in the refere
 
 ### 3. Organize your files.
 
-Create a folder for storing pipeline output (e.g. "PCPanalysis/"). Unpack the zipped folder downloaded in step 1. From this unzipped directory, copy the Code/ folder and pcpsilac.m into the PCPanalysis/ folder. In PCPanalysis/, create a folder called "Input". Place all data files (one for each condition) and the reference database file in the PCPanalysis/Input/ folder. The resulting file structure should look like this:
+Inside a home directory, the code exists in the Code/ folder, and each input file goes in the Input/ folder. The master script, pcpsilac.m, exists in the home directory. To accomplish this, create a home folder (e.g. "Pipeline/"). Unzip the code downloaded from [https://github.com/fosterlab/PCP-SILAC](https://github.com/fosterlab/PCP-SILAC) and copy pcpsilac.m and the Code/ folder into the home directory. In the home directory, create a folder called "Input", then place all data files (one for each condition) and the reference database file in this Input/ folder. The resulting file structure should look like this:
 
   * PCPanalysis/
     * Code/
