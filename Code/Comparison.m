@@ -197,6 +197,12 @@ if ~skipflag
     end
     txt_val{ii} = txt_val{ii}(1:cc+1);
     num_val{ii} = num_val{ii}(1:cc,:);
+    
+    % if txt_val includes protein groups, reduce it to the first protein in each group
+    for jj = 1:size(txt_val{ii},1)
+      tmp = strsplit(txt_val{ii}{jj},';');
+      txt_val{ii}{jj} = tmp{1};
+    end
 
     % Confirm that the 'Replicate' column is in the header
     Ihead = strfind(lower(txt_val{ii}(1,:)),'replicate');

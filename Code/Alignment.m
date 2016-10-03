@@ -139,7 +139,14 @@ if ~skipflag
     
     num_val{ii} = tmp.data;
     txt_val{ii} = tmp.textdata(:,1);
+    
+    % if txt_val includes protein groups, reduce it to the first protein in each group
+    for jj = 1:size(txt_val{ii},1)
+      tmp = strsplit(txt_val{ii}{jj},';');
+      txt_val{ii}{jj} = tmp{1};
+    end
   end
+  
   
   % Import Gauss fits for each replicate
   %   Gaus_import: mx6, where m is the number of proteins with a fitted Gaussian

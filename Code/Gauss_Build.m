@@ -90,6 +90,12 @@ for ii = 1:Nchannels
   rawdata{ii} = tmp.data;
   txt_val{ii} = tmp.textdata;
   
+  % if txt_val includes protein groups, reduce it to the first protein in each group
+  for jj = 1:size(txt_val{ii},1)
+    tmp = strsplit(txt_val{ii}{jj},';');
+    txt_val{ii}{jj} = tmp{1};
+  end
+  
   % if rawdata & txt_val are the same length, assume they both have headers, remove rawdata header
   if size(rawdata{ii},1)==size(txt_val{ii},1)
     rawdata{ii} = rawdata{ii}(2:end,:);
