@@ -439,23 +439,23 @@ for channel_counter = 1:number_of_channels
     clear Dist
     Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));              % 1. Euclidean distance
     Dist.R2 = 1 - corr(Chromatograms').^2;                                % 2. Cleaned chromatogram R^2
-    %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
-    %Dist.R2raw = 1 - R.^2;                                                % 3. Raw chromatogram R^2
-    %Dist.Rpraw = p;                                                       % 4. Raw chromatogram correlation p-value
+    [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+    Dist.R2raw = 1 - R.^2;                                                % 3. Raw chromatogram R^2
+    Dist.Rpraw = p;                                                       % 4. Raw chromatogram correlation p-value
     Dist.Ngauss = squareform(pdist(Ngauss,'euclidean'));                  % 5. Difference in number of fitted Gaussians
-    Dist.AUC = squareform(pdist(auc,'euclidean'));                        % 6. Difference in area-under-the-chromatogram
+    %Dist.AUC = squareform(pdist(auc,'euclidean'));                        % 6. Difference in area-under-the-chromatogram
     Dist.CoApex = zeros(length(Protein.Isoform),length(Protein.Isoform));
-%     I = cell(size(Protein.Isoform));
-%     for ii = 1:length(Protein.Isoform)
-%       I{ii} = ismember(chromNames,Protein.Isoform{ii});
-%     end
-%     for ii = 1:length(Protein.Isoform)
-%       for jj = 1:length(Protein.Isoform)
-%         if ii == jj; continue; end
-%         tmp = gaussParamDist(I{ii},I{jj});
-%         Dist.CoApex(ii,jj) = min(tmp(:));                                 % 7. Co-Apex score 1
-%       end
-%     end
+    I = cell(size(Protein.Isoform));
+    for ii = 1:length(Protein.Isoform)
+      I{ii} = ismember(chromNames,Protein.Isoform{ii});
+    end
+    for ii = 1:length(Protein.Isoform)
+      for jj = 1:length(Protein.Isoform)
+        if ii == jj; continue; end
+        tmp = gaussParamDist(I{ii},I{jj});
+        Dist.CoApex(ii,jj) = min(tmp(:));                                 % 7. Co-Apex score 1
+      end
+    end
     [~,mx] = max(Chromatograms,[],2);
     Dist.CoApex2 = squareform(pdist(mx,'euclidean'));                     % 8. Co-Apex score 2
     fn = fieldnames(Dist);
@@ -565,7 +565,7 @@ for channel_counter = 1:number_of_channels
     
     % Save and clear replicate-specific variables
     sf = [maindir '/Output/tmp/' 'data_rep' num2str(replicate_counter) '_chan' num2str(channel_counter) '.mat'];
-    save(sf,'TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms','Dist')
+    save(sf,'TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms_raw','Chromatograms','Dist')
     clear TP_Matrix possibleInts Protein inverse_self Chromatograms Dist
     
     
@@ -888,8 +888,7 @@ final_Recall = final_TP / all_positives;
 final_Precision = final_TP/(final_TP+final_FP);
 clearvars Neg_binary_interaction_list Ineg Ipos
 
-
-%Crete list of scores, note ensure strjoin function is avalible
+%Create list of scores, note ensure strjoin function is avalible
 interaction_final.scores_formated=cell(Total_unique_interactions,1);
 for format_loop=1:Total_unique_interactions
   tmp = interaction_final.score(format_loop);
@@ -947,12 +946,10 @@ end
 
 
 % Count TP, FP, and novel interactions
-Precision_array = cell(2,1); % 1 - global, 2 - replicate specific
-ii = 1;
 I = (1:Total_unique_interactions)';
-Precision_array{ii} = zeros(number_of_replicates*number_of_channels,3);
+Precision_array = zeros(number_of_channels,3);
 % 1 - FP, 2 - TP, 3 - novel
-for jj = 1:number_of_replicates*number_of_channels
+for jj = 1:number_of_channels
   % Find position of interaction observed within the required number of replicates
   position_to_sum = find(interaction_final.times_observed_across_reps>=jj & I);
   
@@ -960,9 +957,9 @@ for jj = 1:number_of_replicates*number_of_channels
   protInCor = interaction_final.proteinInCorum(position_to_sum);
   
   %Count the number values for non redundant list
-  Precision_array{ii}(jj,1) = sum(protInCor & ~intInCor);
-  Precision_array{ii}(jj,2) = sum(protInCor & intInCor);
-  Precision_array{ii}(jj,3) = length(position_to_sum) - Precision_array{ii}(jj,1) - Precision_array{ii}(jj,2);
+  Precision_array(jj,1) = sum(protInCor & ~intInCor);
+  Precision_array(jj,2) = sum(protInCor & intInCor);
+  Precision_array(jj,3) = length(position_to_sum) - Precision_array(jj,1) - Precision_array(jj,2);
 end
 
 tt = toc;
@@ -997,14 +994,11 @@ tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
-mySound
 tic
 fprintf('    12. Make figures')
 makeFigures_ROC
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
-
-
 
 
 diary('off')
