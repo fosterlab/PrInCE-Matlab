@@ -25,13 +25,11 @@ disp('ROC_PCPSILAC.m')
 tic
 fprintf('\n    0. Initialize')
 
-
 % Load user settings
 maindir = user.maindir;
 Experimental_channels = user.silacratios;
 desiredPrecision = user.desiredPrecision;
 number_of_channels = length(user.silacratios);
-
 
 % Define folders, i.e. define where everything lives.
 codedir = [maindir 'Code/']; % where this script lives
@@ -46,86 +44,64 @@ if ~exist([maindir '/Output/tmp'], 'dir'); mkdir([maindir '/Output/tmp']); end
 if ~exist(figdir, 'dir'); mkdir(figdir); end
 if ~exist(datadir, 'dir'); mkdir(datadir); end
 
-if user.nickflag==1
-  %define Raw SILAC ratios data, This is the output from the alignment script
-  tmpdir = '/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/LegacyData/';
-  MvsL_filename_Raw_rep1=[tmpdir 'Adjusted_MvsL_Raw_for_ROC_analysis_rep1.csv'];
-  MvsL_filename_Raw_rep2=[tmpdir 'Adjusted_MvsL_Raw_for_ROC_analysis_rep2.csv'];
-  MvsL_filename_Raw_rep3=[tmpdir 'Adjusted_MvsL_Raw_for_ROC_analysis_rep3.csv'];
-  HvsL_filename_Raw_rep1=[tmpdir 'Adjusted_HvsL_Raw_for_ROC_analysis_rep1.csv'];
-  HvsL_filename_Raw_rep2=[tmpdir 'Adjusted_HvsL_Raw_for_ROC_analysis_rep2.csv'];
-  HvsL_filename_Raw_rep3=[tmpdir 'Adjusted_HvsL_Raw_for_ROC_analysis_rep3.csv'];
-  MvsL_filename_gaus_rep1=[tmpdir 'Adjusted_MvsL_Combined_OutputGaus_rep1.csv'];
-  MvsL_filename_gaus_rep2=[tmpdir 'Adjusted_MvsL_Combined_OutputGaus_rep2.csv'];
-  MvsL_filename_gaus_rep3=[tmpdir 'Adjusted_MvsL_Combined_OutputGaus_rep3.csv'];
-  HvsL_filename_gaus_rep1=[tmpdir 'Adjusted_HvsL_Combined_OutputGaus_rep1.csv'];
-  HvsL_filename_gaus_rep2=[tmpdir 'Adjusted_HvsL_Combined_OutputGaus_rep2.csv'];
-  HvsL_filename_gaus_rep3=[tmpdir 'Adjusted_HvsL_Combined_OutputGaus_rep3.csv'];
-  ChromatogramIn={HvsL_filename_Raw_rep1,HvsL_filename_Raw_rep2,HvsL_filename_Raw_rep3,...
-    MvsL_filename_Raw_rep1,MvsL_filename_Raw_rep2,MvsL_filename_Raw_rep3};
-  GaussIn={HvsL_filename_gaus_rep1,HvsL_filename_gaus_rep2,HvsL_filename_gaus_rep3,...
-    MvsL_filename_gaus_rep1,MvsL_filename_gaus_rep2,MvsL_filename_gaus_rep3};
+dd = dir([maindir '/Output/tmp/Adjusted_*_Combined_OutputGaus.csv']);
+
+% Define Raw SILAC ratios data. Dynamically find filenames
+if user.skipalignment==1 || isempty(dd)
+  % If Alignment was skipped, use raw data + Gauss_Build output
   
+  dd = dir([maindir 'Output/tmp/*_Raw_data_maxquant_rep*.csv']);
+  isgood = zeros(size(dd));
+  for ii = 1:length(dd)
+    for jj = 1:length(user.silacratios)
+      isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
+    end
+  end
+  dd = dd(isgood==1);
+  ChromatogramIn = cell(size(dd));
+  for di = 1:length(dd)
+    ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
+  end
+  
+  dd = dir([maindir 'Output/tmp/*Combined_OutputGaus_rep*csv']);
+  isgood = zeros(size(dd));
+  for ii = 1:length(dd)
+    for jj = 1:length(user.silacratios)
+      isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
+    end
+  end
+  dd = dd(isgood==1);
+  GaussIn = cell(size(dd));
+  for di = 1:length(dd)
+    GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
+  end
 else
-  dd = dir([maindir '/Output/tmp/Adjusted_*_Combined_OutputGaus.csv']);
+  % If Alignment was not skipped, use Alignment output
   
-  % Define Raw SILAC ratios data. Dynamically find filenames
-  if user.skipalignment==1 || isempty(dd)
-    % If Alignment was skipped, use raw data + Gauss_Build output
-    
-    dd = dir([maindir 'Output/tmp/*_Raw_data_maxquant_rep*.csv']);
-    isgood = zeros(size(dd));
-    for ii = 1:length(dd)
-      for jj = 1:length(user.silacratios)
-        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
-      end
+  dd = dir([maindir 'Output/tmp/Adjusted*Raw_for_ROC_analysis*rep*csv']);
+  isgood = zeros(size(dd));
+  for ii = 1:length(dd)
+    for jj = 1:length(user.silacratios)
+      isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
     end
-    dd = dd(isgood==1);
-    ChromatogramIn = cell(size(dd));
-    for di = 1:length(dd)
-      ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
+  end
+  dd = dd(isgood==1);
+  ChromatogramIn = cell(size(dd));
+  for di = 1:length(dd)
+    ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
+  end
+  
+  GaussIn = cell(size(dd));
+  dd = dir([maindir 'Output/tmp/Adjusted_Combined_OutputGaus*rep*csv']);
+  isgood = zeros(size(dd));
+  for ii = 1:length(dd)
+    for jj = 1:length(user.silacratios)
+      isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
     end
-    
-    dd = dir([maindir 'Output/tmp/*Combined_OutputGaus_rep*csv']);
-    isgood = zeros(size(dd));
-    for ii = 1:length(dd)
-      for jj = 1:length(user.silacratios)
-        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
-      end
-    end
-    dd = dd(isgood==1);
-    GaussIn = cell(size(dd));
-    for di = 1:length(dd)
-      GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
-    end
-  else
-    % If Alignment was not skipped, use Alignment output
-    
-    dd = dir([maindir 'Output/tmp/Adjusted*Raw_for_ROC_analysis*rep*csv']);
-    isgood = zeros(size(dd));
-    for ii = 1:length(dd)
-      for jj = 1:length(user.silacratios)
-        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
-      end
-    end
-    dd = dd(isgood==1);
-    ChromatogramIn = cell(size(dd));
-    for di = 1:length(dd)
-      ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
-    end
-    
-    GaussIn = cell(size(dd));
-    dd = dir([maindir 'Output/tmp/Adjusted_Combined_OutputGaus*rep*csv']);
-    isgood = zeros(size(dd));
-    for ii = 1:length(dd)
-      for jj = 1:length(user.silacratios)
-        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
-      end
-    end
-    dd = dd(isgood==1);
-    for di = 1:length(dd)
-      GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
-    end
+  end
+  dd = dd(isgood==1);
+  for di = 1:length(dd)
+    GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
   end
 end
 
@@ -160,19 +136,17 @@ tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
-%%
-
+%% 
 
 interaction_count = 0;
 binary_interaction_list = cell(10^6,15);
-
 
 for channel_counter = 1:number_of_channels
   s = ['\n    Channel ' num2str(user.silacratios{channel_counter})];
   fprintf(s)
   
   replicatesThisChannel = find(rep2channel == channel_counter);
-  for replicate_counter = replicatesThisChannel
+  for replicate_counter = []%replicatesThisChannel
     
     s = ['\n        Replicate ' num2str(replicate_counter)];
     fprintf(s)
@@ -238,18 +212,9 @@ for channel_counter = 1:number_of_channels
     end
     tmp1 = tmp1(:,1:6);
     Gaus_import = [tmp2 num2cell( cat(1,zeros(1,size(tmp1,2)),tmp1) )];
-    % Gaus_import(:,1): Protein name
-    % Gaus_import(:,2): Height
-    % Gaus_import(:,3): Center
-    % Gaus_import(:,4): Width
-    % Gaus_import(:,5): SSE
-    % Gaus_import(:,6): adjrsquare
-    % Gaus_import(:,7): Complex size
-    
     
     % do a bit of housekeeping
     clear Maxquant_raw Raw_data_reshaped Corum_Import tmp
-    
     
     tt = toc;
     fprintf('  ...  %.2f seconds\n',tt)
@@ -264,10 +229,6 @@ for channel_counter = 1:number_of_channels
     fprintf('        2. Pre-process, make Protein.')
     
     % Pre-process data to remove Gaussian above fraction five
-    % Create array to use for comparsions
-    %H_raw = cellfun(@str2num,Gaus_import(2:end,2));
-    %C_raw = cellfun(@str2num,Gaus_import(2:end,3));
-    %W_raw = cellfun(@str2num,Gaus_import(2:end,4));
     H_raw = cell2mat(Gaus_import(2:end,2));
     C_raw = cell2mat(Gaus_import(2:end,3));
     W_raw = cell2mat(Gaus_import(2:end,4));
@@ -287,20 +248,12 @@ for channel_counter = 1:number_of_channels
     Chromatograms(I)= 0.05 * rand(size(I));
     
     % remove gaussian with centers below frac1
-    %Ibad = C_raw<frac1;
     Ibad = zeros(size(C_raw));
     H = H_raw(~Ibad);
     C = C_raw(~Ibad);
     W = W_raw(~Ibad);
     Chromatograms = Chromatograms(~Ibad,:);
     Chromatograms_raw = Chromatograms_raw(~Ibad,:);
-    
-    % Make normalized gaussians
-    %   x = 0.25:0.25:100;
-    %   gaussian_fit=zeros(length(H),length(x));
-    %   for ii = 1:length(H)
-    %     gaussian_fit(ii,:) = 1*exp(-(x- C(ii)).^2 /2/(W(ii).^2));
-    %   end
     
     % How many Gaussians?
     I = find(~Ibad);
@@ -309,8 +262,6 @@ for channel_counter = 1:number_of_channels
     Ngauss = sum(strcmp(X,X'),1)';
     clear X unique_names
     
-    
-    
     % Make Protein structure
     % This summarizes the proteins in our sample
     
@@ -318,18 +269,9 @@ for channel_counter = 1:number_of_channels
     
     % Combine Majority Protein ID with Proteins Identified in replicate
     Protein.Isoform=Gaus_import(find(~Ibad)+1,1);
-    %Protein.Height=cellfun(@str2num,Gaus_import(2:end,2));
-    %Protein.Width=cellfun(@str2num,Gaus_import(2:end,3));
-    %Protein.Center=cellfun(@str2num,Gaus_import(2:end,4));
     Protein.Height = H;
     Protein.Width = W;
     Protein.Center = C;
-    
-    % remove protein name with center less then 5
-    %Protein.Isoform(Ibad)=[];
-    %Protein.Height(Ibad)=[];
-    %Protein.Width(Ibad)=[];
-    %Protein.Center(Ibad)=[];
     
     Dimensions_Gaus_import = length(Protein.Isoform);
     Dimension_of_Protein_IDs = size(Protein_IDs);
@@ -437,12 +379,13 @@ for channel_counter = 1:number_of_channels
     
     % Calculate distance matrices
     clear Dist
-    Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));              % 1. Euclidean distance
+    %Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));              % 1. Euclidean distance
     Dist.R2 = 1 - corr(Chromatograms').^2;                                % 2. Cleaned chromatogram R^2
-    [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
-    Dist.R2raw = 1 - R.^2;                                                % 3. Raw chromatogram R^2
-    Dist.Rpraw = p;                                                       % 4. Raw chromatogram correlation p-value
-    Dist.Ngauss = squareform(pdist(Ngauss,'euclidean'));                  % 5. Difference in number of fitted Gaussians
+    Dist.R = 1 - corr(Chromatograms');                                % 2. Cleaned chromatogram R^2
+    %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+    %Dist.R2raw = 1 - R.^2;                                                % 3. Raw chromatogram R^2
+    %Dist.Rpraw = p;                                                       % 4. Raw chromatogram correlation p-value
+    %Dist.Ngauss = squareform(pdist(Ngauss,'euclidean'));                  % 5. Difference in number of fitted Gaussians
     %Dist.AUC = squareform(pdist(auc,'euclidean'));                        % 6. Difference in area-under-the-chromatogram
     Dist.CoApex = zeros(length(Protein.Isoform),length(Protein.Isoform));
     I = cell(size(Protein.Isoform));
@@ -568,7 +511,6 @@ for channel_counter = 1:number_of_channels
     save(sf,'TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms_raw','Chromatograms','Dist')
     clear TP_Matrix possibleInts Protein inverse_self Chromatograms Dist
     
-    
     tt = toc;
     fprintf('  ...  %.2f seconds\n',tt)
     
@@ -601,7 +543,7 @@ for channel_counter = 1:number_of_channels
       Dist.(fn{jj})(~inverse_self==1) = nan;
     end
     
-    % Indices of upper-triangular protein pairs
+    % Read indicis of upper-triangular interaction matrices
     a = find(triu(~isnan(Dist.(fn{1}))));
     [prot1i, prot2i] = ind2sub(size(possibleInts),a);
     
@@ -654,15 +596,27 @@ for channel_counter = 1:number_of_channels
   end
   DistList = DistList(1:kk,:);
   
-  [scoreMatrix, feats_new] = scorenb(DistList,possList,classList);
-  score = nanmedian(scoreMatrix,2);
+  % Classifier method
+  %for ii = 1:NDistFields
+  % DistList(:,ii) = nanmean(DistList(:,ii:NDistFields:end),2);
+  %end
+  %DistList = DistList(:,1:NDistFields);
+  %[scoreMatrix, feats_new] = scorenb(DistList,possList,classList);
+  %score = nanmedian(scoreMatrix,2);
+  
+  % Clustering method
+  for ii = 1:NDistFields
+   DistList(:,ii) = nanmean(DistList(:,ii:NDistFields:end),2);
+  end
+  DistList = DistList(:,1:NDistFields);
+  score = scorecluster(DistList);
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
- 
   
   
-  %% 6. Calculate score threshold
+  
+  %% 6. Calculate score threshold for desired precision
   tic
   fprintf('\n    6. Calculate score threshold')
   
@@ -707,7 +661,7 @@ for channel_counter = 1:number_of_channels
     
   
   
-  %% 7. Find and concatenate interactions at desired precision
+  %% 7. Find and concatenate interactions
   
   %for di = 1:length(desiredPrecision)
   di = 1;
@@ -752,7 +706,7 @@ end
 clear Dist TP_Matrix scoreMatrix possibleInts inverse_self
 
 
-%% 8. Create a list of all the unique interactions
+%% 8. Build the final interaction list
 tic
 fprintf('    8. Create a list of all the unique interactions')
 
@@ -851,6 +805,7 @@ tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
+
 %% Calculate final TP, FP, Recall, Precision
 tic
 fprintf('        9. Calculate final TP, FP, FN and TN')
@@ -944,7 +899,6 @@ for ii = 1:Total_unique_interactions
   Recall_plot(ii) = TP / all_positives;
 end
 
-
 % Count TP, FP, and novel interactions
 I = (1:Total_unique_interactions)';
 Precision_array = zeros(number_of_channels,3);
@@ -961,11 +915,6 @@ for jj = 1:number_of_channels
   Precision_array(jj,2) = sum(protInCor & intInCor);
   Precision_array(jj,3) = length(position_to_sum) - Precision_array(jj,1) - Precision_array(jj,2);
 end
-
-tt = toc;
-fprintf('  ...  %.2f seconds\n',tt)
-
-
 
 % Determine channel-specific interactions
 interaction_final.channel = cell(Total_unique_interactions,1);
@@ -985,6 +934,8 @@ for ii = 1:Total_unique_interactions
   end
 end
 
+tt = toc;
+fprintf('  ...  %.2f seconds\n',tt)
 
 
 tic
