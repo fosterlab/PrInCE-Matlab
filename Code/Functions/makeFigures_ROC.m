@@ -12,7 +12,7 @@ PA = Precision_array;
 
 %Interaction_not_in_corum=(PA(:,3)-PA(:,1));
 %Interaction_in_corum_not_detected=(PA(:,1)-PA(:,2));
-bar_x = 1:(number_of_replicates*number_of_channels);
+bar_x = 1:(number_of_channels);
 %bar_y = [Interaction_in_corum_not_detected(:,1) (PA(:,2)) Interaction_not_in_corum(:,1)];
 bar_y = Precision_array;
 prec_fig = bar_y(:,2) ./ (bar_y(:,1) + bar_y(:,2));
