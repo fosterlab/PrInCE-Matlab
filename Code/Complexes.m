@@ -10,6 +10,10 @@
 tic
 fprintf('\n    0. Initialize')
 
+if ~isfield(user,'optimizeHyperParameters')
+  user.optimizeHyperParameters = 0;
+end
+
 minrep = user.minrep; % minimum number of replicates an interaction has to be in
 desiredPrecision = user.desiredPrecision;
 Nchannels = length(user.silacratios);
@@ -250,196 +254,10 @@ else
 end
 csplit = unique(csplit,'rows');
 
-
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
-%%
-%
-%
-% %
-% % % Start with interactionPairs
-% % % i.e. all proteins in an interactions
-% % for ii = 1:countPrec
-% %   tmp = interactionPairs{ii}(:,1:2);
-% %   uniqueProteins = unique([uniqueProteins; tmp(:)]);
-% % end
-% %
-% % % Next add from Proteins struture
-% % % i.e. all proteins analyzed but not put in an interactions
-% % for ii = 1:user.Nreplicate
-% %   uniqueProteins = unique([uniqueProteins; Proteins{ii}.Isoform]);
-% % end
-% %
-% % % uniqueProteins(1:Nprot_pred) are predicted proteins, the rest are CORUM.
-% % Nprot_pred = length(uniqueProteins);
-% %
-% % % Add corum
-% % for ii = 1:size(corumComplex,1)
-% %   cmplx = corumComplex{ii};
-% %
-% %   Idelim = [0 strfind(cmplx, ',') length(cmplx)+1];
-% %   Nprot = length(Idelim) - 1;
-% %   if Nprot<2
-% %     error('Error: Complexes: Complex of size 1 detected.')
-% %   end
-% %   for jj = 1:Nprot
-% %     prot1 = cmplx(Idelim(jj)+1 : Idelim(jj+1)-1);
-% %
-% %     if ~ismember(prot1,uniqueProteins)
-% %       I = length(uniqueProteins);
-% %       uniqueProteins{I+1} = prot1;
-% %     end
-% %   end
-% % end
-%
-% % Convert protein IDs to indices
-% % (numerical values are easier to work with!)
-%
-% % interactionPairs --> interactionPairs2, indices of uniqueProteins
-% % also include how many replicates it was seen in.
-% interactionPairs2 = cell(countPrec,1);
-% replicates = cell(countPrec,1);
-% channels = cell(countPrec,1);
-% for ii = 1:countPrec
-%   interactionPairs2{ii} = nan(size(interactionPairs{ii},1),7);
-%   replicates{ii} = nan(size(interactionPairs{ii},1),10);
-%   channels{ii} = nan(size(replicates{ii}));
-%
-%   for jj = 1:size(interactionPairs{ii},1)
-%     I1 = find(ismember(uniqueProteins,interactionPairs{ii}{jj,1}));
-%     I2 = find(ismember(uniqueProteins,interactionPairs{ii}{jj,2}));
-%
-%     % what replicates was this interaction seen in?
-%     reps = interactionPairs{ii}{jj,3};
-%     I = reps ~= ';' & reps ~= ' ';
-%     Istart = [1 find(diff(I)==1)+1];
-%     Iend = [find(diff(I)==-1) length(reps)];
-%     for kk = 1:length(Istart)
-%       replicates{ii}(jj,kk) = str2num(reps(Istart(kk) : Iend(kk)));
-%     end
-%     nrep = length(unique(reps(isstrprop(reps,'digit'))));
-%     nrep2 = sum(~isnan(unique(replicates{ii}(jj,:))));
-%     if nrep~= nrep2;disp('ummm');end
-%
-%     % what channels was this interaction seen in?
-%     chans = interactionPairs{ii}{jj,4};
-%     for kk = 1:length(user.silacratios)
-%       if ismember(user.silacratios{kk}, chans)
-%         channels{ii}(jj,kk) = kk;
-%       end
-%     end
-%
-%     tmp2 = zeros(1,3);
-%     for kk = 1:3
-%       tmp2(kk) = double(ismember(num2str(kk),interactionPairs{ii}{jj,3}));
-%     end
-%
-%     precdrop = str2num(interactionPairs{ii}{jj,5});
-%
-%     interactionPairs2{ii}(jj,:) = [I1 I2 nrep precdrop tmp2];
-%   end
-% end
-% Nchannels = length(unique(channels{1}(~isnan(channels{1}(:)))));
-% Nreplicates = length(unique(replicates{1}(~isnan(replicates{1}(:)))));
-%
-%
-% % Proteins{ii}.Isoform --> Proteins2, indices of uniqueProteins
-% % also include how many replicates it was seen in.
-% Proteins2 = cell(user.Nreplicate,1);
-% for ii = 1:user.Nreplicate
-%   Proteins2{ii} = nan(size(Proteins{ii}.Isoform,1),1);
-%
-%   for jj = 1:size(Proteins2{ii},1)
-%     I = find(ismember(uniqueProteins,Proteins{ii}.Isoform{jj}));
-%     Proteins2{ii}(jj) = I;
-%   end
-% end
-%
-% % corumComplex --> corumComplex2, indices of uniqueProteins
-% % Reject complexes that have zero overlap with predicted-interaction proteins.
-% corumComplex2 = cell(size(corumComplex));
-% for ii = 1:length(corumComplex)
-%   cmplx = corumComplex{ii};
-%
-%   Idelim = [0 strfind(cmplx, ',') length(cmplx)+1];
-%   Nprot = length(Idelim) - 1;
-%
-%   I = nan(1, Nprot);
-%   for jj = 1:Nprot
-%     prot1 = cmplx(Idelim(jj)+1 : Idelim(jj+1)-1);
-%     I(jj) = find(ismember(uniqueProteins, prot1));
-%   end
-%
-%   if sum(isempty(I))>0 || sum(isnan(I))>0
-%     error('Error: Complexes: CORUM complex protein not found in pairwise proteins.')
-%   end
-%
-%   % Check that complex includes at least one predicted-interaction protein.
-%   if sum(I<=Nprot_pred)>0
-%     corumComplex2{ii} = I;
-%   end
-% end
-% corumComplex2(cellfun('isempty',corumComplex2)) = [];
-%
-%
-% % Determine how to split up complexes
-% % column 1 = replicate index
-% % column 2 = channel index
-% % 0 indicates use all replicates / channels.
-% if user.separateByReplicate == 1 && Nreplicates ==1
-%   warning('user.separateByReplicate set to 1, but only one replicate detected.')
-%   warning('Setting user.separateByReplicate to 0 and proceeding...')
-%   user.separateByChannel = 0;
-% end
-% if user.separateByChannel == 1 && Nchannels ==1
-%   warning('user.separateByChannel set to 1, but only one channel detected.')
-%   warning('Setting user.separateByChannel to 0 and proceeding...')
-%   user.separateByChannel = 0;
-% end
-% clear csplit
-% if user.separateByReplicate == 0 && user.separateByChannel == 0
-%   % All interactions
-%   csplit = [0 0];
-% elseif user.separateByReplicate == 1 && user.separateByChannel == 0
-%   % All interactions + per-replicate
-%   csplit = nan(Nreplicates, 2);
-%   cc = 0;
-%   for ii = 1:Nreplicates
-%     cc = cc+1;
-%     csplit(cc,:) = [ii 0];
-%   end
-%   csplit = [csplit; 0 0];
-% elseif user.separateByReplicate == 0 && user.separateByChannel == 1
-%   % All interactions + per-channel
-%   csplit = nan(Nchannels, 2);
-%   cc = 0;
-%   for jj = 1:Nchannels
-%     cc = cc+1;
-%     csplit(cc,:) = [0 jj];
-%   end
-%   csplit = [csplit; 0 0];
-% elseif user.separateByReplicate == 1 && user.separateByChannel == 1
-%   % All interactions + per-replicate + per-channel
-%   csplit = nan(Nchannels * Nreplicates, 2);
-%   cc = 0;
-%   for ii = 1:Nreplicates
-%     for jj = 1:Nchannels
-%       cc = cc+1;
-%       csplit(cc,:) = [ii,jj];
-%     end
-%   end
-%   csplit = [csplit; 0 0];
-% else
-%   error('Badly formatted user.separateByReplicates, user.separateByChannel')
-% end
-% csplit = unique(csplit,'rows');
-%
-%
-% tt = toc;
-% fprintf('  ...  %.2f seconds\n',tt)
-
-
+mySound,pause
 
 %% 3. Optimize complex-building parameters
 % For each replicate, optimize:
@@ -448,20 +266,6 @@ fprintf('  ...  %.2f seconds\n',tt)
 %   iii) density threshold, how "loose" is too loose for clusterONE?
 tic
 fprintf('    3. Optimize parameters for complex-building')
-
-% Legacy code.
-% % i) make intMatrix from scoreMatrix, i.e. optimize xcutoff
-% intMatrix = zeros(Nprot_pred,Nprot_pred);
-% for jj = 1:size(interactionPairs2{1},1)
-%   if interactionPairs2{1}(jj,end - repi + 1)
-%     x = interactionPairs2{1}(jj,1:2);
-%     precdrop = interactionPairs2{1}(jj,5);
-%     intMatrix(x(1),x(2)) = precdrop;
-%     intMatrix(x(2),x(1)) = precdrop;
-%   end
-% end
-% intMatrix(intMatrix < precRange(ii)) = 0;
-% intMatrix(intMatrix >= precRange(ii)) = 1;
 
 pRange = [0 100 500 2000 10000 50000 10^6];
 densRange = [0 0.1 0.2 0.3 0.4 0.5 0.75 1];

@@ -158,7 +158,7 @@ model.AICc = AICc;
 model.BIC = BIC;
 
 % Throw out Gaussians whose height is less than 15% of the max?
-if 1
+if 0
   I = find(model.coeffs(1:3:end) < max(cleanchrom)*0.15) * 3 - 2;
   I2 = zeros(length(I)*3,1);
   for ii = 1:length(I)

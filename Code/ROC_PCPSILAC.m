@@ -137,7 +137,6 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 %% 
-
 interaction_count = 0;
 binary_interaction_list = cell(10^6,15);
 
@@ -306,48 +305,38 @@ for channel_counter = 1:number_of_channels
     % Remove non-unique entries from each row of Protein_IDS_no_isoform
     Protein_IDS_no_isoform_no_dup_processed = cell(size(Protein_IDs));
     for ii = 2:Dimension_of_Protein_IDs(1)
-      Array_to_check1 = Protein_IDS_no_isoform(ii,:);
-      Array_to_check_empty = cellfun(@isempty,Array_to_check1);
-      Array_to_check1(Array_to_check_empty) = []; % Replace empty cells with NaN
-      uniqueCells = unique(Array_to_check1);
-      for jj = 1:length(uniqueCells)
-        Protein_IDS_no_isoform_no_dup_processed{ii,jj} = uniqueCells(jj);
-      end
+      tmp = Protein_IDS_no_isoform(ii,:);
+      I = ~cellfun('isempty',tmp);
+      uniqueCells = unique(tmp(I(:)));
+      Protein_IDS_no_isoform_no_dup_processed(ii,1:length(uniqueCells)) = uniqueCells;
     end
     
     %Look up Major Protein group Information
     % For each protein that was fitted by a Gaussian
-    %   Find the row containing that protein name in Protein_IDs
+    %   Find the rows containing that protein name in Protein_IDs
     %   Store all protein names from that row of Protein_IDs
     Protein.MajorIDs = cell(Dimensions_Gaus_import,Dimension_of_Protein_IDs(2));
     Protein.MajorID_NoIsoforms = cell(Dimensions_Gaus_import,Dimension_of_Protein_IDs(2));
-    f = 0;
     for ii = 1:Dimensions_Gaus_import(1)
       
       %disp(Lookup_protein_name)
-      Lookup_protein_name = Protein.Isoform(ii);
+      protName = Protein.Isoform(ii);
       
-      tmp = find(strcmp(Lookup_protein_name,Protein_IDs));
-      [Check_counter1, Check_counter2] = ind2sub(size(Protein_IDs),tmp);
+      [ia, ib] = find(strcmp(protName,Protein_IDs));
       
       %copy names to MajorID from Protein_IDs raw data
-      Array_to_check1 = Protein_IDs(Check_counter1,:);
-      Array_to_check_empty1 = cellfun(@isempty,Array_to_check1);
-      for jj = 1:nnz(~Array_to_check_empty1)
-        Protein.MajorIDs{ii,jj} = Protein_IDs{Check_counter1,jj};
-      end
+      tmp = Protein_IDs(ia,:);
+      I = ~cellfun('isempty',tmp);
+      tmp = unique(tmp(I(:)));
+      Protein.MajorIDs(ii,1:length(tmp)) = tmp;
       
       %copy names to MajorID_NoIsoforms from Protein_IDS_no_isoform_no_dup_processed
-      Array_to_check2=Protein_IDS_no_isoform_no_dup_processed(Check_counter1,:);
-      Array_to_check_empty2=cellfun(@isempty,Array_to_check2);
-      for jj = 1:nnz(~Array_to_check_empty2)
-        a = Protein_IDS_no_isoform_no_dup_processed{Check_counter1,jj};
-        Protein.MajorID_NoIsoforms{ii,jj}=a{1};
-      end
+      tmp = Protein_IDS_no_isoform_no_dup_processed(ia,:);
+      I = ~cellfun('isempty',tmp);
+      tmp = unique(tmp(I(:)));
+      Protein.MajorID_NoIsoforms(ii,1:length(tmp)) = tmp;
     end
-    
-    dimension_Protein_MajorID_NoIsoforms=size(Protein.MajorID_NoIsoforms);
-    
+        
     tt = toc;
     fprintf('  ...  %.2f seconds\n',tt)
     
@@ -379,9 +368,9 @@ for channel_counter = 1:number_of_channels
     
     % Calculate distance matrices
     clear Dist
-    %Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));              % 1. Euclidean distance
+    Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));              % 1. Euclidean distance
     Dist.R2 = 1 - corr(Chromatograms').^2;                                % 2. Cleaned chromatogram R^2
-    Dist.R = 1 - corr(Chromatograms');                                % 2. Cleaned chromatogram R^2
+    Dist.R = -1*corr(Chromatograms');                                % 2. Cleaned chromatogram R^2
     %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
     %Dist.R2raw = 1 - R.^2;                                                % 3. Raw chromatogram R^2
     %Dist.Rpraw = p;                                                       % 4. Raw chromatogram correlation p-value
@@ -463,8 +452,6 @@ for channel_counter = 1:number_of_channels
       TP_Matrix(i1,i2) = 1;
       TP_Matrix(i2,i1) = 1;
     end
-    %I = unique(cell2mat(Corum_Dataset_expanded),'rows');
-    %Corum_Dataset_expanded = unique(Corum_Dataset_expanded{ii});
     
     
     % Make other matrices
@@ -597,19 +584,8 @@ for channel_counter = 1:number_of_channels
   DistList = DistList(1:kk,:);
   
   % Classifier method
-  %for ii = 1:NDistFields
-  % DistList(:,ii) = nanmean(DistList(:,ii:NDistFields:end),2);
-  %end
-  %DistList = DistList(:,1:NDistFields);
-  %[scoreMatrix, feats_new] = scorenb(DistList,possList,classList);
-  %score = nanmedian(scoreMatrix,2);
-  
-  % Clustering method
-  for ii = 1:NDistFields
-   DistList(:,ii) = nanmean(DistList(:,ii:NDistFields:end),2);
-  end
-  DistList = DistList(:,1:NDistFields);
-  score = scorecluster(DistList);
+  [scoreMatrix, feats_new] = scorenb(DistList,possList,classList);
+  score = nanmedian(scoreMatrix,2);
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
@@ -630,8 +606,8 @@ for channel_counter = 1:number_of_channels
   recRange = tmp.recRange;
   
   % Check that desiredPrecision is within [min(precRange) max(precRange)]
-  bad_desiredPrecision1 = desiredPrecision>max(precRange);
-  bad_desiredPrecision2 = desiredPrecision<min(precRange);
+  bad_desiredPrecision1 = desiredPrecision-.001>max(precRange);
+  bad_desiredPrecision2 = desiredPrecision-.001<min(precRange);
   bad_desiredPrecision = bad_desiredPrecision1 | bad_desiredPrecision2;
   % If desiredPrecision is too high, lower it
   if ~isempty(find(bad_desiredPrecision1, 1))
@@ -660,7 +636,6 @@ for channel_counter = 1:number_of_channels
   fprintf('  ...  %.2f seconds\n',tt)
     
   
-  
   %% 7. Find and concatenate interactions
   
   %for di = 1:length(desiredPrecision)
@@ -679,7 +654,11 @@ for channel_counter = 1:number_of_channels
     ib = indexList(Final_interactions(ii),2);
     protA = proteinAll{ia};
     protB = proteinAll{ib};
-    binary_interaction_list{interaction_count,1} = strcat(protA,'-',protB); % Interactions
+    clear tmp2
+    tmp2{1} = protA;
+    tmp2{2} = protB;
+    tmp2 = sort(tmp2);
+    binary_interaction_list{interaction_count,1} = strcat(tmp2{1},'-',tmp2{1}); % Interactions
     binary_interaction_list{interaction_count,2} = -1; %Dist.Euc(vii,viii); % Euc
     binary_interaction_list{interaction_count,3} = -1; %Dist.CoApex2(vii,viii); % Co-apex
     binary_interaction_list{interaction_count,4} = -1; %Dist.R2(vii,viii); % R^2
@@ -696,7 +675,6 @@ for channel_counter = 1:number_of_channels
     binary_interaction_list{interaction_count,15} = -1; %scoreMatrix(vii,viii)>xcutoff_rep(replicate_counter,di); % Replicate-specific interaction?
   end
   binary_interaction_list = binary_interaction_list(1:interaction_count,:);
-  
   
   tt = toc;
   fprintf('... %d interactions  ...  %.2f seconds\n',interaction_count,tt)
@@ -918,6 +896,7 @@ end
 
 % Determine channel-specific interactions
 interaction_final.channel = cell(Total_unique_interactions,1);
+interaction_final.channel_formatted = cell(Total_unique_interactions,1);
 for ii = 1:Total_unique_interactions
   tmp = interaction_final.replicate_numbers(ii,:);
   tmp(tmp==0) = [];
@@ -947,7 +926,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 tic
 fprintf('    12. Make figures')
-makeFigures_ROC
+%makeFigures_ROC
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 

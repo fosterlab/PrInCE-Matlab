@@ -4,7 +4,7 @@ function [threshold, varoutput] = calcPPIthreshold(score, class, desiredPrecisio
 %    results in a desired precision level.
 %
 %    Calculates precision as a function of score,
-%    detects when when precision crosses the desired
+%    detects when precision crosses the desired
 %    level. "Zooms in" on that score value to obtain 
 %    finer esimate of the required score.
 %
@@ -63,20 +63,6 @@ while calcTol>Tol && iter<maxIter && deltaPrec>1e-3
   recRange(I) = rec;
   tprRange(I) = tpr;
   fprRange(I) = fpr;
-  
-  %   % Zoom in on region of interest
-  %   i1 = find(prec>desiredPrecision);
-  %   if isempty(i1);
-  %     mx = max(score(:));
-  %   else
-  %     mx = ds(i1(1));
-  %   end
-  %   i2 = find(prec<desiredPrecision);
-  %   if isempty(i2);
-  %     mn = min(score(:));
-  %   else
-  %     mn = ds(i2(end));
-  %   end
   
   % Ensure that prec = desiredPrecision counts as a "zero-crossing"
   tmp = prec - desiredPrecision;

@@ -13,7 +13,7 @@ Original versions of the analysis were written by Anders Kristensen<sup>1</sup> 
 1. Download pipeline.
 2. Format your data.
 3. Organize your files.
-4. Enter youre experiment details in pcpsilac.m.
+4. Enter your experiment details in pcpsilac.m.
 5. Run pcpsilac.m.
 
 ### 1. Download pipeline.

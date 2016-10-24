@@ -27,16 +27,13 @@ diary([user.maindir 'logfile.txt'])
 disp('Gauss_Build.m')
 
 
-
 %% 0. Initialize
 tic
 fprintf('\n    0. Initialize')
 
-
 % Load user settings
 maindir = user.maindir;
 experimental_channels = user.silacratios;
-
 
 Nchannels = length(experimental_channels);
 
@@ -54,11 +51,8 @@ if ~exist([maindir '/Output/tmp'], 'dir'); mkdir([maindir '/Output/tmp']); end
 if ~exist(datadir, 'dir'); mkdir(datadir); end
 if ~exist(figdir, 'dir'); mkdir(figdir); end
 
-
-
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
-
 
 
 %% 1. Read input data
@@ -66,13 +60,10 @@ tic
 fprintf('\n    1. Read input data')
 
 % Import data from all input files
-%[num_val_MvsL,txt_MvsL] = xlsread(InputFile{1}); %Import file MvsL
-%[num_val_HvsL,txt_HvsL] = xlsread(InputFile{2}); %Import file HvsL
 rawdata = cell(size(experimental_channels));
 txt_val = cell(size(experimental_channels));
 for ii = 1:Nchannels
   %[rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
-  %tmp = importdata(user.MQfiles{ii});
   tmp = readchromatogramfile2(user.MQfiles{ii});
   
   % remove 'sheet1' fields
@@ -111,15 +102,10 @@ for ii = 1:Nchannels
     rawdata{ii} = rawdata{ii}(:,2:end);
   end
   
-  % turn txt_val into a list of protein names
-  %txt_val{ii} = txt_val{ii}(:,1);
 end
-%SEC_size_alignment = xlsread(user.calfile);
-
 
 % How many proteins and fractions are there?
 [Nproteins, Nfractions] = size(rawdata{1});
-
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
@@ -226,7 +212,7 @@ for ci = 1:Nchannels % loop over channels
 end
 
 % Make protgausI{ci}, where each row is a Gaussian: [protein number, gaussian number, replicate number]
-% It's just an indexing variable, that matches up gaussians to protein number.
+% i.e. an indexing variable between gaussians and proteins.
 protgausI = cell(Nchannels,1); 
 Ngauss = zeros(Nchannels,1);
 for ci = 1:Nchannels
