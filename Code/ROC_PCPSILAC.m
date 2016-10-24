@@ -145,7 +145,7 @@ for channel_counter = 1:number_of_channels
   fprintf(s)
   
   replicatesThisChannel = find(rep2channel == channel_counter);
-  for replicate_counter = []%replicatesThisChannel
+  for replicate_counter = replicatesThisChannel
     
     s = ['\n        Replicate ' num2str(replicate_counter)];
     fprintf(s)
@@ -708,7 +708,7 @@ interaction_final.R2=cell(length_unique_inter,0);
 interaction_final.DeltaEucDist=cell(length_unique_inter,0);
 interaction_final.proteinInCorum = nan(length_unique_inter,0);
 interaction_final.interactionInCorum = nan(length_unique_inter,0);
-interaction_final.score=nan(length_unique_inter,60);
+interaction_final.score = nan(length_unique_inter,number_of_channels);
 interaction_final.global=nan(length_unique_inter,1);
 interaction_final.replicatespecific=nan(length_unique_inter,1);
 cc = 0;
@@ -775,7 +775,7 @@ for ii = 1:length_unique_inter
 end
 
 % Calculate the average score for each pairwise interaction
-interaction_final.score = max(interaction_final.score,[],2);
+interaction_final.scoreavg = nanmean(interaction_final.score,2);
 
 %clear binary_interaction_list
 
@@ -787,6 +787,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 %% Calculate final TP, FP, Recall, Precision
 tic
 fprintf('        9. Calculate final TP, FP, FN and TN')
+
 % True interactions Observation across replicate
 % Count how many times a true positive interactions was observed
 Total_unique_interactions=length(interaction_final.unique_interactions);
@@ -821,51 +822,74 @@ final_Recall = final_TP / all_positives;
 final_Precision = final_TP/(final_TP+final_FP);
 clearvars Neg_binary_interaction_list Ineg Ipos
 
-%Create list of scores, note ensure strjoin function is avalible
-interaction_final.scores_formated=cell(Total_unique_interactions,1);
-for format_loop=1:Total_unique_interactions
-  tmp = interaction_final.score(format_loop);
-  tmp(isnan(tmp)) = [];
-  length_Replicates=length(tmp);
-  %Test if the array is longer then one entry
-  if length_Replicates<2
-    interaction_final.scores_formated{format_loop}=mat2str(tmp(1));
-  elseif length_Replicates>=2
-    Replicates_2bformated1 = cell(length_Replicates,1);
-    for jj= 1:length(tmp)
-      Replicates_2bformated1{jj} = num2str(tmp(jj));
-    end
-    interaction_final.scores_formated{format_loop} = strjoin(Replicates_2bformated1,' ; ');
+% Determine channel-specific interactions
+interaction_final.channel = cell(Total_unique_interactions,1);
+interaction_final.channel_formatted = cell(Total_unique_interactions,1);
+for ii = 1:Total_unique_interactions
+  tmp = interaction_final.replicate_numbers(ii,:);
+  tmp(tmp==0) = [];
+  %interaction_final.channel{ii} = unique(rep2channel(tmp))';
+  interaction_final.channel{ii} = tmp;
+  tmp = cell(1,length(interaction_final.channel{ii}));
+  for jj = 1:length(interaction_final.channel{ii})
+    tmp{jj} = user.silacratios{interaction_final.channel{ii}(jj)};
+  end
+  if length(tmp)>1
+    interaction_final.channel_formatted{ii} = strjoin(tmp, ' ; ');
+  else
+    interaction_final.channel_formatted{ii} = tmp{1};
   end
 end
 
-% Create scoreRank, scorePrctile
-[~, ~, rankDescend] = unique(interaction_final.score);
-interaction_final.scoreRank = (1-rankDescend) + max(rankDescend);
-interaction_final.scorePrctile = interaction_final.scoreRank/length(interaction_final.scoreRank);
+%Create list of scores, note ensure strjoin function is avalible
+% interaction_final.scores_formated = cell(size(interaction_final.score,1),1);
+% for format_loop=1:Total_unique_interactions
+%   tmp = interaction_final.score(format_loop,:);
+%   tmp(isnan(tmp)) = [];
+%   stringout = cell(length(tmp),1);
+%   for jj= 1:length(tmp)
+%     stringout{jj} = num2str(tmp(jj));
+%   end
+%   interaction_final.scores_formated{format_loop} = strjoin(stringout,' ; ');
+% end
 
+% Create scoreRank, scorePrctile
+%[~, ~, rankDescend] = unique(interaction_final.score);
+%interaction_final.scoreRank = (1-rankDescend) + max(rankDescend);
+%interaction_final.scorePrctile = interaction_final.scoreRank/length(interaction_final.scoreRank);
 
 % Create precision-dropout
-interaction_final.precisionDropout = nan(Total_unique_interactions,1);
+interaction_final.precisionDropout = nan(size(interaction_final.score));
+interaction_final.precisionDropoutavg = nan(Total_unique_interactions,1);
+interaction_final.precisionDropout_formatted = cell(Total_unique_interactions,1);
 Recall_plot = nan(Total_unique_interactions,1);
 FPR_plot = nan(Total_unique_interactions,1);
 for ii = 1:Total_unique_interactions
-  % global precision
-  cutoff = interaction_final.score(ii) - 10e-20;
-  I = interaction_final.score >= cutoff;
-  TP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==1);
-  FP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==0);
-  if TP==0 && FP==0
-    prec = 1;
-  else
-    prec = TP / (TP + FP);
+  % condition-specific precision
+  tmp1 = interaction_final.score(ii,:) - 10e-20;
+  tmp2 = interaction_final.replicate_numbers(ii,:);
+  stringout = cell(nnz(tmp2),1);
+  for jj = 1:nnz(tmp2)
+    cutoff = tmp1(jj);
+    chan = tmp2(jj);
+    Ithischan = interaction_final.replicate_numbers == chan;
+    Igoodscore = interaction_final.score >= cutoff;
+    Iinteract = sum(Ithischan,2)>0 & sum(Igoodscore,2)>0;
+    TP = sum(interaction_final.proteinInCorum(Iinteract)==1 & interaction_final.interactionInCorum(Iinteract)==1);
+    FP = sum(interaction_final.proteinInCorum(Iinteract)==1 & interaction_final.interactionInCorum(Iinteract)==0);
+    if TP==0 && FP==0
+      prec = 1;
+    else
+      prec = TP / (TP + FP);
+    end
+    interaction_final.precisionDropout(ii,jj) = prec;
+    stringout{jj} = num2str(prec);
   end
-  interaction_final.precisionDropout(ii) = prec;
-  Recall_plot(ii) = TP / all_positives;
+  interaction_final.precisionDropout_formatted{ii} = strjoin(stringout,' ; ');
   
-  % precision for individual channels
-  cutoff = interaction_final.score(ii) - 10e-20;
-  I = interaction_final.score >= cutoff;
+  % global precision
+  cutoff = interaction_final.scoreavg(ii) - 10e-20;
+  I = interaction_final.scoreavg >= cutoff;
   TP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==1);
   FP = sum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==0);
   if TP==0 && FP==0
@@ -873,7 +897,7 @@ for ii = 1:Total_unique_interactions
   else
     prec = TP / (TP + FP);
   end
-  interaction_final.precisionDropout(ii) = prec;
+  interaction_final.precisionDropoutavg(ii) = prec;
   Recall_plot(ii) = TP / all_positives;
 end
 
@@ -894,24 +918,6 @@ for jj = 1:number_of_channels
   Precision_array(jj,3) = length(position_to_sum) - Precision_array(jj,1) - Precision_array(jj,2);
 end
 
-% Determine channel-specific interactions
-interaction_final.channel = cell(Total_unique_interactions,1);
-interaction_final.channel_formatted = cell(Total_unique_interactions,1);
-for ii = 1:Total_unique_interactions
-  tmp = interaction_final.replicate_numbers(ii,:);
-  tmp(tmp==0) = [];
-  %interaction_final.channel{ii} = unique(rep2channel(tmp))';
-  interaction_final.channel{ii} = tmp;
-  tmp = cell(1,length(interaction_final.channel{ii}));
-  for jj = 1:length(interaction_final.channel{ii})
-    tmp{jj} = user.silacratios{interaction_final.channel{ii}(jj)};
-  end
-  if length(tmp)>1
-    interaction_final.channel_formatted{ii} = strjoin(tmp, ' ; ');
-  else
-    interaction_final.channel_formatted{ii} = tmp{1};
-  end
-end
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
@@ -926,7 +932,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 tic
 fprintf('    12. Make figures')
-%makeFigures_ROC
+makeFigures_ROC
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 

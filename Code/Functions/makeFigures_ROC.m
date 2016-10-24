@@ -105,8 +105,8 @@ saveas(gcf, sf);
 
 %% Final precision-recall, ROC curves
 
-[~,I] = sort(interaction_final.precisionDropout,'descend');
-tmp = interaction_final.precisionDropout;
+[~,I] = sort(interaction_final.precisionDropoutavg,'descend');
+tmp = interaction_final.precisionDropoutavg;
 tmp(tmp==0) = nan;
 
 cols = rand(number_of_channels,3);
@@ -129,12 +129,6 @@ I2 = I2(I);
 xi = 1:length(tmp);
 figure,hold on
 plot(xi,tmp(I),'k')
-%x = xi;
-%y = tmp(I);
-%for ii = 1:number_of_channels
-%  scatter(x(I2==ii),y(I2==ii),10,cols(ii,:),'filled')
-%end
-%scatter(x(I2==0),y(I2==0),10,'k','filled')
 grid on
 ylabel('Precision','fontsize',12)
 xlabel('Number of interactions','fontsize',12)
@@ -142,29 +136,6 @@ xlabel('Number of interactions','fontsize',12)
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
 sf=[figdir 'Final_Precision_' precPlot];
 saveas(gcf, sf, 'png');
-
-% figure,hold on
-%
-% % dummy plotting for legend
-% scatter(-100,-100,10,'k','filled')
-% scatter(-100,-100,10,[.75 .75 .75],'filled')
-% plot([-100 -101], [-100 -101],'k')
-%
-% [~,I1] = min(abs(tprRange -final_Recall(1)));
-% [~,I2] = min(abs(tprRange -final_Recall(2)));
-% plot(fprRange,tprRange,'k')
-% scatter(fprRange(I1),tprRange(I1),50,'k')
-% scatter(fprRange(I2),tprRange(I2),50,[.6 .6 .6])
-% plot([0 1],[0 1],'--r')
-% xlabel('False positive rate, FP/(FP+TN)','fontsize',12)
-% ylabel('True positive rate, TP/(TP+FN)','fontsize',12)
-% axis([-0.01 1 0 1])
-% legend('Interactions assessed globally','Interactions assessed per replicate','location','southeast')
-% grid on
-% % Save figure
-% set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-% sf=[figdir 'Final_ROC_' precPlot '_GlobalPrecision'];
-% saveas(gcf, sf, 'png');
 
 
 
