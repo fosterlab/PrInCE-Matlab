@@ -1,4 +1,7 @@
-# PCP-SILAC
+# PRInCE
+
+Pipeline for Recovering Interactomes via Co-Elution
+
 Bioinformatics pipeline for analyzing PCP-SILAC and other co-elution experiments.
 
 * Predict protein-protein interactions
