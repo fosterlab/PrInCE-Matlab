@@ -14,12 +14,12 @@ Original versions of the analysis were written by Anders Kristensen<sup>1</sup> 
 1. Download pipeline.
 2. Format your data.
 3. Organize your files.
-4. Enter your experiment details in pcpsilac.m.
-5. Run pcpsilac.m.
+4. Enter your experiment details in prince.m.
+5. Run prince.m.
 
 ### 1. Download pipeline.
 
-In a browser, go to to [https://github.com/fosterlab/PCP-SILAC](https://github.com/fosterlab/PCP-SILAC). Click the green "Clone or Download" button in the top right. Then click "Download ZIP".
+In a browser, go to to [https://github.com/fosterlab/PRInCE](https://github.com/fosterlab/PRInCE). Click the green "Clone or Download" button in the top right. Then click "Download ZIP".
 
 ![Download pipeline from github](/ReadmeFigures/01download.jpg?raw=true)
 
@@ -59,18 +59,18 @@ Before running the pipeline, organize experiment files and code like this:
       * Data file 1 (e.g *condition1.csv*)
       * Data file 2 (e.g *condition2.csv*)
       * ...
-    * pcpsilac.m
+    * prince.m
 
-To accomplish this, first create a working folder (name doesn't matter). Unzip the [code](https://github.com/fosterlab/PCP-SILAC) and copy pcpsilac.m and the Code/ folder into the working directory. In the working directory, create a folder called "Input" and place all data files (one for each condition) and the reference database file in this Input/ folder.
+To accomplish this, first create a working folder (name doesn't matter). Unzip the [code](https://github.com/fosterlab/PRInCE) and copy prince.m and the Code/ folder into the working directory. In the working directory, create a folder called "Input" and place all data files (one for each condition) and the reference database file in this Input/ folder.
 
-### 4. Enter the details of your experiment in pcpsilac.m.
+### 4. Enter the details of your experiment in prince.m.
 
 
 ### 5. Run analysis.
 Open Matlab. In Matlab, *cd* to the folder that contains pcpsilac.m, i.e. the working directory you made in 3. In the command line type
 
 ```
-pcpsilac.m
+prince.m
 ```
 
 As the pipeline runs, output figures and tables will be deposited in the automatically generated Output/ folder.
