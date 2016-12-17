@@ -1,4 +1,12 @@
 function Protein_IDs = readproteingroupsfile(user)
+%READPROTEINGROUPSFILE Reads protein groups input file for PRINCE.
+%   IDs=READFINALINTERACTIONLIST(user) reads the protein groups file
+%   specified in the user structure. user is made by the master script
+%   PRINCE.m. Protein groups file is a csv file where each row is a major
+%   protein group, and each column in the row is a protein ID identified in
+%   that group. IDs is a cell array with one protein ID per cell.
+%
+%   See also PRINCE.
 
 % Very simple function.
 % Reads user.majorproteingroupsfile and returns Protein_IDs.
@@ -10,6 +18,8 @@ tmp = importdata(user.majorproteingroupsfile);
 if isstruct(tmp)
   if isfield(tmp,'Sheet1')
     tmp2 = tmp.Sheet1;
+  else
+    tmp2 = tmp;
   end
 elseif iscell(tmp)
   tmp2 = tmp;

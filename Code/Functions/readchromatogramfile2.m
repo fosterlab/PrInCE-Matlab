@@ -1,8 +1,17 @@
 function out = readchromatogramfile2(fn)
+%READCHROMATOGRAMFILE2 Reads raw data files for PRINCE.
+%   out=READCHROMATOGRAMFILE2(fn) reads the correctly formatted input file
+%   containing co-fraction profiles of single proteins. Filename fn is a csv
+%   file containing rows of co-fractionation profiles grouped by replicate.
+%   out is a structure with the fields:
+%   
+%   out.data     NxM matrix of N co-fractionation profiles over M fractions.
+%                The first column is replicate number, following columns are
+%                protein amount per fraction.
+%   out.textdata Nx1 cell array of protein IDs corresponding to out.data.
+%
+%   See also PRINCE, GAUSSBUILD.
 
-% Makes:
-%   num_val: first column replicate number, rest are fractions
-%   txt_val: single column of protein IDs
 
 
 fid = fopen(fn);

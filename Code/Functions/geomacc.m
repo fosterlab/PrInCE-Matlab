@@ -4,7 +4,7 @@ function [ga,Sn,PPV] = geomacc(predComplex, refComplex)
 %    groups of complexes (predicted and reference).
 %    Geometric accuracy is sqrt(Sn * PPV), where Sn is
 %    average sensitivity, or the fraction of reference
-%    complex members captured in predicted complexes.
+%    complex members recovered in predicted complexes.
 %    PPV is positive predictive value, or the fraction 
 %    of predicted complex members that are in a
 %    reference complex.

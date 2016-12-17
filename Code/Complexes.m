@@ -1,18 +1,55 @@
+%COMPLEXES Predict protein complexes
+%   Using the ClusterONE algorithm, COMPLEXES builds protein complexes from
+%   the protein-protein interactions predicted by INTERACTIONS. Two free
+%   parameters (p, dens) are optimized through a grid search in order to
+%   predict complexes that most closely match the reference complexes, as
+%   quantified by their matching ratio. Predicted complexes that have at
+%   least two proteins in common with one or more known complexes are
+%   matched to these known complexes and reported in output tables.
+%
+%   Master script PRINCE and modules GAUSSBUILD and INTERACTIONS must be run 
+%   before COMPLEXES.
+%
+%   COMPLEXES produces two output folders: Output/Data/Complexes, which
+%   contains all output csv tables, and Output/Figures/Complexes, which
+%   contains all figures.
+%
+%   Workflow:
+%   1. Read Interactions output
+%   2. Pre-process
+%   3. Optimize parameters p and dens
+%   4. Predict complexes
+%   5. Match each predicted complex to a reference complex, if possible
+%   6. Write output tables
+%   7. Make figures
+%
+%   See also PRINCE, GAUSSBUILD, INTERACTIONS, MYCLUSTERONE, MATCHINGRATIO.
+
+%   References:
+%      Tamas Nepusz, Haiyuan Yu, and Alberto Paccanaro. Detecting 
+%         overlapping protein complexes in protein-protein interaction 
+%         networks. Nature methods, 9(5):471-472, 2012.
+
+
 
 % To fix:
-% * You remake the interaction matrix a number of times. Since there you want to build an identical
-% one each time, and since there are a few parameters, it's better to make a simple function for
-% this. Then you know you're making it the same each time!
-% * Collapse exploration (2) and intensification (3) into a single section.
+%
+% - Because geometric accuracy doesn?t penalize novel complex members, it can lead to very large complexes. So matching ratio is better?
+% - Don?t worry about optimizing best_p
+% - Do worry about optimizing the intMatrix. The best one so far is
+%       intMatrix2 = intMatrix-0.75;
+%       intMatrix2(intMatrix2<0) = 0;
+%       intMatrix2 = intMatrix2.^10;
+%   i.e. relatively high precision (75%), cutoff-subtracted, and a high exponent.
+%
+% To Do
+% 1. Fix optimization.
+% 2. Make sure that no-isoform versions are matched to CORUM.
 
 
 %% 0. Initialize
 tic
 fprintf('\n    0. Initialize')
-
-if ~isfield(user,'optimizeHyperParameters')
-  user.optimizeHyperParameters = 0;
-end
 
 minrep = user.minrep; % minimum number of replicates an interaction has to be in
 desiredPrecision = user.desiredPrecision;
@@ -92,31 +129,48 @@ tic
 fprintf('    1. Read input data')
 
 % Final_Interactions_list
-%tmp = importdata(InteractionIn{ii});
 [tmp,tmp_head] = readFinalInteractionList(InteractionIn);
 
 % Need 4 columns: Protein-A, Protein-B, channel, precision-cutoff
 Itext(1) = find(ismember(tmp_head.text,'Protein A'));
 Itext(2) = find(ismember(tmp_head.text,'Protein B'));
 Itext(3) = find(ismember(tmp_head.text,'Channel'));
-Idata = find(ismember(tmp_head.data,'Precision level'));
+Idata = find(ismember(tmp_head.data,'Precision level') | ...
+    ismember(tmp_head.data,'Precision (avg.)'));
 interactionPairs = [tmp.text(:,Itext) num2cell(tmp.data(:,Idata))];
 for ii = 1:size(interactionPairs,1)
+  I1 = find(ismember(interactionPairs{ii,1},'-'));
+  I2 = find(ismember(interactionPairs{ii,2},'-'));
+  % Remove isoform tags
+  if ~isempty(I1)
+    interactionPairs{ii,1} = interactionPairs{ii,1}(1:I1-1);
+  end
+  if ~isempty(I2)
+    interactionPairs{ii,2} = interactionPairs{ii,2}(1:I2-1);
+  end
   interactionPairs(ii,1:2) = sort(interactionPairs(ii,1:2));
 end
-%I = tmp.data(:,Idata)>0.75;
-%interactionPairs(~I,:) = [];
 
 clear tmp tmp_head
 
 % Protein structure
 protIndex = cell(length(scoreIn),1);
 protAll = cell(length(scoreIn),1);
+protAll_noIsoforms = cell(size(protAll));
 for ii = 1:length(scoreIn)
   % score, proteinAll, possList, classList, indexList, feats_new
   load(scoreIn{ii})
   protIndex{ii} = indexList;
   protAll{ii} = proteinAll;
+  
+  protAll_noIsoforms{ii} = cell(size(protAll{ii}));
+  for jj = 1:length(protAll{ii})
+    I1 = find(ismember(protAll{ii}{jj},'-'));
+    if isempty(I1)
+      I1 = length(protAll{ii}{jj})+1;
+    end
+    protAll_noIsoforms{ii}{jj} = protAll{ii}{jj}(1:I1-1);
+  end
   clear score proteinAll possList classList feats_new
 end
 
@@ -146,13 +200,13 @@ tic
 fprintf('    2. Pre-process pairwise interactions')
 
 % Make uniqueProteins, a single list of all proteins
-uniqueProteins = unique(cat(2,protAll{:})); % count the number of proteins in interactions
+uniqueProteins = unique(cat(2,protAll_noIsoforms{:})); % count the number of proteins in interactions
 Nprot_pred = length(uniqueProteins);
 uniqueProteins = unique([uniqueProteins Unique_Corum']); % then include proteins from reference
 Nproteins = length(uniqueProteins);
 
 % Convert protein IDs to indices
-% (numerical values are easier to work with!)
+% (numerical values are faster to work with!)
 % interactionPairs --> interactionPairs2, indices of uniqueProteins
 interactionPairs2 = nan(size(interactionPairs,1),6);
 channels = nan(size(interactionPairs,1),length(user.silacratios));
@@ -257,7 +311,6 @@ csplit = unique(csplit,'rows');
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
-mySound,pause
 
 %% 3. Optimize complex-building parameters
 % For each replicate, optimize:
@@ -394,13 +447,23 @@ for ii = 1:size(csplit,1)
     intMatrix(x(1),x(2)) = nrep;  % add nrep
     intMatrix(x(2),x(1)) = nrep;
   end
-  %intMatrix(intMatrix>0) = 1;
+  intMatrix = intMatrix - user.desiredPrecision;
+  intMatrix(intMatrix<0) = 0;
+  %intMatrix = intMatrix-0.75;
+  %intMatrix(intMatrix<0) = 0;
+  %intMatrix = intMatrix.^10;
   
   % Make complex list
-  [CL(ii).Members,CL(ii).Density] = myclusterone(intMatrix, best_p(ii), best_dens(ii));
+  [CL(ii).Members,CL(ii).Density] = myclusterone(intMatrix, best_p(ii), 0);
   
   % Remove small or low-density complexes
-  for kk = 1:size(CL(ii).Members)
+  tmp = size(CL(ii).Members);
+  if tmp(2)==0
+    NN = 0;
+  else
+    NN = tmp(1);
+  end
+  for kk = 1:NN
     I = CL(ii).Members{kk};
     m = intMatrix(I,I);
     n = length(I);
@@ -409,10 +472,13 @@ for ii = 1:size(csplit,1)
       CL(ii).Members{kk} = [];
     end
   end
-  CL(ii).Members(cellfun('isempty',CL(ii).Members)) = [];
+  I = cellfun('isempty',CL(ii).Members);
+  CL(ii).Members(I) = [];
+  CL(ii).Density(I) = [];
+  NN = sum(~I);
   
   % make mini-interaction matrices
-  for jj = 1:length(CL(ii).Members)
+  for jj = 1:NN
     CL(ii).Connections{jj} = zeros(length(CL(ii).Members{jj}),length(CL(ii).Members{jj}));
     for kk = 1:length(CL(ii).Members{jj})
       for mm = 1:length(CL(ii).Members{jj})
@@ -448,15 +514,14 @@ for ii = 1:size(csplit,1)
   %          5. overlap ratio (N_overlap/size_of_corum)
   corumMatches{ii} = zeros(Ncomplex(ii)*5, 2);
   cc = 0;
-  
-  %corumComplex2 = corumComplex3{ii};
-  
+    
   overlap = zeros(Ncomplex(ii),length(corumComplex2));
   overlap_ratio = zeros(Ncomplex(ii),length(corumComplex2));
   for jj = 1:Ncomplex(ii)
     for kk = 1:length(corumComplex2)
       overlap(jj,kk) = length(intersect(CL(ii).Members{jj},corumComplex2{kk}));
-      overlap_ratio(jj,kk) = length(intersect(CL(ii).Members{jj},corumComplex2{kk})) / length(corumComplex2{kk});
+      overlap_ratio(jj,kk) = length(intersect(uniqueProteins_noIsoform(CL(ii).Members{jj}),...
+        uniqueProteins_noIsoform(corumComplex2{kk}))) / length(corumComplex2{kk});
     end
     overlap_ratio(overlap<2) = 0;
     overlap(overlap<2) = 0;
@@ -507,7 +572,7 @@ fprintf('  ...  %.2f seconds\n',tt)
 tic
 fprintf('    7. Make figures')
 
-%makeFigures_complexes
+makeFigures_complexes
 
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)

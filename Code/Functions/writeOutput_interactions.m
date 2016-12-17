@@ -1,5 +1,7 @@
+%WRITEOUTPUT_INTERACTIONS Writes output tables for the PRINCE Interactions
+%   module.
 
-%% Initialize.
+
 
 precision_write_out_counter = di;
 Precision_values = desiredPrecision * 100;
@@ -57,7 +59,7 @@ for ix=1:Total_unique_interactions
   % channel-specific interactions list
   if length(interaction_final.channel{ix}) == 1
     chan = interaction_final.channel{ix};
-    fprintf(fid_final_1,'%s,%s,%s,%s,%d,%d,%6.4f,%6.4f,%s\n',...
+    fprintf(fid(chan),'%s,%s,%s,%s,%d,%d,%6.4f,%6.4f,%s\n',...
       interaction_final.unique_interactions{ix},...
       interaction_final.proteinA{ix},...
       interaction_final.proteinB{ix},...

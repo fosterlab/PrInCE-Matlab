@@ -1,29 +1,26 @@
-%%%%%%%%%%%%%%% Logic:
-% Since replicates can be run on different columns, etc., it's necessary to align replicates. Each
-% replicate will be offset by a constant amount, so it's sufficient to find offset between a few
-% landmarks
-% i. Read chromatogram data (MaxQuant verbose output) and Gaussian fitting data.
-% ii. Impute missing chromatogram values.
-% iii. Find all proteins with a single Gaussian in all replicates.
-% iv. Choose the best replicate, i.e. the one with the most overlap of single-Gaussian proteins with
-%     the other two. Align to this replicate.
-% v. For every other replicate, fit the line: y_mu = m * x_mu + b, where y_mu is the centers of the
-%     best replicate, x_mu is the centers of the other replicate.
-% vi. Scale the other replicates, x, by the above function. Use linear interpolation.
+%ALIGNMENT Correct for temporal differences between replicates.
+%   For datasets with multiple replicates, ALIGNMENT uses peaks in co-
+%   fractionation profiles, identified by GAUSSBUILD, to correct for any 
+%   temporal offset or dilation between replicates. Only proteins with a 
+%   single identified peak are used.
 %
-% NB1 - Best replicate doesn't seem to be chosen using SSE of fits.
-% NB2 - x and y likely need to be rescaled to reflect fraction spacing (e.g. 20 in 10 minutes, etc.)
-%     - That is, the spacing b/w fractions is not constant. That seems major, right?
-
-
-%%%%%%%%%%%%%%% Big changes:
-% 1. Impute multiple missing values (more than just one, as is currently being done)
-% 2. Don't write csv files (these seem useful for debugging, but otherwise aren't needed).
-% 3. Include an option not to plot (separate plotting script?).
-% 4. Why does Gauss_Build clean the chromatograms more thoroughly? Here we just impute single
-%    values. Should we do more?
-
-
+%   ALIGNMENT is an optional module and can be turned on or off in the
+%   master script PRINCE. If run, ALIGNMENT must be run after first running
+%   PRINCE and GAUSSBUILD.
+%
+%   ALIGNMENT produces two output folders: Output/Data/Alignment, which 
+%   contains all output csv tables, and Output/Figures/Alignment, which
+%   contains all figures.
+%
+%   Workflow:
+%   1. Read co-fractionation profiles and GaussBuild output
+%   2. Choose a replicate to align to
+%   3. Quantify offset and dilation between repliates
+%   4. Correct for offset and dilation
+%   5. Write output tables
+%   6. Make figures
+%
+%   See also PRINCE, GAUSSBUILD.
 
 
 diary([user.maindir 'logfile.txt'])
@@ -158,7 +155,6 @@ if ~skipflag
   for ci = 1:Nchannels
     for replicates= 1:Nreplicates
       Gaus_import{ci,replicates} = importdata(GaussInputFile{ci,replicates});
-      %Summary_gausian_infomration{ci,replicates} = importdata(GassSumInputFile{ci,replicates});
       
       % Ensure Gaus_import.textdata is a single column of protein names
       % simple rule: protein names are the column with the most letters
@@ -184,9 +180,6 @@ if ~skipflag
     end
   end  
   
-  % Calibration
-  %SEC_fit=polyfit(SEC_size_alignment(1,:),SEC_size_alignment(2,:),1);
-  
   %Number of fractions
   [~, fraction_number]=size(num_val{1});
   fraction_number = fraction_number-1;
@@ -201,12 +194,9 @@ if ~skipflag
   cleandata = cell(Nchannels,1);
   for ii = 1:Nchannels
     cleandata{ii} = nan(size(num_val{ii},1),size(num_val{ii},2)+10);
-    %if flag3; cleandata{3} = nan(size(num_val_HvsM,1),size(num_val_HvsM,2)+10);end
     cleandata{ii}(:,1) = num_val{ii}(:,1);
-    %if flag3; cleandata{3}(:,3) = num_val_HvsM(:,1);end
     for ri = 1:size(num_val{1},1) % loop over proteins
       cleandata{ii}(ri,2:end) = cleanChromatogram(num_val{ii}(ri,2:end),[1 3 5 7]);
-      %if flag3; cleandata{3}(ri,2:end) = cleanChromatogram(num_val_HvsM(ri,2:end),[1 3 5 7]);end
     end
   end
   
@@ -232,7 +222,6 @@ if ~skipflag
   for ci = 1:Nchannels
     
     % i) Find names of proteins with a single Gaussian in each replicate
-    %summerised_protein_number_G1 = cell(Nreplicates,1);
     for rr= 1:Nreplicates
       %Ngauss = size(Summary_gausian_infomration{ci,rr},1);
       
@@ -282,7 +271,6 @@ if ~skipflag
       
       % i) Find the overlapping proteins
       overlap = intersect(summerised_names_G1{ci,align_rep},summerised_names_G1{ci,rep_to_align});
-      %overlap([1 2]) = [];
       
       % ii) Find their centers
       Ia = find(ismember(Gaus_import{ci,align_rep}.textdata(:,1),overlap));
@@ -292,7 +280,6 @@ if ~skipflag
       
       % iii) Fit a line
       I = abs(Ca - Cb)<User_alignment_window1;
-      %pfit(ci,rr,:) = robustfit(Ca(I), Cb(I));
       pfit(ci,rr,:) = robustfit(Cb(I), Ca(I));
       
     end
@@ -342,20 +329,13 @@ if ~skipflag
     end
   end
   
-  tt = toc;
-  fprintf('  ...  %.2f seconds\n',tt)
   
-  
-  
-  %% 5. Make some summary statistics
+  % Make some summary statistics
   % Delta_Center
   % Delta_Height
   % Delta_Width
   % EuDist
   % Divergence
-  
-  tic
-  fprintf('    5. Make some summary statistics')
   
   ci = 1;
   
@@ -401,9 +381,9 @@ if ~skipflag
   
   
   
-  %% 6. Write output
+  %% 5. Write output
   tic
-  fprintf('    6. Write output')
+  fprintf('    5. Write output')
   
   writeOutput_alignment
   
@@ -412,10 +392,10 @@ if ~skipflag
   
   
   
-  %% 7. Make figures
+  %% 6. Make figures
   
   tic
-  fprintf('    7. Make figures')
+  fprintf('    6. Make figures')
   
   makeFigures_alignment
   

@@ -1,27 +1,26 @@
-%%%%%%%%%%%%%%% Instructions for running Gauss_Build.m:
-% - Rename maindir for your computer. (The command 'pwd' will give you the full path to a folder.)
-% - Add maindir/Code and maindir/Code/Functions to Matlab path.
+%GAUSSBUILD Find peaks in co-fractionation profiles.
+%   GAUSSBUILD identifies peaks in co-fractionation profiles by
+%   deconvolving profiles into Gaussian mixture models. Models are mixtures 
+%   of between 1 and 5 Gaussians. Profiles are pre-processed (single data
+%   point imputation, smoothing) before before model fitting. Model fitting
+%   and model selection are performed by CHOOSEMODEL_AIC, which uses the
+%   'fit' command. Master script PRINCE must be run before running
+%   GAUSSBUILD.
+% 
+%   Master script PRINCE must be run before GAUSSBUILD.
 %
-%%%%%%%%%%%%%%% Logic:
-% 0. Initalize
-% 1. Read input data (MaxQuant output)
-% 2. Clean the chromatograms
-% 3. Fit 1-5 Gaussians on each cleaned chromatogram
-% 4. Write output
+%   GAUSSBUILD produces two output folders: Output/Data/GaussBuild, which
+%   contains all output csv tables, and Output/Figures/GausBuild, which
+%   contains all figures.
 %
-%%%%%%%%%%%%%%% Custom functions called by Gauss_build.m:
-% - cleanChromatogram.m
-% - choosemodel_holdout.m
-% - gaussfitICs.m
-% - fitgaussmodel.m
+%   Workflow:
+%   1. Read co-fractionation profiles
+%   2. Pre-process profiles
+%   3. For all profiles, fit all five models and choose the best model
+%   4. Write output tables
+%   5. Make figures
 %
-%%%%%%%%%%%%%%% To do:
-% - Include the parfoor loops
-% - Right now the logic is a bit roundabout:
-%       First select a model and then fit that model. This is dangerous because the final fit
-%       could be bad! Better to keep the parameters of the best fit from model selection.
-% - Add 'user defined settings' at the very top of initialize
-% - Fix InputFile, MainOutputFile, and DebugOutputFile which are not currently used.
+%   See also PRINCE, CLEANPROFILE, CHOOSEMODEL_AIC.
 
 diary([user.maindir 'logfile.txt'])
 disp('Gauss_Build.m')
@@ -113,12 +112,10 @@ fprintf('  ...  %.2f seconds\n',tt)
 
 
 %% 2. Clean the chromatograms
-%   1. Impute (fill in) single missing values (nans) by linear interpolation;
-%   2. Fill in first and last fractions with a 0 if they're missing;
-%   3. Replace values <0.2 with nan;
-%   4. If a value is not part of 5 consecutive values, replace it with 0.05;
-%   5. Add 5 zeros to either side of the chromatogram;
-%   6. Smooth whole chromatogram with a boxcar filter (moving average).
+%   1. Impute (fill in) single missing values (nans) by linear interpolation.
+%   2. Remove "lone" singletons and doubletons.
+%   3. Replace all missing values with near-zero noise.
+%   4. Add 5 near-zeros to either side.
 tic
 fprintf('\n    2. Clean the chromatograms')
 
@@ -136,7 +133,7 @@ for ci = 1:Nchannels % loop over channels
   for ri = 1:Nproteins % loop over proteins
     
     raw_chromatogram = rawdata{ci}(ri,1:Nfractions);
-    clean_chromatogram = cleanChromatogram2(raw_chromatogram);
+    clean_chromatogram = cleanProfile(raw_chromatogram);
     
     % store clean_chromatogram in cleandata
     cleandata{ci}(ri,:) = clean_chromatogram;

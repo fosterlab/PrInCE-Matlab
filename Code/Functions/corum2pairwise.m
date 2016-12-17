@@ -2,16 +2,16 @@ function corum2pairwise(user)
 
 %CORUM2PAIRWISE Split reference database into pairwise interactions.
 %   CORUM2PAIRWISE(user) creates a csv file with two columns, using the 
-%   complexes contained in file user.corumfile. Each complex of size N is split 
-%   into N(N-1)/2 pairwise interactions. Created csv file is 
+%   complexes contained in file user.corumfile. Each complex of size N is 
+%   split into N(N-1)/2 pairwise interactions. Created csv file is 
 %   'Corum_pairwise.csv' and is located in the Output/tmp/ folder.
 %
-%   user is a structure and must be created by pcpsilac.m, or otherwise have a
-%   similar format.
+%   user is a structure and must be created by master script PRINCE, or 
+%   otherwise have a similar format.
 %
 %   user.corumfile must be a csv file.
 %
-%   See also pcpsilac.m
+%   See also PRINCE
 
 
 

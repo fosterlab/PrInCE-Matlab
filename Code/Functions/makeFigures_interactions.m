@@ -1,4 +1,4 @@
-
+%MAKEFIGURES_INTERACTIONS Makes figures for the PRINCE Interactions module.
 
 precPlot = num2str(round(desiredPrecision(di)*100));
 

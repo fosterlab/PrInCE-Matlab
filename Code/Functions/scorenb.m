@@ -1,4 +1,29 @@
-function [score, feats] = scorenb(Dist,possibleInts,TP_Matrix)
+function [score,feats] = scorenb(Dist,possibleInts,TP_Matrix)
+%SCORENB Predict protein interactions
+%   [prob,feats]=SCORENB(Dist,P,TPFP) calculates the probability that
+%   protein-protein pairs are interactions. SCORENB requires two inputs:
+%   features describing the similarity of pairs co-fractionation profiles
+%   (Dist), and interacting or non-interacting labels for a subset of
+%   protein pairs (P, TPFP). Dist is an NxM  matrix of M features ("distance
+%   measures") for N protein-protein pairs. P is an Nx1 logical vector 
+%   corresponding to Dist. A value of P=1 denotes a protein pair where both 
+%   proteins are in the reference database, and P=0 denotes a protein pair
+%   where one or both proteins are not in the reference database. TPFP is
+%   an Nx1 logical vector corresponding to Dist, where TPFP=1 labels a
+%   gold-standard interaction, and TPFP=0 & P=0 labels a gold-standard
+%   non-interaction. Therefore, TPFP==1 & P==1 denotes rows in Dist that
+%   are known interactions, and TPFP==0 & P==1 denotes rows in Dist that
+%   are known non-interactions.
+%
+%   prob is the Nx1 vector of interaction probabilities.
+%
+%   Features (distance measures) are selected using the criterion Fisher
+%   Ratio > 2. feats is a 15xM matrix of Fisher Ratio values used for
+%   feature selection, where each row is one iteration of the 15-fold
+%   cross-validation and M is the number of features.
+%
+%   See also INTERACTIONS, INDFEAT.
+
 
 % Use a Naive Bayes classifier to predict protein interactions.
 % Can take NxN square matrices OR a 2D table.
@@ -43,7 +68,7 @@ end
 % what training length do we need to expect to get 5 class == 1?
 classratio = sum(y==1) / sum(y==-1);
 trainingLength = max([8000 round(5/classratio)]);
-trainingLength = min([trainingLength sum(I)/2]);
+trainingLength = min([trainingLength ceil(sum(I)/2)]);
 
 Nmodel = 15;
 score = nan(size(X,1),Nmodel);

@@ -1,3 +1,4 @@
+%MAKEFIGURES_COMPLEXES Makes figures for the PRINCE Complexes module.
 
 Names = cell(size(csplit,1),1);
 for ii = 1:size(csplit,1)
@@ -49,6 +50,7 @@ for ii = 1:size(csplit,1)
     if ~isempty(I)
       refComplex = corumComplex2{corumMatches{ii}(I,2)};
     end
+    sizeCorum = length(refComplex);
     
     figure
     p = plotcomplex(predComplex_members,predComplex_connections,refComplex,uniqueProteins);
@@ -68,7 +70,7 @@ for ii = 1:size(csplit,1)
     set(gca,'LooseInset',get(gca,'TightInset'));
     set(gca,'Visible','off')
     axis square
-    sf=[figdir '/Predicted_vs_corum_' Names{ii} '_Complex_' num2str(complexID(jj))];
+    sf=[figdir '/Predicted_vs_corum_' Names{ii} '_Complex_' num2str(jj)];
     saveas(gcf, sf, 'epsc');
     close all
   end
@@ -257,7 +259,8 @@ set(gca,'LooseInset',get(gca,'TightInset'));
 set(gcf,'paperunits','inches','paperposition',[.25 .25 7 7],...
  'units','inches','position',[.25 .25 15 15])
 axis square
-axis([0.6688   54.5981    1.0965   51.4244])
+%axis([0.6688   54.5981    1.0965   51.4244])
+axis([0 0 78 75])
 set(gca,'Visible','off','xtick',[],'ytick',[])
 sf=[figdir '/Hairball2_redicted_vs_corum'];
 saveas(gcf, sf, 'epsc');

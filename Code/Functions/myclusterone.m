@@ -2,7 +2,7 @@ function [Members, Density] = myclusterone(M, pp, density_threshold)
 
 %MYCLUSTERONE Creates a list of protein complexes using the
 %    ClusterONE algorithm (Nepusz 2012).
-%    [Members,Connections] = myclusterone(M,P) groups the 
+%    [Members,Connections] = MYCLUSTERONE(M,P) groups the 
 %    interactions in pairwise interaction matrix M. Members is 
 %    an Nx1 cell array, where each cell contains the indices 
 %    of all proteins in a single complex. Connections is an 
@@ -41,7 +41,6 @@ if nargin<2
   pp = 0;
 end
 
-
 % Sanity checks
 if size(M,1)~=size(M,2)
   error('myclusterone: Interaction matrix must be square')
@@ -55,13 +54,9 @@ end
 Nprot = size(M,1);
 Nconnections = sum(M>0,2);
 
-
-
 % Binary vector
 % Used to keep track of which proteins have already been assigned to a complex
 inacomplex = zeros(Nprot,1);
-
-
 
 % 1. Grow complexes
 Members = cell(100000,1);
@@ -166,7 +161,7 @@ for ii = 1:size(Members)
   I = Members{ii};
   m = M(I,I);
   n = length(I);
-  Density(ii) = sum(m(:)) / (n * (n-1)/2);
+  Density(ii) = sum(m(:)) / n / n;
 end
 I = Density(ii)<density_threshold;
 Density(I) = [];

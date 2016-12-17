@@ -1,3 +1,4 @@
+%WRITEOUTPUT_COMPLEXES Writes output tables for the PRINCE Complexes module.
 
 Precision_values = round(desiredPrecision * 100);
 
@@ -32,9 +33,9 @@ for ci = 1:size(csplit,1)
   
   fid3 = fopen(fn,'w');
   %Write Header
-  fprintf (fid3,'%s,%s,%s,%s,%s,%s,%s,%s,\n',...
-    'Predicted complex ID','Predicted complex', 'Size of complex', 'Novel complex?', 'Best CORUM match',...
-    'Overlapping proteins', 'N overlap', 'CORUM coverage');
+  fprintf (fid3,'%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
+    'ID','Predicted complex', 'Complex size', 'Complex density', 'Novel complex?', ...
+    'Best CORUM match', 'Overlapping proteins', 'N overlap', 'CORUM coverage');
   
   for ii = 1:size(CL(ci).Members,1)    
     predComplex = strjoin(uniqueProteins(CL(ci).Members{ii}), ' ');
@@ -52,8 +53,8 @@ for ci = 1:size(csplit,1)
       overlap = strjoin(uniqueProteins(intersect(CL(ci).Members{ii},corumComplex2{corumI})));
     end
     
-    fprintf (fid3,'%d, %s, %d, %d, %s, %s, %d, %6.3f,\n',...
-      ii, predComplex, sizePredComplex, novel, corumComplex, overlap, ...
+    fprintf (fid3,'%d, %s, %d, %6.3f, %d, %s, %s, %d, %6.3f,\n',...
+      ii, predComplex, sizePredComplex, CL(ci).Density(ii), novel, corumComplex, overlap, ...
       corumMatches{ci}(Icorummatch,4), corumMatches{ci}(Icorummatch,5) );
   end
   fclose(fid3);

@@ -1,67 +1,44 @@
-%%%%%%%%%%%%%%% Logic:
-% This script tests whether there are any changes in protein interactions.
-% To do this it compares chromatograms (right?) via:
-%   i. t-test
-%   ii. Mann-Whitney test, i.e. a rank-sum test
-%   iii. visualization, i.e. making figures.
-% 0. Initialize
-% 1. Read input
-% 2. Make GaussSummary(2), GaussSummary(1) structures
-% WITHIN REPLICATES (?)
-%   3. Determine which Gaussians are unique to each channel
-%   4. Detect 2-fold changes
-%   5. Determine the trends of guassian curves
-% ACROSS REPLICATES
-%   6. Shared gaussian across replicate.
-%   7. Use fold-change > 2 to determine if complexes change
-%   8. Use mwwtest and ttest to determine change
-%   9. Determine the coverage (number of datapoint observed) for reach protein of each replicate
-% 10. Write out tables
-% 11. Write out txt for Go enrichment
-% 12. Make figures
+%FOLDCHANGES Calculate changes in protein amount.
+%   For datasets with multiple conditions, FOLDCHANGES calculates the ratio
+%   of protein amount in condition A to protein amount in condition B, i.e. 
+%   a fold-change in protein amount between conditions. If there are more 
+%   than two conditions, condition pairs can be specified in master script 
+%   PRINCE. For each protein, fold-changes are calculated using data
+%   centered in a window around peaks identified by GAUSSBUILD.
 %
+%   For datasets with multiple replicates, FOLDCHANGES calculates the
+%   significance of any fold changes via a paired t-test.
 %
-%%%%%%%%%%%%%%% Small changes:
-% 4. Replace Adjusted_HvsL_Raw_data_maxquant_modified.xlsx with Adjusted_HvsL_Raw_data_maxquant.csv
-% 5. Turn variables like Gaus_MvsL into matrices. Remove the top header.
-% 6. Make section 10 (ttest + mwwtest) handle replicates better. Automate.
-% 7. Fix the fprintf displays.
-% 8. Move all write-to-file output to the end.
+%   FOLDCHANGES is an optional module and can be turned on or off in the
+%   master script PRINCE. If run, FOLDCHANGES must be run after PRINCE and 
+%   GAUSSBUILD.
 %
+%   FOLDCHANGES produces two output folders: Output/Data/FoldChanges, which 
+%   contains all output csv tables, and Output/Figures/FoldChanges, which
+%   contains all figures.
 %
-%%%%%%%%%%%%%%% Big changes:
+%   Workflow:
+%   1. Read co-fractionation profiles and GaussBuild output
+%   2. Calculate fold changes
+%   3. Collate variables, house clean
+%   4. Calculate significance of fold changes
+%   5. Write output tables
+%   6. Make figures
 %
-%
-%%%%%%%%%%%%%%% To do:
-% 1. Why do we need Finalised_Master_Gaussian_list AND Master_Gaussian_list?
-
-
-
-% AUTOMATION
-% - Correct for 5 leading nans. Do this dynamically (not just "+5")
-% S2. GaussSummary(1) -> Gaussians{1}, GaussSummary(2) -> Gaussians{2}
-% S3. Total rewrite. This whole section needs to be automated... I think it's just looking for
-%     overlapping proteins between the comparison pairs.
-% S4. Remove reference to HvsM, replace with {2}/{1}. Confirm that HvsM = HvsL/MvsL.
-% S5. Almost no change.
-% S6. I think this one's easy. Two big chunks for 'HvsL' and 'MvsL', turn them into a loop.
-% S7. Lots to do here. Many variables to change. Need replicate and channel loops.
-% S8. This one's easy! Loops over Master Gaussian List, i.e. not replicate or channel. Might not
-%     need to change anything.
-% S9.
+%   See also PRINCE, GAUSSBUILD.
 
 
 diary([user.maindir 'logfile.txt'])
-disp('Comparison.m')
+disp('FoldChanges.m')
 
 skipflag = 0;
 if length(user.silacratios)==1
-  disp('* NB: User set number of SILAC ratios to 1. Skipping Comparison...')
+  disp('* NB: User set number of SILAC ratios to 1. Skipping FoldChanges...')
   user.skipcomparison = 1;
   skipflag = 1;
 end
 if user.skipcomparison==1 && skipflag==0
-  disp('* NB: User set skipcomparison to True. Skipping Comparison...')
+  disp('* NB: User set skipcomparison to True. Skipping FoldChanges...')
   skipflag = 1;
 end
 
@@ -86,8 +63,8 @@ if ~skipflag
   % Define folders, i.e. define where everything lives.
   codedir = [maindir 'Code/']; % where this script lives
   funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
-  datadir = [maindir 'Output/Data/Comparison/']; % where data files live
-  figdir = [maindir 'Output/Figures/Comparison/']; % where figures live
+  datadir = [maindir 'Output/Data/FoldChanges/']; % where data files live
+  figdir = [maindir 'Output/Figures/FoldChanges/']; % where figures live
   % Make folders if necessary
   if ~exist([maindir '/Output'], 'dir'); mkdir([maindir '/Output']); end
   if ~exist([maindir '/Output/Data'], 'dir'); mkdir([maindir '/Output/Data']); end
@@ -308,16 +285,9 @@ if ~skipflag
   %expected amount of proteins, note 1 is the height
   %Standard_area=Nfraction*1*(1/Diltuion_factor_master_mix);
   
-  tt = toc;
-  fprintf('  ...  %.2f seconds\n',tt)
   
-  
-  
-  %% 2. Make GaussSummary structure
-  % This puts Gaussians for the same protein in one line
-  tic
-  fprintf('    2. Make GaussSummary structure')
-  
+  % Make GaussSummary structure
+  % This puts Gaussians for the same protein in one line  
   clear GaussSummary
   
   %Varible related to gaussians
@@ -394,18 +364,9 @@ if ~skipflag
   %Define the size of the MvsL and HvsL arrays
   Dimension_of_array=size(GaussSummary(1).Center);
   
-  tt = toc;
-  fprintf('  ...  %.2f seconds\n',tt)
+    
+  % Determine which Gaussians are unique to each channel
   
-  
-  
-  
-  %% 3. Determine which Gaussians are unique to each channel
-  tic
-  fprintf('    3. Determine which Gaussians are unique to each channel')
-  
-  % WAIT!
-  % gg indexes GaussSummary or GaussData???
   clear Combined_Gaussians
   
   %Determine which gaussians are unique and which are shared between MvsL and
@@ -493,10 +454,10 @@ if ~skipflag
   
   
   
-  %% 4. Detect 2-fold changes
+  %% 2. Detect 2-fold changes
   % This is done with Gaussian Center
   tic
-  fprintf('    4. Detect 2-fold changes (WITHIN REPLICATE)')
+  fprintf('    2. Detect 2-fold changes (WITHIN REPLICATE)')
   
   %%%%%%% you can insert a comparisonpairs loop here
   
@@ -558,20 +519,9 @@ if ~skipflag
   Combined_Gaussians.Observed_change(Ibad) = {'Unquantifiable'};
   
   
-  
-  tt = toc;
-  fprintf('  ...  %.2f seconds\n',tt)
-  
-  %%%%%%% you can end the comparisonpairs loop here
-  
-  
-  
-  %% 5. Determine the trends of guassian curves
+  % Determine the trends of guassian curves
   % Aim: look at the determined gaussians within single replicate and compare
   % if the all the gaussians change, some change or none of them change
-  tic
-  fprintf('    5. Trends of guassian curves (WITHIN REPLICATE)')
-  
   
   %Define Variables
   No_change_consistent_across_gaus=0;
@@ -625,11 +575,11 @@ if ~skipflag
   
   
   
-  %% 6. Create Gaussian Master List, combinining replicates and channels.
+  %% 3. Create Gaussian Master List, combinining replicates and channels.
   % Comparsion 3 Part A:  Determine which Gaussians are shared across replicates
   % Aim: determined gaussians which are shared
   tic
-  fprintf('    6. Create Gaussian Master List, combinining replicates.')
+  fprintf('    3. Create Gaussian Master List, combinining replicates.')
   
   % i) loop through unique protein names
   % ii) find all fitted Gaussians for that protein
@@ -724,9 +674,7 @@ if ~skipflag
       Master_Gaussian_list.Gaussian_area(ii,jj) = GaussSummary(chan).Gaussian_area(repi,ggi);
     end
   end
-  
-  
-  
+    
   %Create Chromatogram file containing the raw isotoplogue data for each guassian that has been kept
   Chromatograms=zeros(countMaster,Nfraction);
   countMaster = 0;
@@ -743,21 +691,13 @@ if ~skipflag
     end
   end
   
-  
-  
-  tt = toc;
-  fprintf('  ...  %.2f seconds\n',tt)
-  
-  
   Finalised_Master_Gaussian_list = Master_Gaussian_list;
   Total_number_of_unique_gaussians_master_list = countMaster;
   Finalised_Master_Gaussian_list.Total_number_of_unique_gaussians_master_list = Total_number_of_unique_gaussians_master_list;
   
   
-  %% 7. Use fold-change > 2 to determine if complexes change
-  tic
-  fprintf('    7. Fold-change, same-replicate, different channels')
   
+  % Use fold-change > 2 to determine if complexes change
   
   %%%%%%% you can insert a comparisonpairs loop here
   
@@ -885,9 +825,9 @@ if ~skipflag
   
   
   
-  %% 8. Use mwwtest and ttest to determine if complexes change
+  %% 4. Use mwwtest and ttest to determine if complexes change
   tic
-  fprintf('    8. MWW Test and T-test across replicates')
+  fprintf('    4. MWW Test and T-test across replicates')
   
   countMaster = 0;
   p_tt = nan(length(Unique_protein_names),30);
@@ -937,7 +877,7 @@ if ~skipflag
       u_mww(ii,jj) = stats.U;
       
       % TTEST
-      [~,p_tt(ii,jj),~,stats] = ttest2(data{1},data{2});
+      [~,p_tt(ii,jj),~,stats] = ttest(data{1},data{2});
       df_tt(ii,jj) = stats.df;
       
     end
@@ -954,7 +894,6 @@ if ~skipflag
   Finalised_Master_Gaussian_list.MWW_U = u_mww;
   Finalised_Master_Gaussian_list.MWW_Satifies_Adjusted_pvalue = p_mww < 0.05/Total_number_of_unique_gaussians_master_list;
   
-  
   Singficant_change_ttest_persaus_protein = cell(length(Unique_protein_names),1);
   Singficant_change_mww_persaus_protein = cell(length(Unique_protein_names),1);
   for ii= 1:length(Unique_protein_names)
@@ -970,26 +909,30 @@ if ~skipflag
     end
   end
   
+  tt = toc;
+  fprintf('  ...  %.2f seconds\n',tt)
+  
+  
+  
+  %% 5. Write output
+  tic
+  fprintf('    5. Write output\n')
+  
+  writeOutput_foldchanges
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   
   
   
-  %% 9. Write output
+  %% 6. Make figures
   tic
-  fprintf('    9. Write output\n')
+  fprintf('    6. Make figures\n')
   
-  writeOutput_comparison
+  makeFigures_foldchanges
   
-  
-  
-  
-  %% 10. Make figures
-  tic
-  fprintf('    10. Make figures\n')
-  
-  makeFigures_comparison
+  tt = toc;
+  fprintf('  ...  %.2f seconds\n',tt)
   
   
 end

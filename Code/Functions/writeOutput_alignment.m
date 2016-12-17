@@ -1,16 +1,4 @@
-% Handles all the output writing of Alignment.m
-%
-% Makes these files:
-%    fid9_Name = strcat('Adjusted_',Experimental_channel,'_Raw_data_maxquant_rep',mat2str(alignment_counter),'.csv');
-%    fid9B_Name = strcat('Adjusted_',Experimental_channel,'_Raw_for_ROC_analysis_rep',mat2str(alignment_counter),'.csv');
-%    fid9B_Name = strcat('Adjusted_HvsM_Raw_data_maxquant_rep',mat2str(alignment_counter),'.csv');
-%    fid6_Name = strcat('Adjusted_Chromatograms_vobose_rep',mat2str(alignment_counter),'_','.csv');
-%    fid7_Name = strcat('Adjusted_Combined_OutputGaus_rep',mat2str(alignment_counter),'.csv');
-%  fid10_Name = strcat('Adjusted_',Experimental_channel,'_Combined_OutputGaus.csv');
-%  fid11_Name = strcat('Adjusted_',Experimental_channel,'_Raw_data_maxquant.csv');
-%
-% Adapted from Nichollas Scott's Gaus_build_24_1.m.
-% Made by Greg Stacey on Nov 25 2015.
+%WRITEOUTPUT_ALIGNMENT Writes output tables for the PRINCE Alignment module.
 
 
 New_Fraction_numbering = -5:fraction_number+5;

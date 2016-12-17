@@ -1,3 +1,4 @@
+%MAKEFIGURES_GAUSSBUILD Makes figures for the PRINCE GaussBuild module.
 
 n1 = size(rawdata{1},2);
 n2 = size(cleandata{1},2);

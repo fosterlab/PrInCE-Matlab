@@ -1,24 +1,40 @@
-%%%%%%%%%%%%%%% Logic:
-%   0. Initialize
-%   for replicate
+%INTERACTIONS Predict protein-protein interactions using co-fractionation.
+%   INTERACTIONS classifies every pair of proteins as either interacting or 
+%   non-interacting. Within a replicate and condition, INTERACTIONS
+%   calculates the co-fractionation dissimilarity of every pair of proteins.
+%   Five 'distance measures' quantify how dissimilar co-fractionation
+%   profiles are. Distance measures and gold-standard reference
+%   interactions are used by the classifier as features and training
+%   labels, respectively.
+%
+%   Master script PRINCE and module GAUSSBUILD must be run before 
+%   INTERACTIONS.
+%
+%   INTERACTIONS produces two output folders: Output/Data/Interactions,
+%   which contains all output csv tables, and Output/Figures/Interactions,
+%   which contains all figures.
+%
+%   Workflow:
+%   for every replicate:
 %       1. Read input
-%       2. Pre-process Gaussians, make Chromatograms and Dist.
-%       3. Make Protein structure
-%       4. Make TP, FP, possibleInts
-%       5. Score each interaction (Naive Bayes)
-%   6. Calculate score threshold with all replicates
-%   for desiredPrecision
-%       7. Find and concatenate interactions at desired precision
-%       8. Create a list of all the unique interactions
-%       9. Calculate final TP, FP, FN and TN
-%       10. Find Treatment interactions
-%       11. Write output files
-%       12. Make figures
+%       2. Calculate distance measures between every pair of
+%          co-fractionation profiles
+%       3. Collate
+%       4. Incorporate reference information
+%       5. Calculate interaction probability
+%   6. Find probability threshold that gives desired precision
+%   7. Find and concatenate interactions at desired precision
+%   8. Create a list of all the unique interactions
+%   9. Calculate final TP, FP, FN and TN
+%   10. Find treatment-specific interactions
+%   11. Write output tables
+%   12. Make figures
+%
+%   See also PRINCE, GAUSSBUILD, SCORENB, CALCPPITHRESHOLD.
 
 
 diary([user.maindir 'logfile.txt'])
 disp('ROC_PCPSILAC.m')
-
 
 
 %% 0. Initialize
@@ -156,6 +172,8 @@ for channel_counter = 1:number_of_channels
     fprintf(s)
     
     Protein_IDs = readproteingroupsfile(user);
+    nn = min(size(Protein_IDs,2),23);
+    Protein_IDs = Protein_IDs(:,1:nn);
     
     % Corum binary interactions
     fid=fopen(user.corumpairwisefile, 'rt');    %Input corum data base.
@@ -217,7 +235,6 @@ for channel_counter = 1:number_of_channels
     
     tt = toc;
     fprintf('  ...  %.2f seconds\n',tt)
-    
     
     
     %% 2. Pre-process, make Protein.
@@ -370,7 +387,7 @@ for channel_counter = 1:number_of_channels
     clear Dist
     Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));              % 1. Euclidean distance
     Dist.R2 = 1 - corr(Chromatograms').^2;                                % 2. Cleaned chromatogram R^2
-    Dist.R = -1*corr(Chromatograms');                                % 2. Cleaned chromatogram R^2
+    Dist.R = -1*corr(Chromatograms');                                     % 2. Cleaned chromatogram R^2
     %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
     %Dist.R2raw = 1 - R.^2;                                                % 3. Raw chromatogram R^2
     %Dist.Rpraw = p;                                                       % 4. Raw chromatogram correlation p-value
@@ -492,7 +509,7 @@ for channel_counter = 1:number_of_channels
     % FP matrix
     Inverse_TP_matrix = ~TP_Matrix;
     %FP_Matrix = (Int_matrix & Inverse_TP_matrix);
-    
+    mySound,pause
     % Save and clear replicate-specific variables
     sf = [maindir '/Output/tmp/' 'data_rep' num2str(replicate_counter) '_chan' num2str(channel_counter) '.mat'];
     save(sf,'TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms_raw','Chromatograms','Dist')
@@ -775,7 +792,8 @@ for ii = 1:length_unique_inter
 end
 
 % Calculate the average score for each pairwise interaction
-interaction_final.scoreavg = nanmean(interaction_final.score,2);
+%interaction_final.scoreavg = nanmean(interaction_final.score,2);
+interaction_final.scoreavg = max(interaction_final.score,[],2);
 
 %clear binary_interaction_list
 
@@ -923,16 +941,20 @@ tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
+%%
+
 tic
 fprintf('    11. Write output files')
-writeOutput_ROC
+writeOutput_interactions
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 
 
+%%
+
 tic
 fprintf('    12. Make figures')
-makeFigures_ROC
+makeFigures_interactions
 tt = toc;
 fprintf('  ...  %.2f seconds\n',tt)
 

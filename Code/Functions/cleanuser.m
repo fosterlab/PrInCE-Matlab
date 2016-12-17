@@ -1,9 +1,13 @@
 function user_new = cleanuser(user)
-% This little function does a couple things.
-% First, it checks that the user structure in pcpsilac_master.m is formatted correctly.
-%   1. Does user.maindir end in a forward slash?
-%   2. Do the data files exist? If not, are there similarly-named data files?
-% Second, it adds user.maindir/Code and user.maindr/Code/Functions to path
+% CLEANUSER Formats 'user' structure for pcpsilac.
+%
+%   CLEANUSER(user) ensures that fields within the user structure are 
+%   formatted correctly. Catches and corrects errors in file names and 
+%   experiment parameters such as wrong type, length, or value. user is a 
+%   structure made by master script PRINCE.
+%
+%   See also PRINCE
+
 
 user_new = user;
 
@@ -79,6 +83,16 @@ end
 % ensure that treatmentcondition is part of every comparisonpairs
 
 % ensure that user.organism is right
+
+% ensure that user.silacratios corresponds with user.comparisonpairs
+if ~isempty(user.comparisonpairs) && isempty(intersect(user.silacratios,user.comparisonpairs))
+  warning('user.silacratios does not correspond with user.comparisonpairs.')
+  warning('Setting user.comparisonpairs to first two entries in user.silacratios...')
+  user.comparisonpairs = [];
+  for ii = 1:min(2,length(user.silacratios))
+    user.comparisonpairs{ii} = user.silacratios{ii};
+  end
+end
 
 
 

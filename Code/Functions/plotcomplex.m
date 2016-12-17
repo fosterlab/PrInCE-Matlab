@@ -1,4 +1,22 @@
-function p = plotcomplex(predComplex_members,predComplex_connections,refComplex,protNames)
+function [p,G] = plotcomplex(predComplex_members,predComplex_connections,refComplex,protNames)
+%   [p,G]=PLOTCOMPLEX(Pc,conn,Rc,names) plots a force-directed diagram of
+%   the predicted complex Pc and (partially) overlapping reference complex
+%   Rc. Pc and Rc are vectors of indices that correspond to the protein
+%   names in the cell array names. conn is the weighted connection matrix
+%   of Pc.
+%
+%   G is the output of GRAPH.
+%
+%   p is the output of plot(G).
+%
+%   Colour scheme:
+%     Orange    Members of Pc not in Rc (novel)
+%     Black     Members of Rc not in Pc (reference-only)
+%     Purple    Members in Pc and Rc (recovered)
+%
+%   See also GRAPH.
+
+
 % G = digraph(1,2:5);
 % G = addedge(G,2,6:15);
 % G = addedge(G,15,16:20);

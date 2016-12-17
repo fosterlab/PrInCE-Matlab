@@ -1,30 +1,7 @@
-%function writeOutput_gaussbuild(datadir,datadir1,datadir2,datadir3,datadir4,...
-%  Coef,SSE,adjrsquare,Try_Fit,...
-%  txt_MvsL,txt_HvsL,replicate,SEC_size_alignment,experimental_channels,...
-%  cleandata,rawdata,tmp1,tmp2,...
-%  protgausI)
+%WRITEOUTPUT_GAUSSBUILD Writes output tables for the PRINCE GaussBuild
+%   module.
 
-% Handles all the output writing of Gauss_Build.m
-%
-% Makes these files:
-%   1_1_*_OutputGaus.csv
-%   1_1_*_Output_Chromatograms.csv                   % One of
-%   1_1_*_OutputGaus_filtered_out.csv                % these for
-%   1_1_*_Output_Chromatograms_filtered_out.csv      % each protein.
-%   *_Summary_Gausians_identifed.csv
-%   *_Combined_OutputGaus.csv
-%   *_Summary_Gausians_for_individual_proteins.csv
-%   *_Combined_OutputGaus_rep*.csv
-%
-%   Combined_Chromatograms.csv
-%   Combined_Chromatograms_filtered_out.csv
-%   Combined_OutputGaus_filtered_out.csv
-%   Summary_Proteins_with_Gausians.csv
-%   Proteins_not_fitted_to_gaussian_*.csv
-%   Proteins_not_fitted_to_gaussian_*.csv
-%
-% Adapted from Nichollas Scott's Gaus_build_24_1.m.
-% Made by Greg Stacey on Nov 25 2015.
+
 
 
 %% 0. Initialize

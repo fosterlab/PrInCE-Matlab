@@ -1,3 +1,4 @@
+%MAKEFIGURES_ALIGNMENT Makes figures for the PRINCE Alignment module.
 
 %colsr = {[1 0 0 ] [0 1 0] [0 0 1]};
 colsr = rand(Nreplicates,3);
