@@ -2,10 +2,9 @@
 %   GAUSSBUILD identifies peaks in co-fractionation profiles by
 %   deconvolving profiles into Gaussian mixture models. Models are mixtures 
 %   of between 1 and 5 Gaussians. Profiles are pre-processed (single data
-%   point imputation, smoothing) before before model fitting. Model fitting
-%   and model selection are performed by CHOOSEMODEL_AIC, which uses the
-%   'fit' command. Master script PRINCE must be run before running
-%   GAUSSBUILD.
+%   point imputation, smoothing) before model fitting. Model fitting and
+%   model selection are performed by CHOOSEMODEL_AIC, which uses the 'fit'
+%   command.
 % 
 %   Master script PRINCE must be run before GAUSSBUILD.
 %
