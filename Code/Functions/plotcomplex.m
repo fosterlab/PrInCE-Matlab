@@ -2,10 +2,13 @@ function [p,G] = plotcomplex(predComplex_members,predComplex_connections,refComp
 %   [p,G]=PLOTCOMPLEX(Pc,conn,Rc,names) plots a force-directed diagram of
 %   the predicted complex Pc and (partially) overlapping reference complex
 %   Rc. Pc and Rc are vectors of indices that correspond to the protein
-%   names in the cell array names. conn is the weighted connection matrix
-%   of Pc.
+%   names in the cell array names. conn is the NxN weighted connection 
+%   matrix of Pc. names is a cell array of protein IDs. The order of
+%   elements in names corresponds to indices in Pc and Rc.
 %
-%   G is the output of GRAPH.
+%   G is the output of GRAPH(X), where X is the square connection matrix
+%   conn augmented with nodes and edges from the reference complex. All
+%   reference edges are assumed to be of weight 1.
 %
 %   p is the output of plot(G).
 %
@@ -36,6 +39,12 @@ function [p,G] = plotcomplex(predComplex_members,predComplex_connections,refComp
 %   black - reference-only nodes to reference-only nodes nodes
 %   orange - prediction-only nodes to anything
 %   light blue - all other edges
+
+if iscell(predComplex_members)
+  if isstring(predComplex_members{1})
+    
+  end
+end
 
 if nargin<4
   protNames = [];

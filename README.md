@@ -73,7 +73,7 @@ Open Matlab. In Matlab, *cd* to the folder that contains pcpsilac.m, i.e. the wo
 prince.m
 ```
 
-As the pipeline runs, output figures and tables will be deposited in the automatically generated Output/ folder.
+As the pipeline runs, output figures and tables will be deposited in the Output/ folder.
 
 
 ## References

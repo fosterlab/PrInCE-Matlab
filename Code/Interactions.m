@@ -161,7 +161,7 @@ for channel_counter = 1:number_of_channels
   fprintf(s)
   
   replicatesThisChannel = find(rep2channel == channel_counter);
-  for replicate_counter = replicatesThisChannel
+  for replicate_counter = 5%replicatesThisChannel
     
     s = ['\n        Replicate ' num2str(replicate_counter)];
     fprintf(s)
@@ -509,7 +509,7 @@ for channel_counter = 1:number_of_channels
     % FP matrix
     Inverse_TP_matrix = ~TP_Matrix;
     %FP_Matrix = (Int_matrix & Inverse_TP_matrix);
-    mySound,pause
+    
     % Save and clear replicate-specific variables
     sf = [maindir '/Output/tmp/' 'data_rep' num2str(replicate_counter) '_chan' num2str(channel_counter) '.mat'];
     save(sf,'TP_Matrix','possibleInts','Protein','inverse_self','Chromatograms_raw','Chromatograms','Dist')

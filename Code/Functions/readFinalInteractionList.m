@@ -34,6 +34,10 @@ column_names4 = { 'Unique interactions','Protein A','Protein B','Channel',...
   'Both proteins in Corum', 'Interaction in Corum','Score (avg.)',...
   'Precision (avg.)','Precision (condition-specific)'};
 
+column_names5 = { 'Redundant interactions','Protein A','Protein B','Channel',...
+  'Both proteins in Corum', 'Interaction in Corum','Score (avg.)',...
+  'Precision (avg.)','Precision (tissue-specific)'};
+
 fid = fopen(fn);
 
 header = fgetl(fid);
@@ -49,7 +53,7 @@ elseif isequal(header,column_names2)
 elseif isequal(header,column_names3)
   Idata = [5 6 7 8 9 10];
   Itext = [1 2 3 4];
-elseif isequal(header,column_names4)
+elseif isequal(header,column_names4) | isequal(header,column_names5)
   Idata = [5 6 7 8 9];
   Itext = [1 2 3 4];
 else
