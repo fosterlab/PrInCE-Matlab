@@ -11,19 +11,13 @@ Original versions of the analysis were written by Anders Kristensen<sup>1</sup> 
 
 # How to use
 
-1. Download pipeline.
-2. Format your data.
-3. Organize your files.
+1. Format your data.
+2. Download pipeline.
+3. Put your data in the input folder..
 4. Enter your experiment details in prince.m.
 5. Run prince.m.
 
-### 1. Download pipeline.
-
-In a browser, go to to [https://github.com/fosterlab/PRInCE](https://github.com/fosterlab/PRInCE). Click the green "Clone or Download" button in the top right. Then click "Download ZIP".
-
-![Download pipeline from github](/ReadmeFigures/01download.jpg?raw=true)
-
-### 2. Format your data.
+### 1. Format your data.
 
 #### Data files
 You will be making one csv file for each biological condition. Each row, except for the header, is co-fractionation data from a single protein and replicate, e.g. a chromatogram. Each file is formatted like this:
@@ -48,9 +42,16 @@ This pipeline needs a reference database of known protein complexes, e.g. CORUM.
 Note: protein IDs in data files must match a subset of protein IDs in the reference database.
 
 
-### 3. Organize your files.
+### 2. Download pipeline.
 
-Before running the pipeline, organize experiment files and code like this:
+In a browser, go to to [https://github.com/fosterlab/PRInCE](https://github.com/fosterlab/PRInCE). Click the green "Clone or Download" button in the top right. Then click "Download ZIP".
+
+![Download pipeline from github](/ReadmeFigures/01download.jpg?raw=true)
+
+
+### 3. Unzip the pipeline, and put your data in the Input folder.
+
+In a working directory, unzip the downloaded zip file (PrInCE-master.zip). This creates four folders and a few files inside the working directory, like this:
 
   * a working directory/
     * Code/
@@ -59,9 +60,10 @@ Before running the pipeline, organize experiment files and code like this:
       * Data file 1 (e.g *condition1.csv*)
       * Data file 2 (e.g *condition2.csv*)
       * ...
+    * Output/
     * prince.m
 
-To accomplish this, first create a working folder (name doesn't matter). Unzip the [code](https://github.com/fosterlab/PRInCE) and copy prince.m and the Code/ folder into the working directory. In the working directory, create a folder called "Input" and place all data files (one for each condition) and the reference database file in this Input/ folder.
+Place all data files (there will be one for each biological condition) and the reference database file (typically allcomplexes.csv from CORUM) in the Input/ folder.
 
 ### 4. Enter the details of your experiment in prince.m.
 
