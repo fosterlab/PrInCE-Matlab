@@ -34,7 +34,7 @@
 
 
 diary([user.maindir 'logfile.txt'])
-disp('ROC_PCPSILAC.m')
+disp('Interactions.m')
 
 
 %% 0. Initialize
@@ -161,7 +161,7 @@ for channel_counter = 1:number_of_channels
   fprintf(s)
   
   replicatesThisChannel = find(rep2channel == channel_counter);
-  for replicate_counter = 5%replicatesThisChannel
+  for replicate_counter = replicatesThisChannel
     
     s = ['\n        Replicate ' num2str(replicate_counter)];
     fprintf(s)
@@ -425,7 +425,10 @@ for channel_counter = 1:number_of_channels
     try
       Unique_MajorProteinIDs = unique(vertcat(Protein.MajorID_NoIsoforms{:}),'rows');
     catch
-      Unique_MajorProteinIDs = unique(vertcat(Protein.MajorID_NoIsoforms(:)));
+      tmp = Protein.MajorID_NoIsoforms(:);
+      I = cellfun('isempty',tmp);
+      tmp(I) = [];
+      Unique_MajorProteinIDs = unique(vertcat(tmp));    
     end
     Pos_Corum_proteins = Unique_Corum(ismember(Unique_Corum, Unique_MajorProteinIDs));
     

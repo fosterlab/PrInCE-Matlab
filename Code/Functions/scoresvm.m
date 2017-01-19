@@ -3,11 +3,14 @@ function [score, feats] = scoresvm(Dist,possibleInts,TP_Matrix)
 
 % Get data
 I = possibleInts(:);
-labels = TP_Matrix(:);
-y = labels(:);
+y = TP_Matrix(:);
 y(y>0) = 1;
 y(y~=1) = -1;
-X = [Dist.R2(:) Dist.Euc(:) Dist.Center(:) Dist.Ngauss(:) Dist.CoApex(:) Dist.AUC(:)];% Dist.RawOverlap(:) Dist.R2raw(:)];
+fn = fieldnames(Dist);
+X = nan(length(Dist.(fn{1})(:)),length(fn));
+for ii = 1:length(fn);
+  X(:,ii) = Dist.(fn{ii})(:);
+end
 Nd = size(X,2);
 
 % Soft whiten data
@@ -21,7 +24,7 @@ for ii = 1:Nd
 end
 
 Nlabel1 = sum(y==1);
-trainingLength = min([1000 round(Nlabel1 * 0.8)]);
+trainingLength = min([8000 round(Nlabel1 * 0.8)]);
 
 iterMax = 15;
 score = nan(size(X,1),iterMax);
@@ -30,11 +33,11 @@ for iter = 1:iterMax
   % Make training and testing data
   
   % balance training data
-%   I1 = find(y==1 & I);
-%   I1 = I1(randsample(length(I1),nn/2));
-%   I0 = find(y==-1);
-%   I0 = I0(randsample(length(I0),nn/2));
-%   Itrain = ismember(1:length(y),[I1;I0]);
+  %   I1 = find(y==1 & I);
+  %   I1 = I1(randsample(length(I1),nn/2));
+  %   I0 = find(y==-1);
+  %   I0 = I0(randsample(length(I0),nn/2));
+  %   Itrain = ismember(1:length(y),[I1;I0]);
   
   % non-balanced training data
   Iall = find(I);
@@ -54,7 +57,7 @@ for iter = 1:iterMax
   f2consider = find(feats(iter,:) > 2);
   
   % Fit svm model
-  svm = fitcsvm(Xtr(:,f2consider),ytr,'Standardize',true);
+  svm = fitcsvm(Xtr(:,f2consider),ytr);
   [~,scoretmp] = predict(svm,Xnew(:,f2consider));
   
   score(Ipred,iter) = scoretmp(:,2);

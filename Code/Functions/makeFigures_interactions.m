@@ -10,12 +10,18 @@ sf = [figdir 'Number_interactions_per_channel.png'];
 jj = 1;
 PA = Precision_array;
 
-%Interaction_not_in_corum=(PA(:,3)-PA(:,1));
-%Interaction_in_corum_not_detected=(PA(:,1)-PA(:,2));
-bar_x = 1:(number_of_channels);
-%bar_y = [Interaction_in_corum_not_detected(:,1) (PA(:,2)) Interaction_not_in_corum(:,1)];
-bar_y = Precision_array;
-prec_fig = bar_y(:,2) ./ (bar_y(:,1) + bar_y(:,2));
+if size(Precision_array,1)==1
+  bar_x = 1:(number_of_channels);
+  bar_y = Precision_array;
+  bar_x(2) = 0;
+  bar_y(2,:) = 0;
+  x0 = [.5 1.5];
+else
+  x0 = [bar_x(1)-1 bar_x(end)+1];
+  bar_x = 1:(number_of_channels);
+  bar_y = Precision_array;
+  prec_fig = bar_y(:,2) ./ (bar_y(:,1) + bar_y(:,2));
+end
 
 myC= [30/255 144/255 255/255
   255/255 215/255 0/255
@@ -35,8 +41,8 @@ for ii = 1:length(prec_fig)
   texty = sum(bar_y(ii,:));
   text(ii-0.25,texty+diff(y)*.04,s)
 end
-legend('Proteins in corum (FP)', 'Interaction in corum (TP)',  'Proteins/Interactions not in corum');
-xlim([bar_x(1)-1 bar_x(end)+1])
+legend('Inter-complex (FP)', 'Intra-complex (TP)',  'Novel');
+xlim(x0)
 grid on
 ylabel('Number of interactions','FontSize', 8);
 xlabel('N conditions','FontSize', 8);
@@ -70,7 +76,7 @@ h_nov = hist(N_intperrep(itype==3),x);
 hh = [h_fp; h_tp; h_nov];
 xlim_flag = 0;
 if length(x)==1
-  x(2) = 0;
+  x(2) = x(1)+1;
   hh(:,2) = zeros(length(hh),1);
   xlim_flag = 1;
 end
@@ -91,9 +97,7 @@ end
 
 subplot(2,1,2),hold on
 f2 = bar(x,hh', 0.6,'stacked');
-xlim([bar_x(1)-1 bar_x(end)+1])
-%legend('Proteins in corum (FP)', 'Interaction in corum (TP)',  'Proteins/Interactions not in corum',...
-%    'location','northwest');
+xlim(x0)
 ylabel('Number of interactions','FontSize', 10);
 xlabel('Replicate - Isotopologue channel','FontSize', 10);
 title('Number of interactions in EACH condition','FontSize', 12);
@@ -105,8 +109,8 @@ saveas(gcf, sf);
 
 %% Final precision-recall, ROC curves
 
-[~,I] = sort(interaction_final.precisionDropoutavg,'descend');
-tmp = interaction_final.precisionDropoutavg;
+[~,I] = sort(interaction_final.precisionDropout(:),'descend');
+tmp = interaction_final.precisionDropoutavg(:);
 tmp(tmp==0) = nan;
 
 cols = rand(number_of_channels,3);
@@ -130,7 +134,7 @@ xi = 1:length(tmp);
 figure,hold on
 plot(xi,tmp(I),'k')
 grid on
-ylabel('Precision','fontsize',12)
+ylabel('Interaction score','fontsize',12)
 xlabel('Number of interactions','fontsize',12)
 % Save figure
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
@@ -138,38 +142,86 @@ sf=[figdir 'Final_Precision_' precPlot];
 saveas(gcf, sf, 'png');
 
 
+%%
 
-%% Histogram of score for class=0, class=1
 
-Nx = max([15 length(classList)/3000]);
-x = linspace(min(score),max(score),Nx);
-h1 = hist(score(classList==1),x);
-h0 = hist(score(classList==0),x);
+tpfp = classList;
+tpfp(possList==0) = nan;
+[~,I] = sort(score,'descend');
+tpfp = tpfp(I);   % order  by score
 
-figure,hold on
-p0 = patch([0 x x(end)],[0 h0/sum(h0) 0],'r');
-p1 = patch([0 x x(end)],[0 h1/sum(h1) 0],'g');
-ax = axis;
-plot([1 1].*xcutoff(di),[ax(3) ax(4)],'--r')
-h = text(xcutoff(di)-diff(ax(1:2))*.02,ax(3)+diff(ax(3:4))*.65,...
-  ['Global precision = ' num2str(round(desiredPrecision(di)*100)) '%']);
-set(h, 'rotation', 90)
-axis(ax)
-p0.FaceAlpha = 0.4;
-p1.FaceAlpha = 0.4;
-p0.EdgeColor = 'none';
-p1.EdgeColor = 'none';
+I = find(tpfp==1);
+tp2plot = nan(length(I)*3,2);
+for ii = 1:length(I)
+  tp2plot((ii-1)*3 + (1:2),1) = I(ii);
+  tp2plot((ii-1)*3 + (1:2),2) = [0 1]';
+end
+
+I = find(tpfp==0);
+fp2plot = nan(length(I)*3,2);
+for ii = 1:length(I)
+  fp2plot((ii-1)*3 + (1:2),1) = I(ii);
+  fp2plot((ii-1)*3 + (1:2),2) = [0 1]';
+end
+
+
+figure
+
+subplot(4,1,1:3)
+loglog(cumsum(tpfp==1),'g','linewidth',2)
+hold on
+loglog(cumsum(tpfp==0),'r','linewidth',2)
+xlim([.99 5000])
+legend('Intra-complex (TP)','Inter-complex (FP)','location','northwest')
+ylabel('Cumulative number of interactions, TP or FP')
 grid on
-hl = legend('Known non-interaction','Known interaction','location','northwest');
-set(hl,'fontsize',12)
-xlabel('Interaction score','fontsize',12)
-ylabel('Count, number of interactions, normalized','fontsize',12)
-title('Histogram of interaction scores for protein pairs in CORUM','fontsize',12)
+
+subplot(4,1,4)
+semilogx(fp2plot(:,1),fp2plot(:,2),'r');
+hold on
+semilogx(tp2plot(:,1),tp2plot(:,2),'g');
+ylim([-.25 1.25])
+set(gca,'ytick',[])
+xlim([.99 5000])
+xlabel('Interaction number, ranked by interaction score')
 
 % Save figure
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir 'ScoreHistogram_' precPlot '_GlobalPrecision'];
+sf=[figdir 'Ranked_interactions_cumulative_TP_FP' precPlot];
 saveas(gcf, sf, 'png');
+
+% %% Histogram of score for class=0, class=1
+%
+% Nx = max([15 length(classList)/3000]);
+% x = linspace(min(score),max(score),Nx);
+% h1 = hist(score(classList==1),x);
+% h0 = hist(score(classList==0),x);
+% 
+% figure,hold on
+% p0 = patch([0 x x(end)],[0 h0/sum(h0) 0],'r');
+% p1 = patch([0 x x(end)],[0 h1/sum(h1) 0],'g');
+% ax = axis;
+% plot([1 1].*xcutoff(di),[ax(3) ax(4)],'--r')
+% h = text(xcutoff(di)-diff(ax(1:2))*.02,ax(3)+diff(ax(3:4))*.65,...
+%   ['Desired precision = ' num2str(round(desiredPrecision(di)*100)) '%']);
+% set(h, 'rotation', 90)
+% axis(ax)
+% p0.FaceAlpha = 0.4;
+% p1.FaceAlpha = 0.4;
+% p0.EdgeColor = 'none';
+% p1.EdgeColor = 'none';
+% grid on
+% hl = legend('Known non-interaction','Known interaction','location','northwest');
+% set(hl,'fontsize',12)
+% xlabel('Interaction score','fontsize',12)
+% ylabel('Count, number of interactions, normalized','fontsize',12)
+% title('Histogram of interaction scores for protein pairs in CORUM','fontsize',12)
+% 
+% % Save figure
+% set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+% sf=[figdir 'ScoreHistogram_' precPlot '_GlobalPrecision'];
+% saveas(gcf, sf, 'png');
+
 
 
 %% Plot best 200 interactions

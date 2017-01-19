@@ -28,7 +28,7 @@ while 1
   t1 = strsplit(t, ',');
   
   score = str2num(t1{4});
-  if score>0
+  if score>900
     cc = cc+1;
     pairwiselist{cc,1} = strrep(t1{1},' ','');
     pairwiselist{cc,2} = strrep(t1{2},' ','');
