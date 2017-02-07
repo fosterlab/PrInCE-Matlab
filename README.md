@@ -11,13 +11,20 @@ Original versions of the analysis were written by Anders Kristensen<sup>1</sup> 
 
 # How to use
 
-1. Format your data.
-2. Download pipeline.
+1. Download pipeline.
+2. Format your data.
 3. Put your data in the input folder..
 4. Enter your experiment details in prince.m.
 5. Run prince.m.
 
-### 1. Format your data.
+
+### 1. Download pipeline.
+
+In a browser, go to to [https://github.com/fosterlab/PRInCE](https://github.com/fosterlab/PRInCE). Click the green "Clone or Download" button in the top right. Then click "Download ZIP".
+
+![Download pipeline from github](/ReadmeFigures/01download.jpg?raw=true)
+
+### 2. Format your data.
 
 #### Data files
 You will be making one csv file for each biological condition. Each row, except for the header, is co-fractionation data from a single protein and replicate, e.g. a chromatogram. Each file is formatted like this:
@@ -40,14 +47,6 @@ This pipeline needs a reference database of known protein complexes, e.g. CORUM.
 * reference complexes are in the fourth column, and each member is semicolon-separated
 
 Note: protein IDs in data files must match a subset of protein IDs in the reference database.
-
-
-### 2. Download pipeline.
-
-In a browser, go to to [https://github.com/fosterlab/PRInCE](https://github.com/fosterlab/PRInCE). Click the green "Clone or Download" button in the top right. Then click "Download ZIP".
-
-![Download pipeline from github](/ReadmeFigures/01download.jpg?raw=true)
-
 
 ### 3. Unzip the pipeline, and put your data in the Input folder.
 
