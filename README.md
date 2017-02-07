@@ -18,7 +18,7 @@ Original versions of the analysis were written by Anders Kristensen<sup>1</sup> 
 5. Run prince.m.
 
 
-### 1. Download pipeline.
+### 1. Download PrInCE.
 
 In a browser, go to to [https://github.com/fosterlab/PRInCE](https://github.com/fosterlab/PRInCE). Click the green "Clone or Download" button in the top right. Then click "Download ZIP".
 
