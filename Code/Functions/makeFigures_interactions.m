@@ -20,8 +20,8 @@ else
   x0 = [bar_x(1)-1 bar_x(end)+1];
   bar_x = 1:(number_of_channels);
   bar_y = Precision_array;
-  prec_fig = bar_y(:,2) ./ (bar_y(:,1) + bar_y(:,2));
 end
+prec_fig = bar_y(:,2) ./ (bar_y(:,1) + bar_y(:,2));
 
 myC= [30/255 144/255 255/255
   255/255 215/255 0/255

@@ -66,7 +66,6 @@ user.desiredPrecision = 0.5;   % At what precision do you want to evaluate prote
                                % should be a number between 0 and 1.
 
 % Complexes
-user.minrep = 2; % Interaction must be seen in at least this number of replicates.
 user.separateByReplicate = 0;
 user.separateByChannel = 1;
 user.fdr = 0.01; % FDR cutoff for enrichment analysis

@@ -34,11 +34,19 @@ for ii = 1:length(user.MQfiles)
   end
 end
 % user.majorproteingroupsfile
-if ~exist([user.maindir '/Input/' user.majorproteingroupsfile],'file')
-  error('\n The following file could not be found: \n %s', user.majorproteingroupsfile)
+if isempty(user.majorproteingroupsfile)
+  disp('')
+  disp(' Continuing without a major protein groups file...')
 else
-  user_new.majorproteingroupsfile = [user.maindir '/Input/' user.majorproteingroupsfile];
+  if ~exist([user.maindir '/Input/' user.majorproteingroupsfile],'file')
+    warning('\n The following file could not be found: \n %s', user.majorproteingroupsfile)
+    disp('\n Continuing without a major protein groups file...')
+    user.majorproteingroupsfile = '';
+  else
+    user_new.majorproteingroupsfile = [user.maindir '/Input/' user.majorproteingroupsfile];
+  end
 end
+% user.corumfile
 if ~exist([user.maindir '/Input/' user.corumfile],'file')
   error('\n The following file could not be found: \n %s', user.corumfile)
 else

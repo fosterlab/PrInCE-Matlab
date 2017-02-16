@@ -88,35 +88,39 @@ end
 
 %% user.majorproteingroupsfile
 
-fid = fopen(user.majorproteingroupsfile);
-
-% Check csv format.
-if ~strcmpi(user.majorproteingroupsfile(end-2:end),'csv')
-  error('The following MQ file is not in .csv format:\n %s', user.majorproteingroupsfile)
-end
-
-% Check header
-head = fgetl(fid);
-head = strsplit(head,',');
-if ~strcmpi(head{1},'majority protein ids')
-  error('First line of the following file must be "majority protein IDs":\n %s', user.majorproteingroupsfile)
-end
-
-% Check all lines
-while ~feof(fid)
-  current_line = fgetl(fid);
-  current_line = strsplit(current_line,',');
-  for jj = 1:length(current_line)
-    if isempty(current_line{jj})
-      continue;
-    end
-    if length(current_line{jj})>12
-      error('The following file appears to contain badly formatted protein IDs:\n %s', user.majorproteingroupsfile)
+if ~isempty(user.majorproteingroupsfile)
+  
+  fid = fopen(user.majorproteingroupsfile);
+  
+  % Check csv format.
+  if ~strcmpi(user.majorproteingroupsfile(end-2:end),'csv')
+    error('The following MQ file is not in .csv format:\n %s', user.majorproteingroupsfile)
+  end
+  
+  % % Check header
+  head = fgetl(fid);
+  head = strsplit(head,',');
+  % if ~strcmpi(head{1},'majority protein ids')
+  %   error('First line of the following file must be "majority protein IDs":\n %s', user.majorproteingroupsfile)
+  % end
+  
+  % Check all lines
+  while ~feof(fid)
+    current_line = fgetl(fid);
+    current_line = strsplit(current_line,',');
+    for jj = 1:length(current_line)
+      if isempty(current_line{jj})
+        continue;
+      end
+      if length(current_line{jj})>12
+        error('The following file appears to contain badly formatted protein IDs:\n %s', user.majorproteingroupsfile)
+      end
     end
   end
+  
+  fclose(fid);
+  
 end
-
-fclose(fid);
 
 
 

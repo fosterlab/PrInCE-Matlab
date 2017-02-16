@@ -171,10 +171,6 @@ for channel_counter = 1:number_of_channels
     s = '\n        1. Read input data';
     fprintf(s)
     
-    Protein_IDs = readproteingroupsfile(user);
-    nn = min(size(Protein_IDs,2),23);
-    Protein_IDs = Protein_IDs(:,1:nn);
-    
     % Corum binary interactions
     fid=fopen(user.corumpairwisefile, 'rt');    %Input corum data base.
     Corum_Import= textscan(fid,'%s\t', 'Delimiter',',');
@@ -250,7 +246,6 @@ for channel_counter = 1:number_of_channels
     W_raw = cell2mat(Gaus_import(2:end,4));
     
     % The data is nan-padded. Find where the real data starts and stops.
-    nanmax = size(Chromatograms_raw,1);
     tmp = find(sum(isnan(Chromatograms_raw))==size(Chromatograms_raw,1));
     if isempty(tmp)
       tmp = -1;
@@ -288,6 +283,16 @@ for channel_counter = 1:number_of_channels
     Protein.Height = H;
     Protein.Width = W;
     Protein.Center = C;
+    
+    % Read Major protein groups file
+    % If it doesn't exist, set it equal to the protein IDs
+    if ~isempty(user.majorproteingroupsfile)
+      Protein_IDs = readproteingroupsfile(user);
+    else
+      Protein_IDs = Protein.Isoform;
+    end
+    nn = min(size(Protein_IDs,2),23);
+    Protein_IDs = Protein_IDs(:,1:nn);
     
     Dimensions_Gaus_import = length(Protein.Isoform);
     Dimension_of_Protein_IDs = size(Protein_IDs);
@@ -386,13 +391,10 @@ for channel_counter = 1:number_of_channels
     % Calculate distance matrices
     clear Dist
     Dist.Euc = squareform(pdist(Chromatograms,'euclidean'));              % 1. Euclidean distance
-    Dist.R2 = 1 - corr(Chromatograms').^2;                                % 2. Cleaned chromatogram R^2
     Dist.R = -1*corr(Chromatograms');                                     % 2. Cleaned chromatogram R^2
-    %[R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
-    %Dist.R2raw = 1 - R.^2;                                                % 3. Raw chromatogram R^2
-    %Dist.Rpraw = p;                                                       % 4. Raw chromatogram correlation p-value
-    %Dist.Ngauss = squareform(pdist(Ngauss,'euclidean'));                  % 5. Difference in number of fitted Gaussians
-    %Dist.AUC = squareform(pdist(auc,'euclidean'));                        % 6. Difference in area-under-the-chromatogram
+    [R,p] = corrcoef(Chromatograms_raw','rows','pairwise');
+    Dist.Rraw = 1 - R;                                                    % 3. Raw chromatogram R^2
+    Dist.Rpraw = p;                                                       % 4. Raw chromatogram correlation p-value
     Dist.CoApex = zeros(length(Protein.Isoform),length(Protein.Isoform));
     I = cell(size(Protein.Isoform));
     for ii = 1:length(Protein.Isoform)
@@ -402,11 +404,11 @@ for channel_counter = 1:number_of_channels
       for jj = 1:length(Protein.Isoform)
         if ii == jj; continue; end
         tmp = gaussParamDist(I{ii},I{jj});
-        Dist.CoApex(ii,jj) = min(tmp(:));                                 % 7. Co-Apex score 1
+        Dist.CoApex(ii,jj) = min(tmp(:));                                 % 5. Co-Apex score 1
       end
     end
     [~,mx] = max(Chromatograms,[],2);
-    Dist.CoApex2 = squareform(pdist(mx,'euclidean'));                     % 8. Co-Apex score 2
+    Dist.CoApex2 = squareform(pdist(mx,'euclidean'));                     % 6. Co-Apex score 2
     fn = fieldnames(Dist);
     NDistFields = length(fn);
     

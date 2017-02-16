@@ -27,10 +27,17 @@ end
 
 Nprot = size(tmp2,1);
 
+% Check if user.majorproteingroupsfile has a header
+if ~isempty(strfind(tmp2{1},'rotein')) || ~isempty(strfind(tmp2{1},'roup'))
+  istart = 2;
+else
+  istart = 1;
+end
+
 % Check if tmp2 already has one protein name per cell.
 % To do this, check if there are any commas in any of the first cells.
 Ncommas = zeros(Nprot,1);
-for ii = 2:Nprot
+for ii = istart:Nprot
   Ncommas(ii) = sum(double(tmp2{ii,1}==44));
 end
 
@@ -55,7 +62,7 @@ else
   Protein_IDs = cell(Nprot, 1000);
   Nmembers = 0;
   Nprot2 = 1;
-  for ii = 2:Nprot
+  for ii = istart:Nprot
     
     % check if line has commas
     I = find(double(tmp2{ii,1}) == 44);
