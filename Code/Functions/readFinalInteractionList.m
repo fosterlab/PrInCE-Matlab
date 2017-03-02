@@ -63,7 +63,7 @@ head.data = header(Idata);
 head.text = header(Itext);
 
 interaction_list.data = nan(200000,length(Idata));
-interaction_list.text = cell(200000,length(Itext));
+interaction_list.text = cell(200000,6);
 cc = 0;
 while ~feof(fid)
   
@@ -77,6 +77,23 @@ while ~feof(fid)
   for ii = 1:length(Itext)
     interaction_list.text{cc,ii} = current_line{Itext(ii)};
   end
+  
+  I1 = find(ismember(interaction_list.text{cc,2},'-'));
+  if ~isempty(I1)
+    tmp = interaction_list.text{cc,2}(1:I1-1);
+  else
+    tmp = interaction_list.text{cc,2};
+  end
+  interaction_list.text{cc,5} = tmp;
+  I1 = find(ismember(interaction_list.text{cc,3},'-'));
+  if ~isempty(I1)
+    tmp = interaction_list.text{cc,3}(1:I1-1);
+  else
+    tmp = interaction_list.text{cc,3};
+  end
+  interaction_list.text{cc,6} = tmp;
+  
+
 end
 
 interaction_list.data = interaction_list.data(1:cc,:);

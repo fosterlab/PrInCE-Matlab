@@ -129,26 +129,31 @@ if ~isempty(user.corumfile)
   
   fid = fopen(user.corumfile);
   
-  % Check csv format.
-  if ~strcmpi(user.corumfile(end-2:end),'csv')
-    error('The following MQ file is not in .csv format:\n %s', user.corumfile)
-  end
-  
   % Check header
   head = fgetl(fid);
-  head = strsplit(head,';');
-  if length(head)==1
-    warning('The following file should be ";" separated, but is likely "," separated:\n %s', user.majorproteingroupsfile)
-    head = strsplit(head{1},',');
-  end
-  if isempty(strfind(lower(head{1}),'complex id'))
-    error('First column of the following file must be "Complex id":\n %s', user.majorproteingroupsfile)
-  end
-  if isempty(strfind(lower(head{2}),'complex name'))
-    error('Second column of the following file must be "Complex name":\n %s', user.majorproteingroupsfile)
-  end
-  if isempty(strfind(lower(head{5}),'uniprot'))
-    error('Fifth column of the following file must contain "uniprot":\n %s', user.majorproteingroupsfile)
+  head1 = strsplit(head,';');
+  head2 = strsplit(head,'\t');
+  
+  if length(head1)==1 & length(head2)>1
+    if isempty(strfind((head2{1}),'ComplexID'))
+      error('First column of the following file must be "ComplexID":\n %s', user.majorproteingroupsfile)
+    end
+    if isempty(strfind((head2{2}),'ComplexName'))
+      error('Second column of the following file must be "ComplexName":\n %s', user.majorproteingroupsfile)
+    end
+    if isempty(strfind((head2{6}),'UniProt'))
+      error('Sixth column of the following file must contain "UniProt":\n %s', user.majorproteingroupsfile)
+    end
+  elseif length(head1)>1 & length(head2)==1
+    if isempty(strfind(lower(head1{1}),'complex id'))
+      error('First column of the following file must be "Complex id":\n %s', user.majorproteingroupsfile)
+    end
+    if isempty(strfind(lower(head1{2}),'complex name'))
+      error('Second column of the following file must be "Complex name":\n %s', user.majorproteingroupsfile)
+    end
+    if isempty(strfind(lower(head1{5}),'uniprot'))
+      error('Fifth column of the following file must contain "uniprot":\n %s', user.majorproteingroupsfile)
+    end
   end
   
   fclose(fid);
