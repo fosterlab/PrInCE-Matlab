@@ -40,11 +40,11 @@ Here's a simple dataset with one condition, two replicates, and five fractions:
 Important: Ensure that files are "saved as csv", e.g. Excel --> "Save as" --> "Save as csv"
 
 #### Reference database of known complexes
-This pipeline needs a reference database of known protein complexes, e.g. CORUM. For now, this reference database must be a file in the same format as CORUM's *allComplexes.csv* file (downloadable [here](http://mips.helmholtz-muenchen.de/genre/proj/corum/)), and we recommend this for mammalian datasets. In case a custom reference must be made, it must follow this format:
+This pipeline needs a reference database of known protein complexes, e.g. CORUM. For now, this reference database must be a file in the same format as CORUM's *allComplexes.txt* file (downloadable [here](http://mips.helmholtz-muenchen.de/corum/#download)), and we recommend this for mammalian datasets. In case a custom reference must be made, it must follow this format:
 
-* must be a csv file
+* must be tab-delimited
 * must have a header
-* reference complexes are in the fourth column, and each member is semicolon-separated
+* reference complexes are in the sixth column, and each member is semicolon-separated
 
 Note: protein IDs in data files must match a subset of protein IDs in the reference database.
 
@@ -55,26 +55,26 @@ In a working directory, unzip the downloaded zip file (PrInCE-master.zip). This 
   * a working directory/
     * Code/
     * Input/
-      * Reference database file (e.g *allComplexes.csv*)
+      * Reference database file (e.g *allComplexes.txt*)
       * Data file 1 (e.g *condition1.csv*)
       * Data file 2 (e.g *condition2.csv*)
       * ...
     * Output/
     * prince.m
 
-Place all data files (there will be one for each biological condition) and the reference database file (typically allcomplexes.csv from CORUM) in the Input/ folder.
+Place all data files (there will be one for each biological condition) and the reference database file (typically allcomplexes.txt from CORUM) in the Input/ folder.
 
 ### 4. Enter the details of your experiment in prince.m.
 
 
 ### 5. Run analysis.
-Open Matlab. In Matlab, *cd* to the folder that contains pcpsilac.m, i.e. the working directory you made in 3. In the command line type
+In Matlab, navigate to the working directory you made in 3. In the command line type
 
 ```
 prince.m
 ```
 
-As the pipeline runs, output figures and tables will be deposited in the Output/ folder.
+As the pipeline runs, output figures and tables will be generated in the Output/ folder.
 
 
 ## References
