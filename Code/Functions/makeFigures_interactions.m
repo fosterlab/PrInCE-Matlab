@@ -10,8 +10,8 @@ sf = [figdir 'Number_interactions_per_channel.png'];
 jj = 1;
 PA = Precision_array;
 
+bar_x = 1:(number_of_channels);
 if size(Precision_array,1)==1
-  bar_x = 1:(number_of_channels);
   bar_y = Precision_array;
   bar_x(2) = 0;
   bar_y(2,:) = 0;
@@ -109,8 +109,8 @@ saveas(gcf, sf);
 
 %% Final precision-recall, ROC curves
 
-[~,I] = sort(interaction_final.precisionDropout(:),'descend');
-tmp = interaction_final.precisionDropoutavg(:);
+[~,I] = sort(interaction_final.precisionDropoutavg(:,1),'descend');
+tmp = interaction_final.precisionDropoutavg(:,1);
 tmp(tmp==0) = nan;
 
 cols = rand(number_of_channels,3);
