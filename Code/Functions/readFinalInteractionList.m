@@ -38,6 +38,10 @@ column_names5 = { 'Redundant interactions','Protein A','Protein B','Channel',...
   'Both proteins in Corum', 'Interaction in Corum','Score (avg.)',...
   'Precision (avg.)','Precision (tissue-specific)'};
 
+column_names6 = { 'Unique interactions','Protein A','Protein B','Channel',...
+  'Both proteins in Corum', 'Interaction in Corum','Interaction probability (avg.)',...
+  'Interaction score (avg.)','Interaction score (condition-specific)'};
+
 fid = fopen(fn);
 
 header = fgetl(fid);
@@ -53,7 +57,7 @@ elseif isequal(header,column_names2)
 elseif isequal(header,column_names3)
   Idata = [5 6 7 8 9 10];
   Itext = [1 2 3 4];
-elseif isequal(header,column_names4) | isequal(header,column_names5)
+elseif isequal(header,column_names4) | isequal(header,column_names5) | isequal(header,column_names6)
   Idata = [5 6 7 8 9];
   Itext = [1 2 3 4];
 else
@@ -63,7 +67,7 @@ head.data = header(Idata);
 head.text = header(Itext);
 
 interaction_list.data = nan(200000,length(Idata));
-interaction_list.text = cell(200000,6);
+interaction_list.text = cell(200000,length(Itext));
 cc = 0;
 while ~feof(fid)
   
@@ -77,23 +81,6 @@ while ~feof(fid)
   for ii = 1:length(Itext)
     interaction_list.text{cc,ii} = current_line{Itext(ii)};
   end
-  
-  I1 = find(ismember(interaction_list.text{cc,2},'-'));
-  if ~isempty(I1)
-    tmp = interaction_list.text{cc,2}(1:I1-1);
-  else
-    tmp = interaction_list.text{cc,2};
-  end
-  interaction_list.text{cc,5} = tmp;
-  I1 = find(ismember(interaction_list.text{cc,3},'-'));
-  if ~isempty(I1)
-    tmp = interaction_list.text{cc,3}(1:I1-1);
-  else
-    tmp = interaction_list.text{cc,3};
-  end
-  interaction_list.text{cc,6} = tmp;
-  
-
 end
 
 interaction_list.data = interaction_list.data(1:cc,:);
