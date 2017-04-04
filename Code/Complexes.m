@@ -136,7 +136,8 @@ Itext(1) = find(ismember(tmp_head.text,'Protein A'));
 Itext(2) = find(ismember(tmp_head.text,'Protein B'));
 Itext(3) = find(ismember(tmp_head.text,'Channel'));
 Idata = find(ismember(tmp_head.data,'Precision level') | ...
-    ismember(tmp_head.data,'Precision (avg.)'));
+    ismember(tmp_head.data,'Precision (avg.)') | ...
+    ismember(tmp_head.data,'Interaction score (avg.)'));
 interactionPairs = [tmp.text(:,Itext) num2cell(tmp.data(:,Idata))];
 for ii = 1:size(interactionPairs,1)
   I1 = find(ismember(interactionPairs{ii,1},'-'));
@@ -520,8 +521,10 @@ for ii = 1:size(csplit,1)
   for jj = 1:Ncomplex(ii)
     for kk = 1:length(corumComplex2)
       overlap(jj,kk) = length(intersect(CL(ii).Members{jj},corumComplex2{kk}));
-      overlap_ratio(jj,kk) = length(intersect(uniqueProteins_noIsoform(CL(ii).Members{jj}),...
-        uniqueProteins_noIsoform(corumComplex2{kk}))) / length(corumComplex2{kk});
+      overlap_ratio(jj,kk) = length(intersect(uniqueProteins(CL(ii).Members{jj}),...
+        uniqueProteins(corumComplex2{kk}))) / length(corumComplex2{kk});
+      %overlap_ratio(jj,kk) = length(intersect(uniqueProteins_noIsoform(CL(ii).Members{jj}),...
+      %  uniqueProteins_noIsoform(corumComplex2{kk}))) / length(corumComplex2{kk});
     end
     overlap_ratio(overlap<2) = 0;
     overlap(overlap<2) = 0;
