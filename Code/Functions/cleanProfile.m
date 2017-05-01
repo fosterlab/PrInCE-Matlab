@@ -1,4 +1,4 @@
-function cleandata = cleanProfile(rawdata)
+function cleandata = cleanProfile(rawdata,Nminconsecutive)
 %CLEANPROFILE Pre-process co-fractionation profile
 %   cleandata=CLEANPROFILE(rawdata) performs several pre-processing steps
 %   on the co-fractionation profile rawdata. The Nx1 vector rawdata is a
@@ -56,10 +56,8 @@ end
 
 % 3. Consecutive numbers, if less then 5 consecutive number removes chromogram and replace with 0.05
 if ismember(3,steps)
-  Nminconsecutive = 5; % minimum number of consecutive non-nan values
   a = ones(1,Nminconsecutive); % the pattern to look for: [1 1 1]
   a2 = strfind(~isnan(tmpchrom),a); % find the pattern
-  %tmpchrom2 = ones(size(tmpchrom))*0.05; % dummy variable
   tmpchrom2 = zeros(size(tmpchrom)); % dummy variable
   for ii = 1:length(a2)
     I = a2(ii) : a2(ii) + Nminconsecutive-1;

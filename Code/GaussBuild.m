@@ -35,6 +35,8 @@ experimental_channels = user.silacratios;
 
 Nchannels = length(experimental_channels);
 
+minGoodValues = 5;
+
 % Define folders, i.e. define where everything lives.
 codedir = [maindir 'Code/']; % where this script lives
 funcdir = [maindir 'Code/Functions/']; % where small pieces of code live
@@ -132,7 +134,7 @@ for ci = 1:Nchannels % loop over channels
   for ri = 1:Nproteins % loop over proteins
     
     raw_chromatogram = rawdata{ci}(ri,1:Nfractions);
-    clean_chromatogram = cleanProfile(raw_chromatogram);
+    clean_chromatogram = cleanProfile(raw_chromatogram,1);
     
     % store clean_chromatogram in cleandata
     cleandata{ci}(ri,:) = clean_chromatogram;
@@ -153,7 +155,6 @@ fprintf('\n    3. Fit 1-5 Gaussians on each cleaned chromatogram')
 Coef = cell(Nchannels, Nproteins);
 SSE = nan(size(Coef));
 adjrsquare = nan(size(Coef));
-%fit_flag = nan(size(Coef));
 Try_Fit = zeros(size(Coef));
 
 gausscount = 0;
@@ -168,7 +169,7 @@ for ci = 1:Nchannels % loop over channels
     clean_chromatogram = cleandata_nonbc(ri,:);
     
     % don't fit Gaussians if there are less than 5 good data points in the chromatogram
-    if sum(clean_chromatogram > 0.05)<5
+    if sum(clean_chromatogram > 0.05)<minGoodValues
       continue
     end
     Try_Fit(ci,ri)=1;
