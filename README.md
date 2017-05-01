@@ -1,6 +1,6 @@
 # PrInCE
 
-Predicting Interactomes via Co-Elution. Bioinformatics pipeline for analyzing PCP-SILAC and other co-elution experiments.
+Predicting Interactomes via Co-Elution: a bioinformatics pipeline for analyzing PCP-SILAC and other co-elution experiments.
 
 * Predict protein-protein interactions
 * Predict protein complexes
@@ -40,7 +40,7 @@ Typical datasets have hundreds or thousands of proteins and dozens of fractions.
 Important: Ensure that files are "saved as csv", e.g. Excel --> "Save as" --> "Save as csv"
 
 #### Reference database of known protein complexes
-This pipeline needs a reference database of known protein complexes, e.g. CORUM. This reference database must be a file in the same format as CORUM's *allComplexes.txt* file (downloadable [here](http://mips.helmholtz-muenchen.de/corum/#download)), and we recommend this for mammalian datasets. In case a custom reference must be made, it must follow this format:
+PrInCE needs a reference database of known protein complexes, e.g. CORUM. This reference database must be a file in the same format as CORUM's *allComplexes.txt* file (downloadable [here](http://mips.helmholtz-muenchen.de/corum/#download)), and we recommend this for mammalian datasets. In case a custom reference must be made, it must follow this format:
 
 * must be tab-delimited
 * must have a header
@@ -61,22 +61,22 @@ In a working directory, unzip the downloaded zip file (PrInCE-master.zip). This 
       * ...
     * Output/
     * Standalone/
-    * experimental_design.txt
+    * experimental_design.rtf
     * prince.m
 
 Place all data files (there will be one for each biological condition) and the reference database file (typically "allcomplexes.txt" from CORUM) in the Input/ folder.
 
 Important: PrInCE includes a test data files (see below). These are are two co-elution data files ("condition1.csv" and "condition2.csv"), a major protein groups file ("Major_protein_groups.csv") and a CORUM reference database ("allComplexes.txt"). These test files should be replaced with your data. Delete these files before analyzing your data!
 
-### 4. Enter the details of your experiment in experimental_design.txt.
+### 4. Enter the details of your experiment in experimental_design.rtf.
 
-The file "experimental_design.rtf" contains experimental parameters such as the number of biological conditions and replicates. This file also gives you the option to skip PrInCE modules and control whether plots are generated for individual proteins. (Plotting individual proteins is useful but makes a few thousand plots.) To edit these parameters, open "experimental_design.rtf" in a text editor and make the necessary changes. The fields listed in this file, along with example values, are:
+The file "experimental_design.rtf" tells PrInCE about your experiment, including paramaters such as the number of biological conditions and replicates. This file also gives the option to skip PrInCE modules and control whether plots are generated for individual proteins. (Plotting individual proteins is useful but can make quite a few plots.) To edit these parameters, open "experimental_design.rtf" in a text editor and make the necessary changes. Here are the parameters listed in the file, along with example values:
 
   * Desired precision of interaction list: 75% (Controls the quality-vs-quantity of the predicted interactions. Typical values are 50%, 60%, and 75%. A 50% precise interaction list has half true positives and half false positives.)
   * Major protein groups filename: Major_protein_groups.csv
   * Reference database filename: allComplexes.txt
-  * Treatment condition: condition1
-  * No-treatment condition: condition2
+  * Treatment condition: condition1 (FoldChanges calculates the ratio of protein amounts between two conditions. e.g. condition1/condition. "Treatment condition" is the numerator in the ratio...)
+  * No-treatment condition: condition2 (... and "No-treatment condition" is the denominator.)
   * Number of fractions: 55 (If different replicates have different numbers of fractions, list the largest number here.)
   * Number of replicates: 3
   * Skip Alignment?: No (Must be "Yes" or "No")
@@ -102,19 +102,20 @@ As the pipeline runs, output figures and tables will be generated in the Output/
 
 #### As standalone executable
 
-If you do not have a copy of Matlab, Mac and PC users can run PrInCE as a pre-compiled standalone application. This requires downloading Matlab Runtime (~1GB) and setting up the appropriate folders, so is not recommended if a copy of Matlab is available. To run a standalone version of PrInCE:
+Mac and PC users can run PrInCE without owning Matlab. This requires downloading Matlab Runtime (~1GB) and setting up the appropriate folders, so is not recommended if a copy of Matlab is available. To run a standalone version of PrInCE:
 
-1. Run "myAppInstaller_web". For Mac users, this is Standalone/Mac/myAppInstaller_web. For PC users, this is Standalone/PC/myAppInstaller_web.
+1. Run "myAppInstaller_web". _For Mac users, this is Standalone/Mac/myAppInstaller_web. For PC users, this is Standalone/PC/myAppInstaller_web._
 2. Complete the installation process. Mac users can leave the DYLD path prompt blank
-3. Move standalone files to the working directory created in step 3. Mac users must move "prince.app" and "run_prince.sh". PC users must move "prince.exe".
+3. Move standalone files to the working directory created in step 3. _Mac users must move "prince.app" and "run_prince.sh". PC users must move "prince.exe"._
 4. Run the standalone prince application.
   - Mac users: In a Terminal window, navigate to the working directory (e.g. 'cd /path/to/working/directory/'). Run prince by typing './run_prince.sh /path/to/Matlab/Runtime/', where /path/to/Matlab/Runtime/ is the location of the (just-downloaded) Matlab Runtime. Typical location is /Applications/MATLAB/MATLAB_Runtime/v92/. i.e. in Terminal, after navigating to the working directory, type './run_prince.sh /Applications/MATLAB/MATLAB_Runtime/v92/'.
   - PC users: Run prince.exe.
 
 ### Test data
 
-PrInCE comes with test co-elution data from a recently published paper<sup>3</sup>. These files are "condition1.csv", "condition2.csv", "Major_protein_groups.csv", and "allComplexes.txt" in the Input/ folder. They give examples of what correctly formatted data files look like and ensure that you can run PrInCE correctly. To do the latter, just follow the instructions in step 5! If all is good, the Output/ folder will be populated with figures and data files within a few hours!
+PrInCE comes with test co-elution data from a recently published paper<sup>3</sup>. These files are "condition1.csv", "condition2.csv", "Major_protein_groups.csv", and "allComplexes.txt" in the Input/ folder. They give examples of what correctly formatted data files look like and ensure that you can run PrInCE correctly. To do the latter, just follow the instructions in step 5! If all is good, the Output/ folder will be populated with figures and data files within a few hours.
 
+Important: Remove/delete these **4** test files before running your own data!
 
 
 ## References
