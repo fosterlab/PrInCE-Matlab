@@ -23,19 +23,10 @@ clear user
 user = readExperimentFile;
 
 % Confirm 'user' is properly formatted
-if ~exist(user.maindir,'dir')
-  user.maindir = pwd;
-  user.maindir = [user.maindir '/'];
-end
-f1 = [user.maindir 'Code'];
-f2 = [user.maindir 'Code/Functions'];
-addpath(f1,f2)
 user = cleanuser(user);
 
 % Confirm input files are properly formatted
 standardinput(user);
-
-user.nickflag = 0;
 
 % Save 'user'
 save([user.maindir 'userconfig.mat'],'user')

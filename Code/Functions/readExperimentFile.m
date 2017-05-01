@@ -39,8 +39,12 @@ else
 end
 
 
-fn = [user.maindir 'experimental_design.rtf'];
-fid = fopen(fn);
+% Add Code and Functions to path
+if ~isdeployed
+  f1 = [user.maindir 'Code'];
+  f2 = [user.maindir 'Code/Functions'];
+  addpath(f1,f2)
+end
 
 
 %%%%%%% Read parameters
@@ -57,6 +61,9 @@ code_strings = {'precision' ...
   'Skip Complexes' ...
   'Plots of Gaussians' ...
   'Plots of fold changes'};
+
+fn = [user.maindir 'experimental_design.rtf'];
+fid = fopen(fn);
 
 while ~feof(fid)
   
