@@ -1,4 +1,4 @@
-function user_new = readExperimentFile
+function user_new = readExperimentFile(user)
 % READEXPERIMENTFILE Reads experimental_design.rtf.
 %
 %   READEXPERIMENTFILE(user) reads the experimental design and plotting
@@ -10,7 +10,6 @@ function user_new = readExperimentFile
 
 
 %%%%%%% Hard coded parameters
-user.maindir = [pwd '/'];
 user.userwindow = 2;
 user.separateByReplicate = 0;
 user.separateByChannel = 1;
@@ -36,14 +35,6 @@ if length(user.MQfiles)<=2
 else
   user.comparisonpairs = user.silacratios(1:2);
   warning('Fold changes will be calculated between condition1 and condition2...')
-end
-
-
-% Add Code and Functions to path
-if ~isdeployed
-  f1 = [user.maindir 'Code'];
-  f2 = [user.maindir 'Code/Functions'];
-  addpath(f1,f2)
 end
 
 

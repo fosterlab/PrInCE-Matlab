@@ -65,7 +65,6 @@ if ~skipflag
   tic
   fprintf('\n    0. Initialize')
   
-  minrep = user.minrep; % minimum number of replicates an interaction has to be in
   desiredPrecision = user.desiredPrecision;
   Nchannels = length(user.silacratios);
   
@@ -336,51 +335,56 @@ if ~skipflag
   fprintf('    3. Optimize parameters for complex-building')
   
   pRange = [0 100 500 2000 10000 50000 10^6];
-  densRange = [0 0.1 0.2 0.3 0.4 0.5 0.75 1];
+  %densRange = [0 0.1 0.2 0.3 0.4 0.5 0.75 1];
+  precRange = linspace(min(interactionPairs2(:,3)),1,8);
   
-  ga = nan(length(pRange),length(densRange));
-  mr = nan(length(pRange),length(densRange));
-  dens = nan(length(pRange),length(densRange));
+  ga = nan(length(pRange),length(precRange));
+  mr = nan(length(pRange),length(precRange));
+  Ncomplex = nan(length(pRange),length(precRange));
+  dens = nan(length(pRange),length(precRange));
   
   best_p = nan(1,size(csplit,1));
   best_dens = nan(1,size(csplit,1));
-  user.optimizeHyperParameters = 0;
+  best_prec = nan(1,size(csplit,1));
+  user.optimizeHyperParameters = 1;
   if user.optimizeHyperParameters ==1
     for ii = 1:size(csplit,1)
-      
-      if csplit(ii,1) == 0
-        I1 = ones(size(interactionPairs2,1),1);
-      else
-        I1 = sum(replicates == csplit(ii,1),2)>0;
-      end
-      if csplit(ii,2) == 0
-        I2 = ones(size(interactionPairs2,1),1);
-      else
-        I2 = sum(channels == csplit(ii,2),2)>0;
-      end
-      I = I1==1 & I2==1;
-      ip2_subset = interactionPairs2(I,:);
-      
-      
-      % This makes intMatrix from interactionPairs2.
-      intMatrix = zeros(Nprot,Nprot);
-      for jj = 1:size(ip2_subset,1)
-        x = ip2_subset(jj,1:2);
-        nrep = ip2_subset(jj,3);
-        intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + nrep;  % add nrep
-        intMatrix(x(2),x(1)) = intMatrix(x(2),x(1)) + nrep;
-      end
-      %intMatrix(intMatrix>0) = 1;
-      
-      for jj = 1:length(pRange)
-        s = ['\n    p=' num2str(pRange(jj))];
-        fprintf(s)
+      for mm = 1:length(precRange)
         
-        % ii) make complexes
-        [Members, Density] = myclusterone(intMatrix, pRange(jj), 0);
-        if isempty(Members); continue; end
+        if csplit(ii,1) == 0
+          I1 = ones(size(interactionPairs2,1),1);
+        else
+          I1 = sum(replicates == csplit(ii,1),2)>0;
+        end
+        if csplit(ii,2) == 0
+          I2 = ones(size(interactionPairs2,1),1);
+        else
+          I2 = sum(channels == csplit(ii,2),2)>0;
+        end
+        I = I1==1 & I2==1;
+        ip2_subset = interactionPairs2(I,:);
+        I = ip2_subset(:,3)>precRange(mm);
+        ip2_subset = ip2_subset(I,:);
         
-        for mm = 1:length(densRange)
+        % This makes intMatrix from interactionPairs2.
+        intMatrix = zeros(Nproteins,Nproteins);
+        for jj = 1:size(ip2_subset,1)
+          x = ip2_subset(jj,1:2);
+          nrep = ip2_subset(jj,3);
+          intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + nrep;  % add nrep
+          intMatrix(x(2),x(1)) = intMatrix(x(2),x(1)) + nrep;
+        end
+        %intMatrix(intMatrix>0) = 1;
+        
+        for jj = 1:length(pRange)
+          s = ['\n    p=' num2str(pRange(jj))];
+          fprintf(s)
+          
+          % ii) make complexes
+          [Members, Density] = myclusterone(intMatrix, pRange(jj), 0);
+          if isempty(Members); continue; end
+          
+          %for mm = 1:length(densRange)
           %s = ['\n        densThresh=' num2str(densRange(mm))];
           %fprintf(s)
           
@@ -403,8 +407,10 @@ if ~skipflag
           % iv) assess how good the complexes are
           %ga(jj,mm) = geomacc(Members2,corumComplex2);
           mr(jj,mm) = matchingratio(Members2,corumComplex2);
+          Ncomplex(jj,mm) = length(Members2);
           %dens(jj,mm) = mean(Density);
           
+          %end
         end
       end
       
@@ -418,13 +424,15 @@ if ~skipflag
       [~,I] = max(optMatrix(:));
       [i1, i2] = ind2sub(size(optMatrix),I);
       best_p(ii) = pRange(i1);
-      best_dens(ii) =  densRange(i2);
-      
+      %best_dens(ii) =  densRange(i2);
+      best_prec(ii) = precRange(i2);
+      best_dens(ii) = 0;
     end
   else
     fprintf(' ... skipping optimization ')
     best_p = 500 * ones(size(csplit,1),1);
     best_dens = 0.1 * ones(size(csplit,1),1);
+    best_prec = 0.6 * ones(size(csplit,1),1);
   end
   
   
@@ -453,6 +461,8 @@ if ~skipflag
     end
     I = I1==1 & I2==1;
     ip2_subset = interactionPairs2(I,:);
+    I = ip2_subset(:,3)>best_prec(ii);
+    ip2_subset = ip2_subset(I,:);
     
     % This makes intMatrix from interactionPairs2.
     intMatrix = zeros(Nproteins,Nproteins);
@@ -597,3 +607,4 @@ if ~skipflag
 end
 
 diary('off')
+

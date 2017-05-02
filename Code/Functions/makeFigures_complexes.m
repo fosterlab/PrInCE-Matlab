@@ -71,105 +71,11 @@ for ii = 1:size(csplit,1)
     set(gca,'Visible','off')
     axis square
     sf=[figdir '/Predicted_vs_corum_' Names{ii} '_Complex_' num2str(jj)];
-    saveas(gcf, sf, 'epsc');
+    saveas(gcf, sf, 'svg');
+    saveas(gcf, sf, 'png');
     close all
   end
 end
-
-
-
-%% Hairball figure 1
-% 
-% % make a square connection matrix
-% connectionMatrix = zeros(Nproteins,Nproteins);
-% ii = 1;
-% 
-% % fill in with predicted complexes
-% for jj = 1:length(CL(ii).Members)
-%   I = CL(ii).Members{jj};
-%   connectionMatrix(I,I) = CL(ii).Connections{jj};
-% end
-% degreePred = sum(connectionMatrix>0);
-% Ipred = find(degreePred>0);
-% 
-% % fill in with reference complexes
-% for jj = 1:length(corumMatches{ii});
-%   nc = corumMatches{ii}(jj,2);
-%   I = corumComplex2{nc};
-%   connectionMatrix(I,I) = 1;
-% end
-% 
-% % reduce matrix to only proteins with degree>0
-% degree = sum(connectionMatrix>0);
-% Igood = find(degree>0);
-% connectionMatrix = connectionMatrix(Igood,Igood);
-% Ipred = find(ismember(Igood,Ipred));
-% 
-% % plot the network
-% G = graph(connectionMatrix,'OmitSelfLoops');
-% LWidths = G.Edges.Weight;
-% LWidths = (LWidths - min(LWidths) + 0.1).^2;
-% LWidths = LWidths / max(LWidths) * 2;
-% 
-% % Which edges are reference-only, recovered, or novel?
-% Edges = table2array(G.Edges);
-% Iref = [];
-% Iref_edge = zeros(size(Edges(:,1)));
-% Ipred_edge = zeros(size(Edges(:,1)));
-% Irecovered_edge = zeros(size(Edges(:,1)));
-% Iref_node = [];
-% for jj = 1:size(corumMatches{ii},1)  
-%   nc = corumMatches{ii}(jj,2);
-%   Iref = find(ismember(Igood,corumComplex2{nc}));
-%   Iref_node = unique([Iref_node Iref]);
-%   
-%   Iref_edge = Iref_edge | (ismember(Edges(:,1),Iref) & ismember(Edges(:,2),Iref));
-%   Ipred_edge = Ipred_edge | (ismember(Edges(:,1),Ipred) | ismember(Edges(:,2),Ipred));
-%   Irecovered_edge = Irecovered_edge | (Iref_edge & Ipred_edge);
-% end
-% 
-% Irefonly = Iref_edge & ~Ipred_edge;
-% Ipredonly = ~Iref_edge & Ipred_edge;
-% Irecovered = Irecovered_edge;
-% 
-% 
-% 
-% figure
-% p = plot(G,'Layout','force','LineWidth',LWidths);
-% 
-% % Highlight Edges
-% % turn reference-to-reference edges black
-% highlight(p,Edges(Iref_edge,1),Edges(Iref_edge,2),'EdgeColor','k')
-% 
-% % turn prediction-to-anything edges purple
-% highlight(p,Edges(Ipred_edge,1),Edges(Ipred_edge,2),'EdgeColor',[143 108 169]/255)
-% 
-% % turn prediction-only edges orange
-% highlight(p,Edges(Ipredonly,1),Edges(Ipredonly,2),'EdgeColor',[245 141 98]/255)
-% 
-% 
-% Iref_only = Iref_node(~ismember(Iref_node,Ipred));
-% Ipred_only = Ipred(~ismember(Ipred,Iref_node));
-% 
-% % Highlight Nodes
-% % turn reference-only nodes black
-% highlight(p,Iref_only,'NodeColor','k')
-% 
-% % turn prediction-only nodes orange
-% highlight(p,Ipred_only,'NodeColor',[245 141 98]/255)
-% 
-% % turn overlapping (reference+prediction) nodes purple
-% I = 1:length(Igood);
-% Iboth = I(~ismember(I,[Iref_only Ipred_only]));
-% highlight(p,Iboth,'NodeColor',[143 108 169]/255)
-% 
-% 
-% set(gcf,'paperunits','inches','paperposition',[.25 .25 7 7],...
-%   'units','inches','position',[.25 .25 15 15])
-% axis square
-% set(gca,'Visible','off','xtick',[],'ytick',[])
-% sf=[figdir '/Hairball1_redicted_vs_corum'];
-% saveas(gcf, sf, 'epsc');
 
 
 
@@ -263,6 +169,6 @@ axis square
 axis([0 0 78 75])
 set(gca,'Visible','off','xtick',[],'ytick',[])
 sf=[figdir '/Hairball2_redicted_vs_corum'];
-saveas(gcf, sf, 'epsc');
+saveas(gcf, sf, 'svg');
 print([sf '.png'], '-dpng', '-r1000');
 

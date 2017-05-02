@@ -199,6 +199,13 @@ for ci = 1:Nchannels % loop over channels
         adjrsquare(ci,ri) = model.adjrsquare;
       end
       
+      if model.Ngauss<1
+         Try_Fit(ci,ri) = 0;
+         Coef{ci,ri} = [];
+         SSE(ci,ri) = nan;
+         adjrsquare(ci,ri) = nan;
+      end
+      
       fprintf(['\n    fit ' txt_val_nonbc{ri+1} ' with ' num2str(model.Ngauss) ' Gaussians, R^2=' num2str(round(adjrsquare(ci,ri)*100)/100)])
       
     catch

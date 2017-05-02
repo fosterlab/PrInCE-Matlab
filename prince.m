@@ -20,7 +20,14 @@ clear user
 %% User settings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-user = readExperimentFile;
+user.maindir = [pwd '/'];
+% Add Code and Functions to path
+if ~isdeployed
+  f1 = [user.maindir 'Code'];
+  f2 = [user.maindir 'Code/Functions'];
+  addpath(f1,f2)
+end
+user = readExperimentFile(user);
 
 % Confirm 'user' is properly formatted
 user = cleanuser(user);

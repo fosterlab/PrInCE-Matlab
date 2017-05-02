@@ -7,27 +7,17 @@ function corumextractcomplex(user)
 
 %% Read raw CORUM file
 fid = fopen(user.corumfile,'r');
-
-% check header is correctly formatted
-header = fgetl(fid);
-if isempty(strfind(header,'Complex id')) || isempty(strfind(header,'subunits (UniProt IDs)'))
-  error('corum2pairwise: Improperly formatted corum file (missing header?).')
-end
+fgetl(fid);
 
 % read body of file
 cc = 0;
 organism = cell(10000,1);
 complexes = cell(10000,1);
-while 1
-  t = fgetl(fid);
-  if(~ischar(t)),break,end
+while not(feof(fid))
+  t1 = strsplit(fgetl(fid),'\t','collapsedelimiters',0);
   cc = cc+1;
-  Idelim = strfind(t, ';');
-  if sum(Idelim)==0
-    Idelim = strfind(t, ',');
-  end
-  organism{cc} = t(Idelim(3)+1 : Idelim(4)-1);
-  complexes{cc} = t(Idelim(4)+1 : Idelim(5)-1);
+  organism{cc} = t1{3};
+  complexes{cc} = t1{6};
 end
 organism = organism(1:cc);
 complexes = complexes(1:cc);
@@ -56,7 +46,7 @@ for ii = 1:cc
     end
   end
   
-  complexsize = length(strfind(complexes{ii}, ','));
+  complexsize = length(strfind(complexes{ii}, ';'));
   if complexsize<1
     complexes{ii} = [];
   end
@@ -73,7 +63,7 @@ fid = fopen(fn,'w');
 for ii = 1:size(complexes,1)
   cmplx = complexes{ii};
   
-  Idelim = [0 strfind(cmplx, ',') length(cmplx)+1];
+  Idelim = [0 strfind(cmplx, ';') length(cmplx)+1];
   Nprot = length(Idelim) - 1;
   if Nprot<2
     error('corumextractcomplex: Complex of size 1 detected.')

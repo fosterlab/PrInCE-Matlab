@@ -103,10 +103,10 @@ if user.fastcomparison==0
         plot([1 1]*C_comp(jj), y, '--k')
         text(C_comp(jj)+0.1, y(1) + diff(y)*.8, num2str(jj))
       end
-      xlabel('Fraction','fontsize',10)
-      ylabel('Isotopologue ratio','FontSize', 10);
+      xlabel('Fraction','fontsize',8)
+      ylabel('Isotopologue ratio','FontSize', 8);
       legend(user.silacratios([Inum Iden]),'location','best')
-      title('Raw chromatogram','fontsize',10)
+      title('Raw chromatogram','fontsize',8)
       ax = axis;
       
       subplot(3,1,2), hold on % fit gaussians, numerator channel
@@ -117,10 +117,10 @@ if user.fastcomparison==0
         plot([1 1]*C_comp(jj), y, '--k')
         text(C_comp(jj)+0.1, y(1) + diff(y)*.8, num2str(jj))
       end
-      xlabel('Fraction','fontsize',10)
-      ylabel('Isotopologue ratio','FontSize', 10);
+      xlabel('Fraction','fontsize',8)
+      ylabel('Isotopologue ratio','FontSize', 8);
       legend(user.silacratios([Inum Iden]),'location','best')
-      title('Fitted Gaussians','fontsize',10)
+      title('Fitted Gaussians','fontsize',8)
       axis(ax)
       
       subplot(3,2,5), hold on
@@ -133,8 +133,8 @@ if user.fastcomparison==0
       for jj = 1:length(I)
         patch([-.4 -.4 .4 .4]+I(jj),y([1 2 2 1]),[-1 -1 -1 -1],[.9 .9 .9],'edgecolor',[.9 .9 .9])
       end
-      ylabel('Fold change','fontsize',10)
-      xlabel('Gaussian number','fontsize',10)
+      ylabel('log2 fold change','fontsize',8)
+      xlabel('Gaussian number','fontsize',8)
       
       subplot(3,2,6), hold on
       bar(fold_norm(Iccomp))
@@ -146,8 +146,8 @@ if user.fastcomparison==0
       for jj = 1:length(I)
         patch([-.4 -.4 .4 .4]+I(jj),y([1 2 2 1]),[-1 -1 -1 -1],[.9 .9 .9],'edgecolor',[.9 .9 .9])
       end
-      ylabel('Norml. fold change','fontsize',10)
-      xlabel('Gaussian number','fontsize',10)
+      ylabel('log2 fold change (norm.)','fontsize',8)
+      xlabel('Gaussian number','fontsize',8)
       
       sf = [figdir '/IndividualProteins/' rep_protName '_foldchange.png'];
       saveas(gcf, sf);

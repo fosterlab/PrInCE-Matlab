@@ -77,7 +77,7 @@ ft{4} = fittype('gauss4');
 ft{5} = fittype('gauss5');
 
 % Define fit options
-LB = [0.2 0 1]; % H, C, W
+LB = [-inf -inf -inf]; % H, C, W
 UB = [inf length(coFracProfile)+10 inf]; % H, C, W
 fo{1} = fitoptions('method','NonlinearLeastSquares','Robust','LAR','Lower',repmat(LB,1,1),...
   'Upper',repmat(UB,1,1),'MaxIter',400,'Display','off');
@@ -161,8 +161,10 @@ model.AICc = AICc;
 model.BIC = BIC;
 
 % Throw out Gaussians whose height is less than 15% of the max?
-if 0
-  I = find(model.coeffs(1:3:end) < max(coFracProfile)*0.15) * 3 - 2;
+if 1
+  % height < 15% of max | Center is out of bounds
+  I = find(model.coeffs(1:3:end) < max(coFracProfile)*0.15 ...
+      | model.coeffs(2:3:end)<x(1) | model.coeffs(2:end:end)>x(end)) * 3 - 2;
   I2 = zeros(length(I)*3,1);
   for ii = 1:length(I)
     I2((ii-1)*3 + 1 : ii*3) = I(ii) + [0 1 2];
