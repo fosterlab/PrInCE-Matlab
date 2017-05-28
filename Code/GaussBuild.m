@@ -204,6 +204,7 @@ for ci = 1:Nchannels % loop over channels
          Coef{ci,ri} = [];
          SSE(ci,ri) = nan;
          adjrsquare(ci,ri) = nan;
+         continue;
       end
       
       fprintf(['\n    fit ' txt_val_nonbc{ri+1} ' with ' num2str(model.Ngauss) ' Gaussians, R^2=' num2str(round(adjrsquare(ci,ri)*100)/100)])

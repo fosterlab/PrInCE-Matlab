@@ -855,12 +855,16 @@ if ~skipflag
       % Get data from all channels and replicates
       data = cell(Nchannels,1);
       nobs(ii,jj) = 10^6; % keep track of how many data points are in each channel
+      Ibad = zeros(length(location_Protein_in_raw_textdata),1);
       for kk = 1:Nchannels % Channel
-        tmp = log(num_val{kk}(location_Protein_in_raw_textdata,Center_to_test));
-        tmp = tmp(~isnan(tmp)); % Remove nans from data
-        data{kk} = tmp;
-        
-        nobs(ii,jj) = min(nobs(ii,jj),length(data{kk}));
+          tmp = log(num_val{kk}(location_Protein_in_raw_textdata,Center_to_test));
+          data{kk} = tmp;
+          Ibad = Ibad | isnan(data{kk});
+          
+      end
+      for kk = 1:Nchannels
+          data{kk} = data{kk}(not(Ibad));
+          nobs(ii,jj) = min(nobs(ii,jj),length(data{kk}));
       end
       
       % Does the data pass Nick's good-data checks?
