@@ -166,7 +166,7 @@ set(gcf,'paperunits','inches','paperposition',[.25 .25 7 7],...
  'units','inches','position',[.25 .25 15 15])
 axis square
 %axis([0.6688   54.5981    1.0965   51.4244])
-axis([0 0 78 75])
+%axis([0 0 78 75])
 set(gca,'Visible','off','xtick',[],'ytick',[])
 sf=[figdir '/Hairball2_redicted_vs_corum'];
 saveas(gcf, sf, 'svg');

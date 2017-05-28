@@ -397,7 +397,7 @@ if ~skipflag
             m = intMatrix(I,I);
             n = length(I);
             dens_comp(kk) = sum(m(:)) / (n * (n-1)/2);
-            if n<3 || dens_comp(kk) < densRange(mm)
+            if n<3 || dens_comp(kk) < 0.1
               Members2{kk} = [];
             end
           end
