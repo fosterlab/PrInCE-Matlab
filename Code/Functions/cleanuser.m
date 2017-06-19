@@ -106,10 +106,11 @@ end
 
 %% Add user.maindir/Code and user.maindr/Code/Functions to path
 
-f1 = [user.maindir 'Code'];
-f2 = [user.maindir 'Code/Functions'];
-if ~exist(f1, 'dir'); mkdir(f1); end
-if ~exist(f2, 'dir'); mkdir(f2); end
-
-addpath(f1,f2)
+if ~isdeployed
+  f1 = [user.maindir 'Code'];
+  f2 = [user.maindir 'Code/Functions'];
+  if ~exist(f1, 'dir'); mkdir(f1); end
+  if ~exist(f2, 'dir'); mkdir(f2); end
+  addpath(f1,f2)
+end
 
