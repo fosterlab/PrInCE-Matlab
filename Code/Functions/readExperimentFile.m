@@ -76,6 +76,8 @@ while ~feof(fid)
   elseif length(Ifield)==1
     usable_string = strsplit(t1,':');
     usable_string = usable_string{2};
+    usable_string = strsplit(usable_string,'\');
+    usable_string = usable_string{1};
     
     if Ifield==1 % desired precision
       I = ismember(usable_string,['1' '2' '3' '4' '5' '6' '7' '8' '9' '0' '.']);
@@ -89,7 +91,7 @@ while ~feof(fid)
       end
       
     elseif Ifield==2 % 'Major protein groups filename'
-      user.majorproteingroupsfile = process_field(usable_string,[user.maindir 'Input/Major_protein_groups.csv']);
+      user.majorproteingroupsfile = process_field(usable_string,'');
       
     elseif Ifield==3 % 'Reference database filename'
       user.corumfile = process_field(usable_string,[user.maindir 'Input/allComplexes.txt']);
