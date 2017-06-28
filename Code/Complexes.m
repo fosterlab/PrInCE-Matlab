@@ -193,6 +193,20 @@ if ~skipflag
   if ~isvector(corumComplex)
     error('Error: Complexes: Incorrectly formatted CORUM complex file')
   end
+  for ii = 1:size(corumComplex,1)
+    % remove unnecessary commas
+    flag=1;
+    while flag==1
+      corumComplex{ii} = strrep(corumComplex{ii},',,',',');
+      if isempty(strfind(corumComplex{ii},',,'))
+        flag = 0;
+      end
+    end
+    
+    if ismember(corumComplex{ii}(end),',')
+      corumComplex{ii} = corumComplex{ii}(1:end-1); 
+    end
+  end
   
   % Corum pairwise interactions
   fid=fopen(user.corumpairwisefile, 'rt');    %Input corum data base.

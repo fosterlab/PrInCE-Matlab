@@ -94,6 +94,8 @@ for ii = 1:cc
   cmplx = strrep(cmplx,',',' ');
   cmplx = strrep(cmplx,';',' ');
   cmplx = strsplit(cmplx,' ');
+  cmplx = cmplx(not(cellfun('isempty',cmplx)));
+  cmplx = unique(cmplx);
   Nprot = length(cmplx);
 
   if Nprot<2
