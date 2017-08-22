@@ -66,7 +66,7 @@ In a working directory, unzip the downloaded zip file (PrInCE-master.zip). This 
 
 Place all data files (there will be one for each biological condition) and the reference database file (typically "allcomplexes.txt" from CORUM) in the Input/ folder.
 
-Important: PrInCE includes a test data files (see below). These are are two co-elution data files ("condition1.csv" and "condition2.csv"), a major protein groups file ("Major_protein_groups.csv") and a CORUM reference database ("allComplexes.txt"). These test files should be replaced with your data. Delete these files before analyzing your data!
+Important: PrInCE includes test data files (see below). These test files should be replaced/deleted before analyzing your data!
 
 ### 4. Enter the details of your experiment in experimental_design.rtf.
 
@@ -104,12 +104,18 @@ As the pipeline runs, output figures and tables will be generated in the Output/
 
 Mac and PC users can run PrInCE without owning Matlab. This requires downloading Matlab Runtime (~1GB) and setting up the appropriate folders, so is not recommended if a copy of Matlab is available. To run a standalone version of PrInCE:
 
-1. Run "myAppInstaller_web". _For Mac users, this is Standalone/Mac/myAppInstaller_web. For PC users, this is Standalone/PC/myAppInstaller_web._
-2. Complete the installation process. Mac users can leave the DYLD path prompt blank
-3. Move standalone files to the working directory created in step 3. _Mac users must move "prince.app" and "run_prince.sh". PC users must move "prince.exe"._
-4. Run the standalone prince application.
-  - Mac users: In a Terminal window, navigate to the working directory (e.g. 'cd /path/to/working/directory/'). Run prince by typing './run_prince.sh /path/to/Matlab/Runtime/', where /path/to/Matlab/Runtime/ is the location of the (just-downloaded) Matlab Runtime. Typical location is /Applications/MATLAB/MATLAB_Runtime/v92/. i.e. in Terminal, after navigating to the working directory, type './run_prince.sh /Applications/MATLAB/MATLAB_Runtime/v92/'.
-  - PC users: Run prince.exe.
+    1. Run "myAppInstaller_web". _For Mac users, this is Standalone/Mac/myAppInstaller_web. For PC users, this is Standalone/PC/myAppInstaller_web._
+    2. Complete the installation process.
+        - When prompted to choose the first installation folder (prince standalone), set it to the PrInCE working directory.
+        - For the second installation folder (Matlab runtime), keep the default.
+        - The "Confirmation" screen of the installation process shows the folders that prince standalone and Matlab runtime are in. __Make note of these!__
+    3. Move standalone files to the working directory created in step 3. 
+        - Standalone files are in a folder called 'application', which is in the first installation folder. This is the PrInCE working directory (if you followed instructions in step 2!).
+        - Mac users must move "prince.app" and "run_prince.sh". 
+        - PC users must move "prince.exe".
+    4. Run the standalone prince application.
+        - Mac users: In a Terminal window, navigate to the working directory (e.g. 'cd /path/to/working/directory/'). Run prince by typing './run_prince.sh /path/to/Matlab/Runtime/', where /path/to/Matlab/Runtime/ is the location of the (just-downloaded) Matlab Runtime. Typical location is /Applications/MATLAB/MATLAB_Runtime/v92/. i.e. in Terminal, after navigating to the working directory, type './run_prince.sh /Applications/MATLAB/MATLAB_Runtime/v92/'.
+        - PC users: Run prince.exe (double-click the prince.exe icon).
 
 ### Test data
 
