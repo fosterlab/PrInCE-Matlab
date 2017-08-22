@@ -51,7 +51,8 @@ code_strings = {'precision' ...
   'Skip Interactions' ...
   'Skip Complexes' ...
   'Plots of Gaussians' ...
-  'Plots of fold changes'};
+  'Plots of fold changes' ...
+  'Skip GaussBuild'};
 
 fn = [user.maindir 'experimental_design.rtf'];
 fid = fopen(fn);
@@ -113,7 +114,7 @@ while ~feof(fid)
       user.Nreplicate = process_field(usable_string,'-1');
       user.Nreplicate = str2double(user.Nreplicate);
       
-    elseif Ifield==8 % 'Skip GaussBuild'
+    elseif Ifield==8 % 'Skip Alignment'
       user.skipalignment = process_field(usable_string,'0');
       user.skipalignment = str2double(user.skipalignment);
       
@@ -121,11 +122,11 @@ while ~feof(fid)
       user.skipcomparison = process_field(usable_string,'0');
       user.skipcomparison = str2double(user.skipcomparison);
     
-    elseif Ifield==10 % 'Skip FoldChanges'
+    elseif Ifield==10 % 'Skip Interactions'
       user.skipinteractions = process_field(usable_string,'0');
       user.skipinteractions = str2double(user.skipinteractions);
       
-    elseif Ifield==11 % 'Skip FoldChanges'
+    elseif Ifield==11 % 'Skip Complexes'
       user.skipcomplexes = process_field(usable_string,'0');
       user.skipcomplexes = str2double(user.skipcomplexes);
       
@@ -136,6 +137,10 @@ while ~feof(fid)
     elseif Ifield==13 % 'Plots of fold changes'
       user.fastcomparison = process_field(usable_string,'0');
       user.fastcomparison = str2double(user.fastcomparison);
+      
+    elseif Ifield==14 % 'Plots of fold changes'
+      user.skipgaussbuild = process_field(usable_string,'0');
+      user.skipgaussbuild = str2double(user.skipgaussbuild);
       
     end
     
