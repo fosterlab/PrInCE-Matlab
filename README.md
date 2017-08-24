@@ -50,9 +50,9 @@ Note: protein IDs in data files must match a subset of protein IDs in the refere
 
 ### 3. Unzip the pipeline, and put your data in the Input folder.
 
-In a working directory, unzip the downloaded zip file (PrInCE-master.zip). This creates four folders and a few files inside the working directory, like this:
+Unzip the downloaded zip file (PrInCE-master.zip). This creates four folders and a few files, like this:
 
-  * a working directory/
+  * PrInCE-master/
     * Code/
     * Input/
       * Reference database file (e.g *allComplexes.txt*)
@@ -92,7 +92,7 @@ Important: "experimental_design.rtf" must be saved as a .rtf file! In most text 
 
 #### In Matlab
 
-If you have Matlab R2016a or later, we recommend you run the Matlab source code. In Matlab, navigate to the working directory you made in step 3. In the Matlab command line type
+If you have Matlab R2016a or later, we recommend you run the Matlab source code. In Matlab, navigate to the PrInCE-master folder you made in step 3. In the Matlab command line type
 
 ```
 prince.m
@@ -104,17 +104,17 @@ As the pipeline runs, output figures and tables will be generated in the Output/
 
 Mac and PC users can run PrInCE without owning Matlab. This requires downloading Matlab Runtime (~1GB) and setting up the appropriate folders, so is not recommended if a copy of Matlab is available. To run a standalone version of PrInCE:
 
-1. Run "myAppInstaller_web". _For Mac users, this is Standalone/Mac/myAppInstaller_web. For PC users, this is Standalone/PC/myAppInstaller_web._
-2. Complete the installation process.
-    - When prompted to choose the first installation folder (prince standalone), set it to the PrInCE working directory.
+i. Run "myAppInstaller_web". _For Mac users, this is Standalone/Mac/myAppInstaller_web. For PC users, this is Standalone/PC/myAppInstaller_web._
+ii. Complete the installation process.
+    - When prompted to choose the first installation folder (prince standalone), choose the PrInCE-master folder.
     - For the second installation folder (Matlab runtime), keep the default.
-    - The "Confirmation" screen shows the folders that prince standalone and Matlab runtime are in. __Make a note of the Matlab runtime folder!__
-3. Move standalone files to the working directory created in step 3. __This is the folder that contains "license.txt", "experimental_design.rtf", etc.__
-    - Standalone files are in a folder called "application", which is in the first installation folder. (i.e. the PrInCE working directory if you're following instructions!).
+    - The "Confirmation" screen shows the folders that prince standalone and Matlab runtime are in. __Mac users, copy and paste the paths to these TWO folders! You'll need them in step 4 below.__
+iii. Move standalone files to the PrInCE-master folder created in step 3. __This is the folder that contains "license.txt", "experimental_design.rtf", etc.__
+    - Standalone files are in a folder called "application", which is in the installation folder (i.e. the PrInCE-master folder if you're following instructions!).
     - Mac users must move "prince.app" and "run_prince.sh". 
     - PC users must move "prince.exe".
-4. Run the standalone prince application.
-    - Mac users: In a Terminal window, navigate to the working directory (e.g. 'cd /path/to/working/directory/'). Run prince by typing './run_prince.sh /path/to/Matlab/Runtime/', where /path/to/Matlab/Runtime/ is the location of the (just-downloaded) Matlab Runtime. Typical location is /Applications/MATLAB/MATLAB_Runtime/v92/ (if you're following instructions, you __just made a note of it__!). i.e. in Terminal, after navigating to the working directory, type './run_prince.sh /Applications/MATLAB/MATLAB_Runtime/v92/'.
+iv. Run the standalone prince application.
+    - Mac users: Open a Terminal window. Navigate to the PrInCE-master folder by typing 'cd /path/to/PrInCE-master/', where "/path/to/PrInCE-master/" is the first path copied from the Confirmation screen in step ii. Run prince by typing './run_prince.sh /path/to/Matlab/Runtime/', where "/path/to/Matlab/Runtime/" is the second path copied from the Confirmation screen. Typical location is /Applications/MATLAB/MATLAB_Runtime/v92/. i.e. in Terminal, after navigating to the PrInCE-master folder, type './run_prince.sh /Applications/MATLAB/MATLAB_Runtime/v92/'.
     - PC users: Run prince.exe (double-click the prince.exe icon).
 
 ### Test data
