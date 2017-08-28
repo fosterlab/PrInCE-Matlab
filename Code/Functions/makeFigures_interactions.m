@@ -249,6 +249,7 @@ end
 
 [tmp,I] = sort(interaction_final.precisionDropout,'descend');
 nplots = min([200  length(I)]);
+h = figure;
 for ii = 1:nplots
   intI = I(ii);
   chans = interaction_final.channel{intI};
@@ -275,7 +276,9 @@ for ii = 1:nplots
     subplots = [ceil(length(chans)/4) 4];
   end
   
-  figure
+  % Select the figure and clear it
+  set(0, 'CurrentFigure', fh);
+  clf reset;
   for jj = 1:length(chans)
     for kk = 1:length(rep2channel)
       if isempty(prots{jj,kk})
@@ -301,6 +304,6 @@ for ii = 1:nplots
   set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
   sf=[f1 'Interactions_' num2str(ii) '_' protA '_' protB];
   saveas(gcf, sf, 'png');
-  close all
+  
 end
 
