@@ -21,6 +21,7 @@ colour_to_use=[0.254 0.411 0.882 %Colour: Royal Blue
 
 cc = 0;
 if user.fastcomparison==0
+  h = figure;
   for ii = 1:length(Finalised_Master_Gaussian_list.Protein_name)
     for rep = 1:user.Nreplicate
       cc = cc+1
@@ -86,7 +87,11 @@ if user.fastcomparison==0
       fold_raw = Combined_Gaussians.log2_of_gaussians(Icg);
       fold_norm = Combined_Gaussians.log2_normalised_gaussians(Icg);
       
-      figure
+      
+      % Select the figure and clear it
+      set(0, 'CurrentFigure', h);
+      clf reset;
+      
       subplot(3,1,1), hold on % raw chromatograms
       xraw = 1:length(raw_num);
       scatter(xraw,raw_num,20,colour_to_use(2,:),'filled')
@@ -151,7 +156,6 @@ if user.fastcomparison==0
       
       sf = [figdir '/IndividualProteins/' rep_protName '_foldchange.png'];
       saveas(gcf, sf);
-      close all
       
     end
   end

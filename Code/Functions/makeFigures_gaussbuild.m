@@ -190,13 +190,16 @@ if ~user.fastgaussbuild
     186/255 85/255 211/255 %Colour: Medium Orchid
     219/255 112/255 147/255]; %Colour: Pale Violet Red
   
+  h = figure;
+  
   for ii = 1:Nproteins
     
     if sum(isnan(rawdata{1}(ii,:)))==length(rawdata{1}(ii,:))
       continue;
     end
     
-    figure
+    set(0, 'CurrentFigure', h);
+    clf reset;
     
     % plot the raw data
     subplot(3,1,1),hold on
@@ -262,7 +265,6 @@ if ~user.fastgaussbuild
     
     sf = [figdir '/Chromatograms/' mat2str(replicate(ii)),'_',txt_val{1}{ii+1,1},'.png'];
     saveas(gcf, sf);
-    close all
     
   end
 end
