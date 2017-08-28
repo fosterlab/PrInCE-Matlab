@@ -277,7 +277,7 @@ for ii = 1:nplots
   end
   
   % Select the figure and clear it
-  set(0, 'CurrentFigure', fh);
+  set(0, 'CurrentFigure', h);
   clf reset;
   for jj = 1:length(chans)
     for kk = 1:length(rep2channel)
