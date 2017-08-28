@@ -84,6 +84,14 @@ for ii = 1:length(user.MQfiles)
   fclose(fid);
 end
 
+% ensure that user.Nreplicate is correct
+tmp = readchromatogramfile2(user.MQfiles{1});
+Nreplicate_empirical = length(unique(tmp.data(:,1)));
+if user.Nreplicate ~= Nreplicate_empirical
+  warning('Number of replicates is likely wrong in experimental_design.rtf.')
+  warning(['Setting number of replicates to ' num2str(Nreplicate_empirical) '.'])
+end
+  
 
 
 %% user.majorproteingroupsfile

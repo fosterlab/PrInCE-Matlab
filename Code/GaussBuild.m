@@ -22,7 +22,7 @@
 %   See also PRINCE, CLEANPROFILE, CHOOSEMODEL_AIC.
 
 diary([user.maindir 'logfile.txt'])
-disp('Gauss_Build.m')
+disp('GaussBuild.m')
 
 skipflag = 0;
 if user.skipgaussbuild==1

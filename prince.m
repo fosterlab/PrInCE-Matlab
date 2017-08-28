@@ -27,6 +27,7 @@ text(.25,.6,'Starting PrInCE...', 'fontsize',20)
 text(.15,.5,'Check logfile.txt for progress.','fontsize',18)
 set(gca,'xtick',[],'ytick',[])
 set(gcf,'units','normalized','position',[.3 .3 .3 .3])
+pause(.01)
 
 user.maindir = [pwd '/'];
 % Add Code and Functions to path
