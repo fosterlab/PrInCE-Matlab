@@ -104,7 +104,7 @@ As the pipeline runs, output figures and tables will be generated in the Output/
 
 Mac and PC users can run PrInCE without owning Matlab. This requires downloading Matlab Runtime (~1GB) and setting up the appropriate folders, so is not recommended if a copy of Matlab is available. To run a standalone version of PrInCE:
 
-1. Run "myAppInstaller_web". _For Mac users, this is Standalone/Mac/myAppInstaller_web. For PC users, this is Standalone/PC/myAppInstaller_web._
+1. Run "myAppInstaller_web". _For Mac users, this is Standalone/Mac/PrInCEInstaller_web. For PC users, this is Standalone/PC/PrInCEInstaller_web._
 2. Complete the installation process.
     - When prompted to choose the first installation folder (prince standalone), choose the PrInCE-master folder.
     - For the second installation folder (Matlab runtime), keep the default.
@@ -115,7 +115,9 @@ Mac and PC users can run PrInCE without owning Matlab. This requires downloading
     - PC users must move "prince.exe".
 4. Run the standalone prince application.
     - Mac users: Open a Terminal window. Navigate to the PrInCE-master folder by typing 'cd /path/to/PrInCE-master/', where "/path/to/PrInCE-master/" is the first path copied from the Confirmation screen (see above). Run prince by typing './run_prince.sh /path/to/Matlab/Runtime/', where "/path/to/Matlab/Runtime/" is the second path copied from the Confirmation screen. Typical location is /Applications/MATLAB/MATLAB_Runtime/v92/. i.e. in Terminal, after navigating to the PrInCE-master folder, type './run_prince.sh /Applications/MATLAB/MATLAB_Runtime/v92/'.
-    - PC users: Run prince.exe (double-click the prince.exe icon).
+    - PC users: Run prince.exe (double-click the prince.exe icon). __N.B. Only double-click prince.exe once!__ There's a lag of 5-10 seconds. __A common mistake is to start prince.exe multiple times.__
+
+Important: Windows users may have to turn off the "check apps and files" in Windows Defender.
 
 ### Test data
 
