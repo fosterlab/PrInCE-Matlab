@@ -23,8 +23,8 @@ clear user
 % Display feedback figure
 figure(101)
 axis([0 1 0 1])
-text(.25,.6,'Starting PrInCE...', 'fontsize',24)
-text(.15,.5,'Check logfile.txt for progress.','fontsize',22)
+text(.25,.6,'Starting PrInCE...', 'fontsize',20)
+text(.15,.5,'Check logfile.txt for progress.','fontsize',18)
 set(gca,'xtick',[],'ytick',[])
 set(gcf,'units','normalized','position',[.3 .3 .3 .3])
 
