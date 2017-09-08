@@ -13,20 +13,20 @@ __Interactions__ (Output/Data/Interactions/)
 
 __Complexes__ (Output/Data/Complexes/)
 
-* Complexes_All_interactions.csv. Complexes predicted from interactions in Final_Interactions_list_50_precision.csv, and their best matching known (CORUM) complexes. Predicted complexes with less than two members in common with a known complex are "Novel". "Complex density" is the fraction of possible intra-complex connections listed in Final_Interactions_list_50_precision.csv. "N overlap" is the number of members shared between predicted and known complexes; "CORUM coverage" is "N overlap" divided by the size of the "Best CORUM match".
+* Complexes_All_interactions.csv. Complexes predicted from interactions in Final_Interactions_list_50_precision.csv ("Predicted complex" column), and their best matching known, e.g. CORUM, complexes ("Best CORUM match"). Predicted complexes with less than two members in common with a known complex are "Novel". "Complex density" is the fraction of possible intra-complex connections that are predicted interactions, i.e. listed in Final_Interactions_list_50_precision.csv. "N overlap" is the number of members shared between predicted and known complexes; "CORUM coverage" is "N overlap" divided by the size of the "Best CORUM match".
 
-* More_corum_matches_All_interactions.csv. Some predicted complexes share members with more than one known (CORUM) complex. The best match, as determined by the number of members in common, is listed here along with the second best match. The best match is the same as "Best CORUM match" in "Complexes_All_interactions.csv".
+* More_corum_matches_All_interactions.csv. Some predicted complexes share members with more than one known complex. The best match, as determined by the number of members in common, is listed here along with the second best match. The best match is the same as "Best CORUM match" in Complexes_All_interactions.csv.
 
-* Summary_complexes.csv. Summary of predicted complexes, including the number, average size, density, matching ratio and geometric accuracy. The latter two measure how closely the predicted complexes resemble known complexes.
+* Summary_complexes.csv. Summary of predicted complexes, including the number, average size, average density, matching ratio and geometric accuracy. The latter two measure how closely the predicted complexes resemble known complexes.
 
 
 __FoldChanges__
 
-* Final_2foldchange_list_between_condition1andcondition2. Changes in protein amount between condition1 and condition2, expressed in log2 units. A fold change ("Fold change (raw data)") is given for each fitted Gaussian, which is assumed to be a complex. For example, a single protein that participates in two complexes can increase for the first complex and decrease for the second; this protein would be listed twice, with the elution fraction of each complex shwon in the "Center" column. If there was not enough data to calculate a fold change (1 or fewer data points within three fractions of "Center"), the fold change is "unquantifiable". Fold changes >1 are an "increase", fold changes <-1 are a "decrease", and all others are "no change".
+* Final_2foldchange_list_between_condition1andcondition2. Changes in protein amount between condition1 and condition2, expressed in log2 units. A fold change ("Fold change (raw data)") is given for each fitted Gaussian (Gaussians correspond to elution peaks, which are likely complexes). For example, a single protein that participates in two complexes can increase for the first complex and decrease for the second; this protein would be listed twice, with the elution fraction of each complex shwon in the "Center" column. If there was not enough data to calculate a fold change (1 or fewer data points within three fractions of "Center"), the fold change is "unquantifiable". Fold changes >1 are an "increase", fold changes <-1 are a "decrease", and all others are "no change".
 
-* Gaussian_list.csv. List of all Gaussians fitted to co-fractionation profiles, along with the Gaussian parameters ("Center", "Width", and "Height"). "adjrsquared" is the R^2 between all Gaussians fit to a co-fractionation profile and the profile.
+* Gaussian_list.csv. List of all Gaussians fitted to co-fractionation profiles, along with the Gaussian parameters ("Center", "Width", and "Height"). "adjrsquared" is the R^2 between the fitted Gaussian model and the co-fractionation profile.
 
-* Summary_gaussian_trend_analysis_protein_replicate.csv. Summary of fold changes that are a consistent increase, decrease, or do not change change, where "consistent" means all Gaussians (i.e. complexes) for a protein have the same behaviour (increase, decrease, or no change).
+* Summary_gaussian_trend_analysis_protein_replicate.csv. Summary of fold changes that consistently increase, decrease, or do not change change for a protein. Consistent means all Gaussians (i.e. complexes) for a protein have the same behaviour (increase, decrease, or no change).
 
 * Summary_gaussians_detected_between_replicates.csv. Summary of all Gaussians fit to co-fractionation profiles, and whether an increase (log2(fold change) >1), decrease (log2(fold change) <-1), or no change was detected.
 
