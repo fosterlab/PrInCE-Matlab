@@ -1,3 +1,9 @@
+
+A summary of PrInCE output tables and figures.
+
+___
+
+
 # Tables
 
 __Interactions__ (Output/Data/Interactions/)
@@ -31,7 +37,7 @@ __FoldChanges__
 * Summary_gaussians_detected_between_replicates.csv. Summary of all Gaussians fit to co-fractionation profiles, and whether an increase (log2(fold change) >1), decrease (log2(fold change) <-1), or no change was detected.
 
 
-
+---
 
 # Figures
 
