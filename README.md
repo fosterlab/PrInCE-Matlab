@@ -6,6 +6,8 @@ Predicting Interactomes via Co-Elution: a bioinformatics pipeline for analyzing 
 * Predict protein complexes
 * Calculate protein abundance differences
 
+See [FAQS](FAQ.md) and [TablesAndFigures](TablesAndFigures.md) for detailed explanation of output files.
+
 Original versions of the analysis were written by Anders Kristensen<sup>1</sup> and Nichollas Scott<sup>2</sup>.
 
 
