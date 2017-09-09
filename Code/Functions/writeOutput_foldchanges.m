@@ -6,7 +6,8 @@ fid = fopen(fn,'w');
 fprintf (fid,'%s,%s,%s,%s,%s\n','Protein ID','Replicate','Fraction (Gauss center)','log2 Fold change','log2 Fold change (normalized)');
 for ii = 1:length(Finalised_Master_Gaussian_list.Protein_name)
   prot = Finalised_Master_Gaussian_list.Protein_name{ii,1};
-  I = find(contains(Combined_Gaussians.Protein_name,prot));
+  if isempty(prot); continue; end
+  I = find(ismember(Combined_Gaussians.Protein_name,prot));
   reps = Combined_Gaussians.Replicate(I);
   centers = Combined_Gaussians.Center(I);
   foldChange = Combined_Gaussians.log2_of_gaussians(I);
@@ -20,6 +21,7 @@ for ii = 1:length(Finalised_Master_Gaussian_list.Protein_name)
       prot,reps(jj), centers(jj), foldChange(jj), foldChange_norm(jj));
   end
 end
+
 
 
 % % #output
