@@ -112,83 +112,92 @@ saveas(gcf, sf);
 [~,I] = sort(interaction_final.precisionDropoutavg(:,1),'descend');
 tmp = interaction_final.precisionDropoutavg(:,1);
 tmp(tmp==0) = nan;
-
-cols = rand(number_of_channels,3);
-cols(1,:) = [1 0 0];
-if number_of_channels>1
-  cols(2,:) = [0 1 0];
-end
-
-I2 = nan(length(I),1);
-for ii = 1:length(I)
-  tmp2 = interaction_final.channel{ii};
-  if length(tmp2)>1
-    I2(ii) = 0;
-  else
-    I2(ii) = tmp2;
-  end
-end
-I2 = I2(I);
-
 xi = 1:length(tmp);
+
 figure,hold on
 plot(xi,tmp(I),'k')
 grid on
-ylabel('Interaction score','fontsize',12)
-xlabel('Number of interactions','fontsize',12)
+ylabel('Precision, TP/(TP+FP)','fontsize',12)
+xlabel('Number of interactions, TP+FP','fontsize',12)
 % Save figure
 set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir 'Final_Precision_' precPlot];
+sf=[figdir 'Precision_vs_NumberOfInteractions'];
 saveas(gcf, sf, 'png');
+
+
+ntp = cumsum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==1);
+figure,hold on
+plot(ntp / all_positives,tmp(I),'k')
+grid on
+ylabel('Precision, TP/(TP+FP)','fontsize',12)
+xlabel('Recall, TP/(TP+FN)','fontsize',12)
+% Save figure
+set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+sf=[figdir 'Precision_vs_Recall'];
+saveas(gcf, sf, 'png');
+
+
+% nfp = cumsum(interaction_final.proteinInCorum(I)==1 & interaction_final.interactionInCorum(I)==0);
+% tn = 10000;
+% figure,hold on
+% plot(nfp/tn, ntp/all_positives,'k')
+% grid on
+% ylabel('True positive rate, TP/(TP+FN)','fontsize',12)
+% xlabel('False positive rate, FP/(FP+TN)','fontsize',12)
+% % Save figure
+% set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+% sf=[figdir 'ROC_curve'];
+% saveas(gcf, sf, 'png');
+
 
 
 %%
 
 
-tpfp = classList;
-tpfp(possList==0) = nan;
-[~,I] = sort(score,'descend');
-tpfp = tpfp(I);   % order  by score
-
-I = find(tpfp==1);
-tp2plot = nan(length(I)*3,2);
-for ii = 1:length(I)
-  tp2plot((ii-1)*3 + (1:2),1) = I(ii);
-  tp2plot((ii-1)*3 + (1:2),2) = [0 1]';
-end
-
-I = find(tpfp==0);
-fp2plot = nan(length(I)*3,2);
-for ii = 1:length(I)
-  fp2plot((ii-1)*3 + (1:2),1) = I(ii);
-  fp2plot((ii-1)*3 + (1:2),2) = [0 1]';
-end
-
-
-figure
-
-subplot(4,1,1:3)
-loglog(cumsum(tpfp==1),'g','linewidth',2)
-hold on
-loglog(cumsum(tpfp==0),'r','linewidth',2)
-xlim([.99 5000])
-legend('Intra-complex (TP)','Inter-complex (FP)','location','northwest')
-ylabel('Cumulative number of interactions, TP or FP')
-grid on
-
-subplot(4,1,4)
-semilogx(fp2plot(:,1),fp2plot(:,2),'r');
-hold on
-semilogx(tp2plot(:,1),tp2plot(:,2),'g');
-ylim([-.25 1.25])
-set(gca,'ytick',[])
-xlim([.99 5000])
-xlabel('Interaction number, ranked by interaction score')
-
-% Save figure
-set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir 'Ranked_interactions_cumulative_TP_FP' precPlot];
-saveas(gcf, sf, 'png');
+% tpfp = classList;
+% tpfp(possList==0) = nan;
+% [~,I] = sort(score,'descend');
+% tpfp = tpfp(I);   % order  by score
+% 
+% I = find(tpfp==1);
+% tp2plot = nan(length(I)*3,2);
+% for ii = 1:length(I)
+%   tp2plot((ii-1)*3 + (1:2),1) = I(ii);
+%   tp2plot((ii-1)*3 + (1:2),2) = [0 1]';
+% end
+% 
+% I = find(tpfp==0);
+% fp2plot = nan(length(I)*3,2);
+% for ii = 1:length(I)
+%   fp2plot((ii-1)*3 + (1:2),1) = I(ii);
+%   fp2plot((ii-1)*3 + (1:2),2) = [0 1]';
+% end
+% 
+% 
+% figure
+% 
+% subplot(4,1,1:3)
+% loglog(cumsum(tpfp==1),'g','linewidth',2)
+% hold on
+% loglog(cumsum(tpfp==0),'r','linewidth',2)
+% xlim([.99 5000])
+% legend('Intra-complex (TP)','Inter-complex (FP)','location','northwest')
+% ylabel('Cumulative number of interactions, TP or FP')
+% grid on
+% 
+% subplot(4,1,4)
+% semilogx(fp2plot(:,1),fp2plot(:,2),'r');
+% hold on
+% semilogx(tp2plot(:,1),tp2plot(:,2),'g');
+% ylim([-.25 1.25])
+% set(gca,'ytick',[])
+% xlim([.99 5000])
+% xlabel('Interaction number, ranked by interaction score')
+% 
+% % Save figure
+% set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+% sf=[figdir 'Ranked_interactions_cumulative_TP_FP' precPlot];
+% saveas(gcf, sf, 'png');
 
 % %% Histogram of score for class=0, class=1
 %
@@ -255,55 +264,39 @@ for ii = 1:nplots
   chans = interaction_final.channel{intI};
   protA = interaction_final.proteinA{intI};
   protB = interaction_final.proteinB{intI};
-  
-  if isempty(chans)
-    continue
-  elseif length(chans)==1
-    subplots = [1 1];
-  elseif length(chans)==2
-    subplots = [2 1];
-  elseif length(chans)==3
-    subplots = [2 2];
-  elseif length(chans)==4
-    subplots = [2 2];
-  elseif length(chans)==5
-    subplots = [3 2];
-  elseif length(chans)==6
-    subplots = [3 2];
-  elseif length(chans)>6 && length(chans)<=0
-    subplots = [3 3];
-  elseif length(chans)>9
-    subplots = [ceil(length(chans)/4) 4];
-  end
+
+  subplots = [length(chans) number_of_replicates];
   
   % Select the figure and clear it
   set(0, 'CurrentFigure', h);
   clf reset;
+  cc = 0;
   for jj = 1:length(chans)
     for kk = 1:length(rep2channel)
       if isempty(prots{jj,kk})
         continue;
       end
+      cc = cc+1;
       Ia = find(ismember(prots{jj,kk}.Isoform,protA));
       Ib = find(ismember(prots{jj,kk}.Isoform,protB));
       
-      subplot(subplots(1),subplots(2),jj), hold on
+      subplot(subplots(1),subplots(2),cc), hold on
       plot(1:length(chroms{jj,kk}(Ia,:)),chroms{jj,kk}(Ia,:),'k','linewidth',2)
       plot(1:length(chroms{jj,kk}(Ib,:)),chroms{jj,kk}(Ib,:),'color',[.75 .75 .75],'linewidth',2)
       legend(protA,protB,'location','best')
+      title([user.silacratios{jj} ' - replicate ' num2str(mod(kk-1,number_of_replicates)+1)])
+      ylabel('Protein amount')
+      xlabel('Fraction number')
+      xlim([0 nfrac+1])
     end
-    ylabel('Protein amount')
-    xlabel('Fraction number')
-    title(user.silacratios{jj})
-    xlim([0 nfrac+1])
   end
   ax = axis;
   s = ['Prec=' num2str(round(interaction_final.precisionDropout(intI)*100)) '%'];
   text(ax(1)+(ax(2)-ax(1))*.2,ax(3)+(ax(4)-ax(3))*.5,s)
   % Save figure
-  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9],'units','inches','position',[.25 2.5 12 9])
   sf=[f1 'Interactions_' num2str(ii) '_' protA '_' protB];
   saveas(gcf, sf, 'png');
-  
+  pause
 end
 
