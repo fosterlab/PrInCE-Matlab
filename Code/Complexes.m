@@ -243,7 +243,7 @@ if ~skipflag
     I2 = find(ismember(uniqueProteins,interactionPairs{jj,2}));
     
     % what channels was this interaction seen in?
-    chans = interactionPairs{jj,4};
+    chans = interactionPairs{jj,3};
     for kk = 1:length(user.silacratios)
       if ismember(user.silacratios{kk}, chans)
         channels(jj,kk) = kk;

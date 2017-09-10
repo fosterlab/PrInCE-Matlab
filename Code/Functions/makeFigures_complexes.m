@@ -38,6 +38,7 @@ end
 
 %% Single complex, corum / predicted overlap
 
+h = figure;
 for ii = 1:size(csplit,1)
   for jj = 1:length(CL(ii).Members)
     
@@ -52,7 +53,9 @@ for ii = 1:size(csplit,1)
     end
     sizeCorum = length(refComplex);
     
-    figure
+    set(0, 'CurrentFigure', h);
+    clf reset;
+    
     p = plotcomplex(predComplex_members,predComplex_connections,refComplex,uniqueProteins);
     p.MarkerSize = 7;
     
@@ -73,7 +76,7 @@ for ii = 1:size(csplit,1)
     sf=[figdir '/Predicted_vs_corum_' Names{ii} '_Complex_' num2str(jj)];
     saveas(gcf, sf, 'svg');
     saveas(gcf, sf, 'png');
-    close all
+    
   end
 end
 
