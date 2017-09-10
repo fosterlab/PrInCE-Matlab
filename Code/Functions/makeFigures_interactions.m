@@ -297,6 +297,6 @@ for ii = 1:nplots
   set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9],'units','inches','position',[.25 2.5 12 9])
   sf=[f1 'Interactions_' num2str(ii) '_' protA '_' protB];
   saveas(gcf, sf, 'png');
-  pause
+  
 end
 
