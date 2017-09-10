@@ -13,19 +13,41 @@ xclean = (1:n2) - (n2-n1)/2;
 
 for ii = 1:Nchannels
   
+  I = find(diff(replicate)>0);
+  clear I2
+  A = cell(length(I)+1,1);
+  A{1} = rawdata{ii}(1:I(1),:);
+  [x1,II] = max(A{1},[],2);
+  [x2,II2] = sort(II,'ascend');
+  A{1} = A{1}(II2,:);
+  ia = sum(not(isnan(A{1})),2)==0;
+  A{1}(ia,:) = [];
+  B = A{1};
+  I2(1) = size(B,1);
+  for jj = 1:length(I)
+      A{jj+1} = rawdata{ii}(1:I(1),:);
+      [x1,II] = max(A{jj+1},[],2);
+      [x2,II2] = sort(II,'ascend');
+      A{jj+1} = A{jj+1}(II2,:);
+      ia = sum(not(isnan(A{jj+1})),2)==0;
+      A{jj+1}(ia,:) = [];
+      B = [B; A{jj+1}];
+      I2(jj+1) = size(B,1);
+  end
+  I = I2(1:end-1);
+
   figure
-  imagesc(rawdata{ii})
-  colorbar
+  imagesc(log10(B))
   axis xy
   hold on
+  colormap bone
   
-  I = find(diff(replicate)>0);
   x = xlim;
   y = ylim;
   text(x(1) + diff(x)*.8, y(1) + diff(y)*.05,'Replicate 1','color','w','fontsize',10)
   for jj = 1:length(I)
     plot(x, [1 1].*I(jj),'r')
-    text(x(1) + diff(x)*.8, I(jj) + diff(y)*.05,['Replicate ' num2str(replicate(I(jj)+1))],'color','w','fontsize',10)
+    text(x(1) + diff(x)*.8, I(jj) + diff(y)*.05,['Replicate ' num2str(jj)],'color','w','fontsize',10)
   end
   
   xlabel('Fraction','fontsize',10)
@@ -38,14 +60,35 @@ for ii = 1:Nchannels
   
   ax = axis;
   
-  
+  I = find(diff(replicate)>0);
+  clear I2
+  A = cell(length(I)+1,1);
+  A{1} = cleandata{ii}(1:I(1),2:end);
+  [x1,II] = max(A{1},[],2);
+  [x2,II2] = sort(II,'ascend');
+  A{1} = A{1}(II2,:);
+  ia = sum(A{1}>0,2)==0;
+  A{1}(ia,:) = [];
+  B = A{1};
+  I2(1) = size(B,1);
+  for jj = 1:length(I)
+      A{jj+1} = cleandata{ii}(1:I(1),2:end);
+      [x1,II] = max(A{jj+1},[],2);
+      [x2,II2] = sort(II,'ascend');
+      A{jj+1} = A{jj+1}(II2,:);
+      ia = sum((A{jj+1}>0),2)==0;
+      A{jj+1}(ia,:) = [];
+      B = [B; A{jj+1}];
+      I2(jj+1) = size(B,1);
+  end
+  I = I2(1:end-1);
+
   figure
-  imagesc(cleandata{ii}(:,frac1:frac2))
-  colorbar
+  imagesc(log10(B(:,frac1:frac2)))
   axis xy
   hold on
+  colormap bone
   
-  I = find(diff(replicate)>0);
   x = xlim;
   y = ylim;
   text(x(1) + diff(x)*.8, y(1) + diff(y)*.05,'Replicate 1','color','w','fontsize',10)
@@ -111,6 +154,11 @@ for ci = 1:Nchannels
     W = Coef{ci,ri}(3:3:end);
     Wall{ci} = [Wall{ci} W];
   end
+  
+  % clean up parameters
+  Hall{ci} = Hall{ci}(Hall{ci}>0 & Hall{ci}<250);
+  Call{ci} = Call{ci}(Call{ci}>-10);
+  Wall{ci} = Wall{ci}(Wall{ci}>0 & Wall{ci}<100);
 end
 
 

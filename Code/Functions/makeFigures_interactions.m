@@ -265,13 +265,13 @@ for ii = 1:nplots
   protA = interaction_final.proteinA{intI};
   protB = interaction_final.proteinB{intI};
 
-  subplots = [length(chans) number_of_replicates];
+  subplots = [length(user.silacratios) number_of_replicates];
   
   % Select the figure and clear it
   set(0, 'CurrentFigure', h);
   clf reset;
   cc = 0;
-  for jj = 1:length(chans)
+  for jj = 1:length(user.silacratios)
     for kk = 1:length(rep2channel)
       if isempty(prots{jj,kk})
         continue;
@@ -294,7 +294,7 @@ for ii = 1:nplots
   s = ['Prec=' num2str(round(interaction_final.precisionDropout(intI)*100)) '%'];
   text(ax(1)+(ax(2)-ax(1))*.2,ax(3)+(ax(4)-ax(3))*.5,s)
   % Save figure
-  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9],'units','inches','position',[.25 2.5 12 9])
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 7],'units','inches','position',[.25 2.5 12 7])
   sf=[f1 'Interactions_' num2str(ii) '_' protA '_' protB];
   saveas(gcf, sf, 'png');
   
