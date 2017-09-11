@@ -10,7 +10,7 @@ Complexes built from all predicted interactions are listed in __Complexes_All_in
 
 __Where are my fold changes (between conditions)?__
 
-Fold changes are listed in __Final_2foldchange_list_between_condition1andcondition2.csv__ in folder __Output/Data/FoldChanges/__. (If there are more than two conditions, "condition1andcondition2" might be e.g. "condition1andcondition3".) Figures for every individual protein are in Output/Figures/FoldChanges/IndividualProteins. If there are no FoldChange tables or figures, it could be because you only have one condition. If there are no figures in the IndividualProteins folder, you probably have "Plots of fold changes (FoldChanges): No" in experimental_design.rtf.
+Fold changes are listed in __Fold_change_condition1vscondition2.csv__ in folder __Output/Data/FoldChanges/__. (If there are more than two conditions, "condition1andcondition2" might be, say, "condition1andcondition3".) Figures for every individual protein are in Output/Figures/FoldChanges/IndividualProteins. If there are no FoldChange tables or figures, you might only have one condition. If there are no figures in the IndividualProteins folder, you probably have "Plots of fold changes (FoldChanges)" set to "No" in experimental_design.rtf.
 
 __What are all these output files?__
 
