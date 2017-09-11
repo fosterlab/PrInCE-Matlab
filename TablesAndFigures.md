@@ -10,11 +10,7 @@ __Interactions__ (Output/Data/Interactions/)
 
 * Final_Interactions_list_50_precision.csv. Pairwise protein interactions predicted from all replicates and conditions. The "Interaction score (avg.)" column is very useful, since it lets you create interaction lists of any precision. For example, to generate an interaction list with 75% precision, take all interactions with an interaction score greater than 0.75. For 90% precision, take all interactions with a score greater than 0.90. "Interaction probability" is the output of the Naive Bayes classifier. A true positive interaction has "1" in the "Interaction in CORUM" column; a false positive interaction has "0" in the "Interaction in CORUM" column and "1" in the "Both proteins in CORUM" column.
 
-* Final_Interactions_list_condition1only_50_precision.csv. A subset of Final_Interactions_list_50_precision.csv, with only the interactions found in condition1. Each condition will have its own file.
-
-* Precision_across_channels.csv. Summary of interactions found in any condition ("at least 1 condition") or more conditions (e.g. "at least 2 condition"). There should be fewer interactions found in more conditions, but with higher precision.
-
-* Summary_Interactions_50pc_replicate.csv. Summary of the true positive and false positive interactions in Final_Interactions_list_50_precision.csv.
+* Summary_Precision_Recall.csv. A summary of the interaction list at multiple precision levels. Includes numbers of true positive and false positive interactions, number of novel interactions, and recall (TP/(TP+FN)).
 
 
 __Complexes__ (Output/Data/Complexes/)
@@ -28,13 +24,8 @@ __Complexes__ (Output/Data/Complexes/)
 
 __FoldChanges__
 
-* Final_2foldchange_list_between_condition1andcondition2. Changes in protein amount between condition1 and condition2, expressed in log2 units. A fold change ("Fold change (raw data)") is given for each fitted Gaussian (Gaussians correspond to elution peaks, which are likely complexes). For example, a single protein that participates in two complexes can increase for the first complex and decrease for the second; this protein would be listed twice, with the elution fraction of each complex shwon in the "Center" column. If there was not enough data to calculate a fold change (1 or fewer data points within three fractions of "Center"), the fold change is "unquantifiable". Fold changes >1 are an "increase", fold changes <-1 are a "decrease", and all others are "no change".
+* Fold_change_condition1vscondition2.csv. A list of all fold changes calculated between conditions 1 and 2, expressed in log2 units. Each fold change is calculated at an estimated elution peak, given by a center of a fitted Gaussian. A fold change is calculated for each peak, except if conditions share an elution peak (within two fractions), in which case only one is calculated. Fold changes are calculated using the average protein amount in 5 fractions around the elution peak (condition1/condition2). If either condition has one or fewer data points in these fraction, no fold change is calculated.
 
-* Gaussian_list.csv. List of all Gaussians fitted to co-fractionation profiles, along with the Gaussian parameters ("Center", "Width", and "Height"). "adjrsquared" is the R^2 between the fitted Gaussian model and the co-fractionation profile.
-
-* Summary_gaussian_trend_analysis_protein_replicate.csv. Summary of fold changes that consistently increase, decrease, or do not change change for a protein. Consistent means all Gaussians (i.e. complexes) for a protein have the same behaviour (increase, decrease, or no change).
-
-* Summary_gaussians_detected_between_replicates.csv. Summary of all Gaussians fit to co-fractionation profiles, and whether an increase (log2(fold change) >1), decrease (log2(fold change) <-1), or no change was detected.
 
 
 ---
@@ -43,9 +34,11 @@ __FoldChanges__
 
 __Interactions__
 
-* Final_Precision_50.png. A variation of a P-R curve, with precision (aka "interaction score") on the y-axis, and number of interactions on the x-axis.
-
 * Number_interactions_per_channel.png. Top: The number of true positive, false positive, and novel interactions in at least 1, 2, etc conditions. Percentages above bars show precision. For example, x-axis=2 shows the number of interactions predicted in at least 2 conditions. Bottom: Number of interactions in each condition. For example, x-axis=2 shows the number of interactions (true positive, false positive, novel) predicted in condition 2.
+
+* Precision_vs_Recall.png: Precision-Recall Curve. X-axis = Recall = TP/(TP+FN), Y-axis = Precision = TP/(TP+FP).
+
+* Precision_vs_NumberOfInteractions.png. A variation of a Precision-Recall curve, with precision (aka "interaction score") on the y-axis, and number of interactions on the x-axis. X-axis = Number of interactions = TP+FP+Novel, Y-axis = Precision = TP/(TP+FP).
 
 * BestInteractions. This folder has plots of co-fractionation profiles for the top 200 interactions. For now, all replicates are plotted in the same figure (this is likely to change!).
 
