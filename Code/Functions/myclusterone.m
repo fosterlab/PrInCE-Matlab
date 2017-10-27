@@ -1,4 +1,4 @@
-function [Members, Density] = myclusterone(M, pp, density_threshold)
+function [Members, Density] = myclusterone(M, pp, density_threshold, iterMax)
 
 %MYCLUSTERONE Creates a list of protein complexes using the
 %    ClusterONE algorithm (Nepusz 2012).
@@ -41,6 +41,10 @@ if nargin<2
   pp = 0;
 end
 
+if nargin<4
+    iterMax = 50;
+end
+
 % Sanity checks
 if size(M,1)~=size(M,2)
   error('myclusterone: Interaction matrix must be square')
@@ -61,7 +65,7 @@ inacomplex = zeros(Nprot,1);
 % 1. Grow complexes
 Members = cell(100000,1);
 cmplxcount = 0;
-while sum(inacomplex)<Nprot
+while sum(inacomplex)<Nprot && cmplxcount<size(M,1)
 
   % Choose protein with most number of connections as starting seed, V0
   Nconnections(inacomplex==1) = -1;
@@ -69,8 +73,9 @@ while sum(inacomplex)<Nprot
   inacomplex(V) = 1;
   
   grow = 1;
-  while grow
-    
+  kk = 0;
+  while grow && kk<iterMax
+    kk = kk+1;
     V0 = V;
     
     % V, current complex

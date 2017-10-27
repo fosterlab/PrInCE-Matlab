@@ -47,8 +47,12 @@ else
   end
 end
 % user.corumfile
-if ~exist([user.maindir '/Input/' user.corumfile],'file')
-  error('\n The following file could not be found: \n %s', user.corumfile)
+if exist([user.maindir '/Input/' user.corumfile],'file')~=2
+  if isempty(user.corumfile)
+    
+  else
+    error('\n The following file could not be found: \n %s', user.corumfile)
+  end
 else
   user_new.corumfile = [user.maindir '/Input/' user.corumfile];
 end
