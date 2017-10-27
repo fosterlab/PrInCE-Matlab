@@ -122,7 +122,7 @@ if ~isempty(user.majorproteingroupsfile)
         continue;
       end
       if length(current_line{jj})>12
-        error('The following file appears to contain badly formatted protein IDs:\n %s', user.majorproteingroupsfile)
+        warning('The following file appears to contain badly formatted protein IDs:\n %s', user.majorproteingroupsfile)
       end
     end
   end

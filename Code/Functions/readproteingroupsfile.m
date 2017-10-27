@@ -46,7 +46,7 @@ end
 if sum(Ncommas)==0
   
   % Remove bad characters
-  badchars = [',' '(' ')'];
+  badchars = [',' '(' ')' '"'];
   for ii = 1:length(tmp2)
     I = ismember(tmp2{ii},badchars);
     tmp2{ii}(I) = [];
