@@ -41,7 +41,7 @@ else
   if ~exist([user.maindir '/Input/' user.majorproteingroupsfile],'file')
     warning('\n The following file could not be found: \n %s', user.majorproteingroupsfile)
     disp('\n Continuing without a major protein groups file...')
-    user.majorproteingroupsfile = '';
+    user_new.majorproteingroupsfile = '';
   else
     user_new.majorproteingroupsfile = [user.maindir '/Input/' user.majorproteingroupsfile];
   end
