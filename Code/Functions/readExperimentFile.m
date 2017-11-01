@@ -9,7 +9,7 @@ function user_new = readExperimentFile(user)
 %   See also PRINCE
 
 
-%%%%%%% Hard coded parameters
+%% Hard coded parameters
 user.userwindow = 2;
 user.separateByReplicate = 0;
 user.separateByChannel = 1;
@@ -38,7 +38,24 @@ else
 end
 
 
-%%%%%%% Read parameters
+%% Set all to-be-read parameters to default
+
+user.majorproteingroupsfile = '';
+user.corumfile = 'allComplexes.txt';
+user.treatmentcondition = '';
+user.notreatmentcondition = '';
+user.Nfraction = 0;
+user.skipcomparison = 0;
+user.skipalignment = 0;
+user.skipinteractions = 0;
+user.skipcomplexes = 0;
+user.skipcomplexes = 0;
+user.fastgaussbuild = 0;
+user.fastcomparison = 0;
+user.skipgaussbuild = 0;
+
+
+%% Read parameters
 code_strings = {'precision' ...
   'Major protein groups filename' ...
   'Reference database filename' ...

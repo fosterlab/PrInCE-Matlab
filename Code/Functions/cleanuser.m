@@ -49,9 +49,20 @@ end
 % user.corumfile
 if exist([user.maindir '/Input/' user.corumfile],'file')~=2
   if isempty(user.corumfile)
-    
+    error('\n PrInCE requires a reference database. No reference database file provided.')
   else
-    error('\n The following file could not be found: \n %s', user.corumfile)
+    % user.corumfile field exists, but the file can't be found.
+    % if the file is 'allComplexes.txt', look for 'allComplexes.csv' and
+    % vice versa.
+    if isequal(user.corumfile, 'allComplexes.txt') && exist([user.maindir '/Input/' 'allComplexes.csv'],'file')~=2
+      warning('\n Reference database file allComplexes.txt not found, but allComplexes.csv exists.')
+      warning('\n Changing reference database file to allComplexes.csv...')
+    elseif isequal(user.corumfile, 'allComplexes.csv') && exist([user.maindir '/Input/' 'allComplexes.txt'],'file')~=2
+      warning('\n Reference database file allComplexes.csv not found, but allComplexes.txt exists.')
+      warning('\n Changing reference database file to allComplexes.txt...')
+    else
+      error('\n The following reference database file could not be found: \n %s', user.corumfile)
+    end
   end
 else
   user_new.corumfile = [user.maindir '/Input/' user.corumfile];

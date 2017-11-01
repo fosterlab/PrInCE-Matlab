@@ -42,7 +42,7 @@ user = readExperimentFile(user);
 user = cleanuser(user);
 
 % Confirm input files are properly formatted
-standardinput(user);
+user = standardinput(user);
 
 % Save 'user'
 save([user.maindir 'userconfig.mat'],'user')
