@@ -1,4 +1,4 @@
-function standardinput(user)
+function user_new = standardinput(user)
 % This function checks that input files specified by user have the correct format.
 % - Check csv format.
 % - Check header.
@@ -6,6 +6,9 @@ function standardinput(user)
 % - Check last 2 lines.
 
 numeric_chars = [num2str(0:10) '-' '.'];
+
+user_new = user;
+
 
 %% user.MQfiles
 for ii = 1:length(user.MQfiles)
@@ -22,12 +25,12 @@ for ii = 1:length(user.MQfiles)
   head = strtrim(head);
   head = head(~cellfun('isempty',head));
   if isempty(strfind(lower(head{1}),'protein'))
-    fprintf('\nFirst column of the following MQ file must be protein IDs.')
-    error('First row of the first column must contain the word "protein".\n %s', user.MQfiles{ii})
+    warning('\nThe first column of the data file %s must be protein IDs.', user.MQfiles{ii})
+    %error('First row of the first column must contain the word "protein".\n %s', user.MQfiles{ii})
   end
   if isempty(strfind(lower(head{2}),'replicate'))
-    fprintf('\nThe second column of the following MQ file must be the replicate number.')
-    error('The first line of the second column must contain the word "replicate".\n %s', user.MQfiles{ii})
+    warning('\nThe second column of the data file %s must be the replicate number.', user.MQfiles{ii})
+    %error('The first line of the second column must contain the word "replicate".\n %s', user.MQfiles{ii})
   end
   if length(head)-2 ~= user.Nfraction
     error('There is a mismatch between user.Nfraction (%d) and number of fractions in the MQ file (%d):\n %s',...
@@ -90,7 +93,7 @@ Nreplicate_empirical = length(unique(tmp.data(:,1)));
 if user.Nreplicate ~= Nreplicate_empirical
   warning('Number of replicates is likely wrong in experimental_design.rtf.')
   warning(['Setting number of replicates to ' num2str(Nreplicate_empirical) '.'])
-  user.Nreplicate = Nreplicate_empirical;
+  user_new.Nreplicate = Nreplicate_empirical;
 end
   
 
