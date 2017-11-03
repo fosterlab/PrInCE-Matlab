@@ -225,7 +225,7 @@ if ~isfield(user,'fastgaussbuild')
   user.fastgaussbuild = 1;
 end
 
-if user.fastgaussbuild==1
+if user.fastgaussbuild==0
   
   figdir1 = [figdir '/Chromatograms/'];
   if ~exist(figdir1, 'dir'); mkdir(figdir1); end

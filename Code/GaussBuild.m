@@ -71,7 +71,7 @@ if ~skipflag
   txt_val = cell(size(experimental_channels));
   for ii = 1:Nchannels
     %[rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
-    tmp = readchromatogramfile2(user.MQfiles{ii});
+    tmp = readchromatogramfile2(user.MQfiles{ii},user.Nfraction);
     
     % remove 'sheet1' fields
     if isfield(tmp,'Sheet1')

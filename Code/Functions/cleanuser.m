@@ -9,6 +9,42 @@ function user_new = cleanuser(user)
 %   See also PRINCE
 
 
+%% Hard coded parameters
+user.userwindow = 2;
+user.separateByReplicate = 0;
+user.separateByChannel = 1;
+user.fdr = 0.01;
+user.User_alignment_window1 = 20;
+user.nickflag = 0;
+tmp = dir([user.maindir '/Input/*ondition*.csv']);
+if isempty(tmp)
+  error('No data files in Input folder. Data files must be named in this format: conditionX.csv, where X is the condition number.')
+end
+user.MQfiles = cell(size(tmp));
+user.silacratios = cell(size(tmp));
+for ii = 1:length(tmp)
+  user.MQfiles{ii} = tmp(ii).name;
+  if ~strfind(tmp(ii).name,'csv')
+    error('Data files (conditionX.csv) must in csv format. Please Save As csv.')
+  end
+  ss = strrep(tmp(ii).name,'.csv','');
+  user.silacratios{ii} = ss;
+end
+
+% make user.comparisonpairs
+user.comparisonpairs = {user.treatmentcondition; user.notreatmentcondition};
+I = cellfun('isempty', user.comparisonpairs);
+user.comparisonpairs(I) = [];
+% check if user.comparisonpairs overlaps with user.silacratios
+I = not(ismember(user.comparisonpairs, user.silacratios));
+badpairs = strjoin(user.comparisonpairs(I), ', ');
+user.comparisonpairs(I) = [];
+if length(user.MQfiles)>=2 && length(user.comparisonpairs)<2
+    warning('Fold changes will be calculated between %s and %s\n These files were not found: %s',...
+        user.MQfiles{1}, user.MQfiles{2}, badpairs);
+    user.comparisonpairs = user.silacratios(1:2);
+end
+
 user_new = user;
 
 
@@ -54,14 +90,16 @@ if exist([user.maindir '/Input/' user.corumfile],'file')~=2
     % user.corumfile field exists, but the file can't be found.
     % if the file is 'allComplexes.txt', look for 'allComplexes.csv' and
     % vice versa.
-    if isequal(user.corumfile, 'allComplexes.txt') && exist([user.maindir '/Input/' 'allComplexes.csv'],'file')~=2
-      warning('\n Reference database file allComplexes.txt not found, but allComplexes.csv exists.')
-      warning('\n Changing reference database file to allComplexes.csv...')
-    elseif isequal(user.corumfile, 'allComplexes.csv') && exist([user.maindir '/Input/' 'allComplexes.txt'],'file')~=2
-      warning('\n Reference database file allComplexes.csv not found, but allComplexes.txt exists.')
-      warning('\n Changing reference database file to allComplexes.txt...')
+    if isequal(user.corumfile, 'allComplexes.txt') && exist([user.maindir '/Input/' 'allComplexes.csv'],'file')==2
+      warning('Reference database file allComplexes.txt not found, but allComplexes.csv exists.')
+      warning('Changing reference database file to allComplexes.csv...')
+      user_new.corumfile = [user.maindir '/Input/allComplexes.csv'];
+    elseif isequal(user.corumfile, 'allComplexes.csv') && exist([user.maindir '/Input/' 'allComplexes.txt'],'file')==2
+      warning('Reference database file allComplexes.csv not found, but allComplexes.txt exists.')
+      warning('Changing reference database file to allComplexes.txt...')
+      user_new.corumfile = [user.maindir '/Input/allComplexes.txt'];
     else
-      error('\n The following reference database file could not be found: \n %s', user.corumfile)
+      error('The following reference database file could not be found: \n %s', user.corumfile);
     end
   end
 else
@@ -104,8 +142,6 @@ end
 % ensure that the silac ratios in user.MQfiles and user.silacratios are the same order
 
 % ensure that treatmentcondition is part of every comparisonpairs
-
-% ensure that user.organism is right
 
 % ensure that user.silacratios corresponds with user.comparisonpairs
 if ~isempty(user.comparisonpairs) && isempty(intersect(user.silacratios,user.comparisonpairs))

@@ -1,4 +1,4 @@
-function out = readchromatogramfile2(fn)
+function out = readchromatogramfile2(fn,Nfraction)
 %READCHROMATOGRAMFILE2 Reads raw data files for PRINCE.
 %   out=READCHROMATOGRAMFILE2(fn) reads the correctly formatted input file
 %   containing co-fraction profiles of single proteins. Filename fn is a csv
@@ -22,16 +22,16 @@ header = strsplit(header,',');
 cc = 0;
 txt_val = cell(10^6,1);
 txt_val{1} = header{1};
+num_val = nan(10^6,Nfraction);
 while ~feof(fid)
   t = fgetl(fid);
   t1 = strsplit(t,',');
-  if cc ==0
-    num_val = nan(10^6,length(t1)-1);
-  end
   cc = cc+1;
   
+  Nfractions_this_row = min([Nfraction, length(t1)-1]);
+  
   txt_val{cc+1} = t1{1};
-  for kk = 1:size(num_val,2)
+  for kk = 1:Nfractions_this_row
     num_val(cc,kk) = str2double(t1{kk+1});
   end
 end

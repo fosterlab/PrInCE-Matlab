@@ -20,15 +20,6 @@ clear user
 %% User settings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Display feedback figure
-figure(101)
-axis([0 1 0 1])
-text(.25,.6,'Starting PrInCE...', 'fontsize',20)
-text(.15,.5,'Check logfile.txt for progress.','fontsize',18)
-set(gca,'xtick',[],'ytick',[])
-set(gcf,'units','normalized','position',[.3 .3 .3 .3])
-pause(.01)
-
 user.maindir = [pwd '/'];
 % Add Code and Functions to path
 if ~isdeployed
@@ -36,7 +27,13 @@ if ~isdeployed
   f2 = [user.maindir 'Code/Functions'];
   addpath(f1,f2)
 end
-user = readExperimentFile(user);
+
+% Get user input
+user = princeGUI;
+if isempty(user)
+  return;
+end
+user.maindir = [pwd '/'];
 
 % Confirm 'user' is properly formatted
 user = cleanuser(user);
@@ -46,7 +43,6 @@ user = standardinput(user);
 
 % Save 'user'
 save([user.maindir 'userconfig.mat'],'user')
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

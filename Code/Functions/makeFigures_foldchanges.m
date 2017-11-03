@@ -20,7 +20,7 @@ colour_to_use=[0.254 0.411 0.882 %Colour: Royal Blue
 % One plot per protein in each replicate, i.e. can make multiple plots of the same protein.
 
 cc = 0;
-if user.fastcomparison==1
+if user.fastcomparison==0
   h = figure;
   for ii = 1:length(Finalised_Master_Gaussian_list.Protein_name)
     for rep = 1:user.Nreplicate
