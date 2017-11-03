@@ -11,9 +11,12 @@ user_new = user;
 
 
 %% user.MQfiles
+cc = 0;
+countedFraction = nan(10^5,1); % number of fractions in each row
+replicate = nan(10^5,1); % replicate seen in each row
 for ii = 1:length(user.MQfiles)
   fid = fopen(user.MQfiles{ii});
-  
+    
   % Check csv format.
   if ~strcmpi(user.MQfiles{ii}(end-2:end),'csv')
     error('The following MQ file is not in .csv format:\n %s', user.MQfiles{ii})
@@ -26,27 +29,20 @@ for ii = 1:length(user.MQfiles)
   head = head(~cellfun('isempty',head));
   if isempty(strfind(lower(head{1}),'protein'))
     warning('\nThe first column of the data file %s must be protein IDs.', user.MQfiles{ii})
-    %error('First row of the first column must contain the word "protein".\n %s', user.MQfiles{ii})
   end
   if isempty(strfind(lower(head{2}),'replicate'))
     warning('\nThe second column of the data file %s must be the replicate number.', user.MQfiles{ii})
-    %error('The first line of the second column must contain the word "replicate".\n %s', user.MQfiles{ii})
-  end
-  if length(head)-2 ~= user.Nfraction
-    error('There is a mismatch between user.Nfraction (%d) and number of fractions in the MQ file (%d):\n %s',...
-      user.Nfraction, length(head)-2, user.MQfiles{ii})
   end
   
   % Check first 2 lines.
-  for jj = 1:2
+  while not(feof(fid))
+    cc = cc+1;
     current_line = fgetl(fid);
     current_line = strsplit(current_line,',');
     current_line = strtrim(current_line);
     current_line = current_line(~cellfun('isempty',current_line));
-    if length(current_line)-2 ~= user.Nfraction
-      error('There is a mismatch between user.Nfraction (%d) and number of fractions in the MQ file (%d):\n %s',...
-        user.Nfraction, length(head)-2, user.MQfiles{ii})
-    end
+    countedFraction(cc) = length(current_line) - 2;
+    replicate(cc) = str2double(current_line{2});
     if ~ischar(current_line{1})
       error('First column of the following MQ file must be protein IDs.:\n %s',user.MQfiles{ii})
     end
@@ -57,64 +53,75 @@ for ii = 1:length(user.MQfiles)
     end
   end
   
-  % Check last 2 lines.
-  current_line_m1 = [];
-  while ~isequal(current_line, -1)
-    current_line_m2 = current_line_m1;
-    current_line_m1 = current_line;
-    current_line = fgetl(fid);
-  end
-  clear current_line
-  current_line{1} = strsplit(current_line_m2,',');
-  current_line{2} = strsplit(current_line_m1,',');
-  for jj = 1:2
-    current_line{jj} = strtrim(current_line{jj});
-    current_line{jj} = current_line{jj}(~cellfun('isempty',current_line{jj}));
-    if length(current_line{jj})-2 ~= user.Nfraction
-      error('There is a mismatch between user.Nfraction (%d) and number of fractions in the MQ file (%d):\n %s',...
-        user.Nfraction, length(head)-2, user.MQfiles{ii})
-    end
-    if ~ischar(current_line{jj}{1})
-      error('First column of the following MQ file must be protein IDs.:\n %s',user.MQfiles{ii})
-    end
-    if ~isnumeric(current_line{jj}{2})
-      if sum(ismember(current_line{jj}{2},numeric_chars))~=length(current_line{jj}{2})
-        error('Second column of the following MQ file must be replicate number.:\n %s',user.MQfiles{ii})
-      end
-    end
-  end
-  
+    
   fclose(fid);
 end
 
-% ensure that user.Nreplicate is correct
-tmp = readchromatogramfile2(user.MQfiles{1});
-Nreplicate_empirical = length(unique(tmp.data(:,1)));
-if user.Nreplicate ~= Nreplicate_empirical
-  warning('Number of replicates is likely wrong in experimental_design.rtf.')
-  warning(['Setting number of replicates to ' num2str(Nreplicate_empirical) '.'])
-  user_new.Nreplicate = Nreplicate_empirical;
+% Count how many fractions were detected
+countedFraction = countedFraction(1:cc);
+fractionCounts = unique(countedFraction);
+goodFractions = 0;
+if length(fractionCounts)==1
+    % If all rows had the same number of fractions
+    user_new.Nfraction = fractionCounts;
+    goodFractions = 1;
+else
+    % If there were different fraction numbers
+    user_new.Nfraction = max(fractionCounts);
+    ss = sprintf('The number of FRACTIONS is not consistent in condition files. \nUsing the max number of fractions (%s). \nIf %s is incorrect, check that files are correctly formatted.',...
+        num2str(user_new.Nfraction),num2str(user_new.Nfraction));
+    warning(ss);
+    hh = warndlg(sprintf(ss));
+    uiwait(hh)
 end
-  
+
+% Count how many replicates were detected
+replicate = replicate(1:cc);
+replicate = unique(replicate);
+replicate(isnan(replicate)) = [];
+replicate(isempty(replicate)) = [];
+user_new.Nreplicate = length(replicate);
+goodReplicates = 0;
+if user_new.Nreplicate>15
+    % If too many replicates were detected
+    ss = sprintf('%s REPLICATES detected in %s. Thats a lot! \nCheck file to ensure replicate column is correctly formatted.',...
+        num2str(user_new.Nreplicate), [user_new.silacratios{ii} '.csv']);
+    warning(ss);
+    hh = warndlg(sprintf(ss));
+    uiwait(hh)
+else
+    % If a reasonable number were detected
+    goodReplicates = 1;
+end
+
+% Tell the user how many replicates/fractions were detected
+if goodReplicates==1 && goodFractions ==1
+    ss = sprintf('Detected %s FRACTIONS and %s REPLICATES in condition files. If that is not correct, check that condition files are correctly formatted.',...
+        num2str(user_new.Nfraction), num2str(user_new.Nreplicate));
+    sprintf(ss)
+    msgbox(ss, 'Replicates and fractions');
+elseif goodReplicates==1 && goodFractions == 0
+    ss = sprintf('Detected %s REPLICATES in condition files. If that is not correct, check that condition files are correctly formatted.',...
+        num2str(user_new.Nreplicate));
+    sprintf(ss)
+    msgbox(ss, 'Replicates');
+elseif goodReplicates==0 && goodFractions == 1
+    ss = sprintf('Detected %s FRACTIONS in condition files. If that is not correct, check that condition files are correctly formatted.',...
+        num2str(user_new.Nfraction));
+    sprintf(ss)
+    msgbox(ss, 'Fractions');
+end
 
 
 %% user.majorproteingroupsfile
 
 if ~isempty(user.majorproteingroupsfile)
-  
   fid = fopen(user.majorproteingroupsfile);
   
   % Check csv format.
   if ~strcmpi(user.majorproteingroupsfile(end-2:end),'csv')
     error('The following MQ file is not in .csv format:\n %s', user.majorproteingroupsfile)
   end
-  
-  % % Check header
-  head = fgetl(fid);
-  head = strsplit(head,',');
-  % if ~strcmpi(head{1},'majority protein ids')
-  %   error('First line of the following file must be "majority protein IDs":\n %s', user.majorproteingroupsfile)
-  % end
   
   % Check all lines
   while ~feof(fid)
@@ -131,14 +138,11 @@ if ~isempty(user.majorproteingroupsfile)
   end
   
   fclose(fid);
-  
 end
-
 
 
 %% user.corumfile
 if ~isempty(user.corumfile)
-  
   fid = fopen(user.corumfile);
   
   % Check header
@@ -148,27 +152,26 @@ if ~isempty(user.corumfile)
   
   if length(head1)==1 & length(head2)>1
     if isempty(strfind((head2{1}),'ComplexID'))
-      error('First column of the following file must be "ComplexID":\n %s', user.majorproteingroupsfile)
+      warning('First column of the following file should be "ComplexID":\n %s', user.majorproteingroupsfile)
     end
     if isempty(strfind((head2{2}),'ComplexName'))
-      error('Second column of the following file must be "ComplexName":\n %s', user.majorproteingroupsfile)
+      warning('Second column of the following file should be "ComplexName":\n %s', user.majorproteingroupsfile)
     end
     if isempty(strfind((head2{6}),'UniProt'))
-      error('Sixth column of the following file must contain "UniProt":\n %s', user.majorproteingroupsfile)
+      warning('Sixth column of the following file should contain "UniProt":\n %s', user.majorproteingroupsfile)
     end
   elseif length(head1)>1 & length(head2)==1
     if isempty(strfind(lower(head1{1}),'complex id'))
-      error('First column of the following file must be "Complex id":\n %s', user.majorproteingroupsfile)
+      warning('First column of the following file should be "Complex id":\n %s', user.majorproteingroupsfile)
     end
     if isempty(strfind(lower(head1{2}),'complex name'))
-      error('Second column of the following file must be "Complex name":\n %s', user.majorproteingroupsfile)
+      warning('Second column of the following file should be "Complex name":\n %s', user.majorproteingroupsfile)
     end
     if isempty(strfind(lower(head1{5}),'uniprot'))
-      error('Fifth column of the following file must contain "uniprot":\n %s', user.majorproteingroupsfile)
+      warning('Fifth column of the following file should contain "uniprot":\n %s', user.majorproteingroupsfile)
     end
   end
   
   fclose(fid);
-  
 end
 
