@@ -15,9 +15,8 @@ Original versions of the analysis were written by Anders Kristensen<sup>1</sup> 
 
 1. Download pipeline.
 2. Format your data.
-3. Put your data in the input folder..
-4. Enter your experiment details in prince.m.
-5. Run prince.m.
+3. Put your data in the input folder.
+4. Run prince.m.
 
 
 ### 1. Download PrInCE.
@@ -70,29 +69,21 @@ Place all data files (there will be one for each biological condition) and the r
 
 Important: PrInCE includes test data files (see below). These test files should be replaced/deleted before analyzing your data!
 
-### 4. Enter the details of your experiment in experimental_design.rtf.
+### 4. Run analysis.
 
-The file "experimental_design.rtf" tells PrInCE about your experiment, including paramaters such as the number of biological conditions and replicates. This file also gives the option to skip PrInCE modules and control whether plots are generated for individual proteins. (Plotting individual proteins is useful but can make quite a few plots.) To edit these parameters, open "experimental_design.rtf" in a text editor and make the necessary changes. Here are the parameters listed in the file, along with example values:
+When running PrInCE in Matlab or as a standalone program, you'll first be prompted for input files and experiment parameters.
 
-  * Desired precision of interaction list: 75% (Controls the quality-vs-quantity of the predicted interactions. Typical values are 50%, 60%, and 75%. A 50% precise interaction list has half true positives and half false positives.)
-  * Major protein groups filename: Major_protein_groups.csv
-  * Reference database filename: allComplexes.txt
-  * Treatment condition: condition1 (FoldChanges calculates the ratio of protein amounts between two conditions. e.g. condition1/condition. "Treatment condition" is the numerator in the ratio...)
-  * No-treatment condition: condition2 (... and "No-treatment condition" is the denominator.)
-  * Number of fractions: 55 (If different replicates have different numbers of fractions, list the largest number here.)
-  * Number of replicates: 3
-  * Skip Alignment?: No (Must be "Yes" or "No")
-  * Skip FoldChanges?: No (Must be "Yes" or "No")
-  * Skip Interactions?: No (Must be "Yes" or "No")
-  * Skip Complexes?: No (Must be "Yes" or "No")
-  * Make plots of individual proteins (GaussBuild)?: Yes (Must be "Yes" or "No")
-  * Make plots of individual proteins (FoldChanges)?: Yes (Must be "Yes" or "No")
+![Data files and experiment parameters.](/ReadmeFigures/princegui.jpg?raw=true)
 
-Important: "experimental_design.rtf" must be saved as a .rtf file! In most text editors, go to "Save as" --> "Save as .rtf"
+1. Input files. Major protein groups and reference database. See FAQ for [what is the major protein groups file?](FAQ.md);
+2. Experiment parameters. For experiments with multiple conditions, fold changes are calculated as a ratio of protein amounts between treatment and non-treatment conditions, e.g. condition2/condition1. Treatment is the numerator, non-treatment the denominator. To set treatment and non-treatment, enter integers in the boxes that correspond to condition files (condition1.csv, etc). Interaction precision controls the quality-vs-quantity of the predicted interactions. Typical values are 50%, 60%, and 75%. A 50% precise interaction list has half true positives and half false positives.
+3. Skip modules? If unsure, leave this section alone! If PrInCE was previously run and you want to start the analysis from a module (e.g. Interactions), you can skip the preceding modules. Alternatively you can run a partial analysis, e.g. skipping the Complexes module.
+4. Skip plots? GaussBuild and FoldChanges make many plots of individual proteins! You can choose to skip these here.
+5. Click this to run PrInCE. As the pipeline runs, output figures and tables will be generated in the Output/ folder.
 
-### 5. Run analysis.
+Important: If you don't provide input files or experiment parameters PrInCE will use default values. These defaults work for the test data but probably won't describe your data, so enter your experiment details!
 
-#### In Matlab
+#### Running PriNCE in Matlab
 
 If you have Matlab R2016a or later, we recommend you run the Matlab source code. In Matlab, navigate to the PrInCE-master folder you made in step 3. In the Matlab command line type
 
@@ -100,9 +91,7 @@ If you have Matlab R2016a or later, we recommend you run the Matlab source code.
 prince.m
 ```
 
-As the pipeline runs, output figures and tables will be generated in the Output/ folder.
-
-#### As standalone executable
+#### Running PriNCE as standalone program
 
 Mac and PC users can run PrInCE without owning Matlab. This requires downloading Matlab Runtime (~1GB) and setting up the appropriate folders, so is not recommended if a copy of Matlab is available. To run a standalone version of PrInCE:
 
