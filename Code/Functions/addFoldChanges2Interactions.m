@@ -406,7 +406,7 @@ for ii = 1:length(pFC_filtered.protein)
 end
 
 
-%%   6. Connect dataOut with interaction list
+%%   7. Connect fold changes with interaction list
 
 header2add = {'Significant fold change? (p<.05 protA)' ... % 1
     'Significant fold change? (p<.05 protB)' ... % 2
@@ -442,7 +442,7 @@ header2add = {'Significant fold change? (p<.05 protA)' ... % 1
 dataOut.forPrint = cell(10^5, length(header2add));
 
 % Just read in interaction list stupidly (all strings)
-fnin = 'F:\Greg\PCP_SILAC\Runs\Craig\Craig20170829_tests\Craig20170829_4reps_final_reproduce_filter1/Output/Data/Interactions/Final_Interactions_wProtNames_list_50_precision.csv';
+fnin = [maindir '/Output/Data/Interactions/Final_Interactions_wProtNames_list_50_precision.csv'];
 fid = fopen(fnin);
 datain.head = strsplit(fgetl(fid),',');
 I = cellfun('isempty',datain.head);
@@ -531,7 +531,7 @@ dataOut.forPrint = dataOut.forPrint(1:cc,:);
 fclose all;
 
 
-%%   6. Write fold changes to final_interactions.csv
+%%   8. Write fold changes to final_interactions.csv
 
 fnout = [maindir '/Output/Data/Interactions/Final_Interactions_wProtNames_FoldChanges_list_' ...
   numstr(round(user.desiredPrecision*100)) '_precision.csv'];
