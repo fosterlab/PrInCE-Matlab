@@ -730,7 +730,8 @@ if ~skipflag
   
   %Create array to store values
   interaction_final.unique_interactions=cell(length_unique_inter,0);
-  interaction_final.replicate_numbers=nan(length_unique_inter,number_of_channels);
+  %interaction_final.replicate_numbers=nan(length_unique_inter,number_of_channels);
+  interaction_final.replicate_numbers=nan(length_unique_inter,0);  
   interaction_final.proteinA=cell(length_unique_inter,0);
   interaction_final.proteinB=cell(length_unique_inter,0);
   interaction_final.CenterA=cell(length_unique_inter,0);
@@ -860,7 +861,7 @@ if ~skipflag
   interaction_final.channel_formatted = cell(Total_unique_interactions,1);
   for ii = 1:Total_unique_interactions
     tmp = interaction_final.replicate_numbers(ii,:);
-    tmp(tmp==0) = [];
+    tmp(tmp==0 | isnan(tmp)) = [];
     %interaction_final.channel{ii} = unique(rep2channel(tmp))';
     interaction_final.channel{ii} = tmp;
     tmp = cell(1,length(interaction_final.channel{ii}));
@@ -890,8 +891,8 @@ if ~skipflag
       chan = tmp2(jj);
       Ithischan = interaction_final.replicate_numbers == chan;
       Igoodscore = interaction_final.score >= cutoff;
-      %Iinteract = sum(Ithischan,2)>0 & sum(Igoodscore,2)>0;
-      Iinteract = sum(Ithischan & Igoodscore,2)>0;
+      Iinteract = sum(Ithischan,2)>0 & sum(Igoodscore,2)>0;
+      %Iinteract = sum(Ithischan & Igoodscore,2)>0;
       TP = sum(interaction_final.proteinInCorum(Iinteract)==1 & interaction_final.interactionInCorum(Iinteract)==1);
       FP = sum(interaction_final.proteinInCorum(Iinteract)==1 & interaction_final.interactionInCorum(Iinteract)==0);
       if TP==0 && FP==0

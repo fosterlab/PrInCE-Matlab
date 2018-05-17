@@ -24,139 +24,140 @@ if user.fastcomparison==0
   h = figure;
   for ii = 1:length(Finalised_Master_Gaussian_list.Protein_name)
     for rep = 1:user.Nreplicate
-      cc = cc+1
-      
-      % get replicate + protein name
-      protName = Finalised_Master_Gaussian_list.Protein_name{ii,1};
-      %rep_protName = Finalised_Master_Gaussian_list.Replicate_Protein_identifier{ii};
-      rep_protName = [num2str(rep) '_' protName]
-      
-      % Find this replicate + protein in Combined_Gaussians
-      Icg = find(Combined_Gaussians.Replicate == rep & strcmp(protName,Combined_Gaussians.Protein_name));
-      if isempty(Icg)
-        continue
-      end
-      [C_comp,Iccomp] = sort(Combined_Gaussians.Center(Icg));
-      
-      % Get channel names and indices
-      chan_den = Combined_Gaussians.denominatorChannnel{Icg};
-      chan_num = Combined_Gaussians.numeratorChannnel{Icg};
-      Iden = find(ismember(user.silacratios,chan_den));
-      Inum = find(ismember(user.silacratios,chan_num));
-      
-      % get raw data
-      Iraw = find(ismember(txt_val{Iden}(:,1), rep_protName));
-      raw_num = num_val{Inum}(Iraw,2:end);
-      raw_den = num_val{Iden}(Iraw,2:end);
-      
-      % get gaussian params
-      Igd_den = find(ismember(GaussData{Iden}(:,2),rep_protName));
-      hd = (GaussData{Iden}(Igd_den,7));
-      cd = (GaussData{Iden}(Igd_den,8));
-      wd = (GaussData{Iden}(Igd_den,9));
-      gp_den = zeros(length(hd),3);
-      for jj = 1:length(hd)
-        gp_den(jj,1) = str2num(hd{jj});
-        gp_den(jj,2) = str2num(cd{jj});
-        gp_den(jj,3) = str2num(wd{jj});
-      end
-      Igd_num = find(ismember(GaussData{Inum}(:,2),rep_protName));
-      hn = (GaussData{Inum}(Igd_num,7));
-      cn = (GaussData{Inum}(Igd_num,8));
-      wn = (GaussData{Inum}(Igd_num,9));
-      gp_num = zeros(length(hn),3);
-      for jj = 1:length(hn)
-        gp_num(jj,1) = str2num(hn{jj});
-        gp_num(jj,2) = str2num(cn{jj});
-        gp_num(jj,3) = str2num(wn{jj});
-      end
-      
-      % make gaussian curves
-      xfit = linspace(0,length(raw_num)+1,101);
-      yfit_den = zeros(size(xfit));
-      for jj = 1:length(cd)
-        yfit_den = yfit_den + gp_den(jj,1)*exp(-((xfit-gp_den(jj,2))/gp_den(jj,3)).^2);
-      end
-      xfit = linspace(0,length(raw_num)+1,101);
-      yfit_num = zeros(size(xfit));
-      for jj = 1:length(cn)
-        yfit_num = yfit_num + gp_num(jj,1)*exp(-((xfit-gp_num(jj,2))/gp_num(jj,3)).^2);
-      end
-      
-      % get fold changes for each gaussian
-      fold_raw = Combined_Gaussians.log2_of_gaussians(Icg);
-      fold_norm = Combined_Gaussians.log2_normalised_gaussians(Icg);
-      
-      
-      % Select the figure and clear it
-      set(0, 'CurrentFigure', h);
-      clf reset;
-      
-      subplot(3,1,1), hold on % raw chromatograms
-      xraw = 1:length(raw_num);
-      scatter(xraw,raw_num,20,colour_to_use(2,:),'filled')
-      scatter(xraw,raw_den,20,colour_to_use(1,:),'filled')
-      plot(xraw,raw_num,'color',colour_to_use(2,:));
-      plot(xraw,raw_den,'color',colour_to_use(1,:));
-      xlim([xraw(1) xraw(end)])
-      y = ylim;
-      if y(1)>0
-        y(1) = 0.01;
-      end
-      ylim(y)
-      for jj = 1:length(C_comp)
-        plot([1 1]*C_comp(jj), y, '--k')
-        text(C_comp(jj)+0.1, y(1) + diff(y)*.8, num2str(jj))
-      end
-      xlabel('Fraction','fontsize',8)
-      ylabel('Isotopologue ratio','FontSize', 8);
-      legend(user.silacratios([Inum Iden]),'location','best')
-      title('Raw chromatogram','fontsize',8)
-      ax = axis;
-      
-      subplot(3,1,2), hold on % fit gaussians, numerator channel
-      plot(xfit,yfit_num,'color',colour_to_use(2,:));
-      plot(xfit,yfit_den,'color',colour_to_use(1,:));
-      xlim([xraw(1) xraw(end)])
-      for jj = 1:length(C_comp)
-        plot([1 1]*C_comp(jj), y, '--k')
-        text(C_comp(jj)+0.1, y(1) + diff(y)*.8, num2str(jj))
-      end
-      xlabel('Fraction','fontsize',8)
-      ylabel('Isotopologue ratio','FontSize', 8);
-      legend(user.silacratios([Inum Iden]),'location','best')
-      title('Fitted Gaussians','fontsize',8)
-      axis(ax)
-      
-      subplot(3,2,5), hold on
-      bar(fold_raw(Iccomp))
-      y = ylim;
-      y(1) = min([-1.1 y(1)]);
-      y(2) = max([1.1 y(2)]);
-      ylim(y)
-      I = find(isnan(fold_raw(Iccomp)));
-      for jj = 1:length(I)
-        patch([-.4 -.4 .4 .4]+I(jj),y([1 2 2 1]),[-1 -1 -1 -1],[.9 .9 .9],'edgecolor',[.9 .9 .9])
-      end
-      ylabel('log2 fold change','fontsize',8)
-      xlabel('Gaussian number','fontsize',8)
-      set(gca,'xtick',1:length(fold_raw))
-      
-      subplot(3,2,6), hold on
-      bar(fold_norm(Iccomp))
-      y = ylim;
-      y(1) = min([-1.1 y(1)]);
-      y(2) = max([1.1 y(2)]);
-      ylim(y)
-      I = find(isnan(fold_norm(Iccomp)));
-      for jj = 1:length(I)
-        patch([-.4 -.4 .4 .4]+I(jj),y([1 2 2 1]),[-1 -1 -1 -1],[.9 .9 .9],'edgecolor',[.9 .9 .9])
-      end
-      ylabel('log2 fold change (norm.)','fontsize',8)
-      xlabel('Gaussian number','fontsize',8)
-      set(gca,'xtick',1:length(fold_raw))
-      
       try
+        cc = cc+1;
+        
+        % get replicate + protein name
+        protName = Finalised_Master_Gaussian_list.Protein_name{ii,1};
+        %rep_protName = Finalised_Master_Gaussian_list.Replicate_Protein_identifier{ii};
+        rep_protName = [num2str(rep) '_' protName];
+        
+        % Find this replicate + protein in Combined_Gaussians
+        Icg = find(Combined_Gaussians.Replicate == rep & strcmp(protName,Combined_Gaussians.Protein_name));
+        if isempty(Icg)
+          continue
+        end
+        [C_comp,Iccomp] = sort(Combined_Gaussians.Center(Icg));
+        
+        % Get channel names and indices
+        chan_den = Combined_Gaussians.denominatorChannnel{Icg};
+        chan_num = Combined_Gaussians.numeratorChannnel{Icg};
+        Iden = find(ismember(user.silacratios,chan_den));
+        Inum = find(ismember(user.silacratios,chan_num));
+        
+        % get raw data
+        Iraw = find(ismember(txt_val{Iden}(:,1), rep_protName));
+        raw_num = num_val{Inum}(Iraw,2:end);
+        raw_den = num_val{Iden}(Iraw,2:end);
+        
+        % get gaussian params
+        Igd_den = find(ismember(GaussData{Iden}(:,2),rep_protName));
+        hd = (GaussData{Iden}(Igd_den,7));
+        cd = (GaussData{Iden}(Igd_den,8));
+        wd = (GaussData{Iden}(Igd_den,9));
+        gp_den = zeros(length(hd),3);
+        for jj = 1:length(hd)
+          gp_den(jj,1) = str2num(hd{jj});
+          gp_den(jj,2) = str2num(cd{jj});
+          gp_den(jj,3) = str2num(wd{jj});
+        end
+        Igd_num = find(ismember(GaussData{Inum}(:,2),rep_protName));
+        hn = (GaussData{Inum}(Igd_num,7));
+        cn = (GaussData{Inum}(Igd_num,8));
+        wn = (GaussData{Inum}(Igd_num,9));
+        gp_num = zeros(length(hn),3);
+        for jj = 1:length(hn)
+          gp_num(jj,1) = str2num(hn{jj});
+          gp_num(jj,2) = str2num(cn{jj});
+          gp_num(jj,3) = str2num(wn{jj});
+        end
+        
+        % make gaussian curves
+        xfit = linspace(0,length(raw_num)+1,101);
+        yfit_den = zeros(size(xfit));
+        for jj = 1:length(cd)
+          yfit_den = yfit_den + gp_den(jj,1)*exp(-((xfit-gp_den(jj,2))/gp_den(jj,3)).^2);
+        end
+        xfit = linspace(0,length(raw_num)+1,101);
+        yfit_num = zeros(size(xfit));
+        for jj = 1:length(cn)
+          yfit_num = yfit_num + gp_num(jj,1)*exp(-((xfit-gp_num(jj,2))/gp_num(jj,3)).^2);
+        end
+        
+        % get fold changes for each gaussian
+        fold_raw = Combined_Gaussians.log2_of_gaussians(Icg);
+        fold_norm = Combined_Gaussians.log2_normalised_gaussians(Icg);
+        
+        
+        % Select the figure and clear it
+        set(0, 'CurrentFigure', h);
+        clf reset;
+        
+        subplot(3,1,1), hold on % raw chromatograms
+        xraw = 1:length(raw_num);
+        scatter(xraw,raw_num,20,colour_to_use(2,:),'filled')
+        scatter(xraw,raw_den,20,colour_to_use(1,:),'filled')
+        plot(xraw,raw_num,'color',colour_to_use(2,:));
+        plot(xraw,raw_den,'color',colour_to_use(1,:));
+        xlim([xraw(1) xraw(end)])
+        y = ylim;
+        if y(1)>0
+          y(1) = 0.01;
+        end
+        ylim(y)
+        for jj = 1:length(C_comp)
+          plot([1 1]*C_comp(jj), y, '--k')
+          text(C_comp(jj)+0.1, y(1) + diff(y)*.8, num2str(jj))
+        end
+        xlabel('Fraction','fontsize',8)
+        ylabel('Isotopologue ratio','FontSize', 8);
+        legend(user.silacratios([Inum Iden]),'location','best')
+        title('Raw chromatogram','fontsize',8)
+        ax = axis;
+        
+        subplot(3,1,2), hold on % fit gaussians, numerator channel
+        plot(xfit,yfit_num,'color',colour_to_use(2,:));
+        plot(xfit,yfit_den,'color',colour_to_use(1,:));
+        xlim([xraw(1) xraw(end)])
+        for jj = 1:length(C_comp)
+          plot([1 1]*C_comp(jj), y, '--k')
+          text(C_comp(jj)+0.1, y(1) + diff(y)*.8, num2str(jj))
+        end
+        xlabel('Fraction','fontsize',8)
+        ylabel('Isotopologue ratio','FontSize', 8);
+        legend(user.silacratios([Inum Iden]),'location','best')
+        title('Fitted Gaussians','fontsize',8)
+        axis(ax)
+        
+        subplot(3,2,5), hold on
+        bar(fold_raw(Iccomp))
+        y = ylim;
+        y(1) = min([-1.1 y(1)]);
+        y(2) = max([1.1 y(2)]);
+        ylim(y)
+        I = find(isnan(fold_raw(Iccomp)));
+        for jj = 1:length(I)
+          patch([-.4 -.4 .4 .4]+I(jj),y([1 2 2 1]),[-1 -1 -1 -1],[.9 .9 .9],'edgecolor',[.9 .9 .9])
+        end
+        ylabel('log2 fold change','fontsize',8)
+        xlabel('Gaussian number','fontsize',8)
+        set(gca,'xtick',1:length(fold_raw))
+        
+        subplot(3,2,6), hold on
+        bar(fold_norm(Iccomp))
+        y = ylim;
+        y(1) = min([-1.1 y(1)]);
+        y(2) = max([1.1 y(2)]);
+        ylim(y)
+        I = find(isnan(fold_norm(Iccomp)));
+        for jj = 1:length(I)
+          patch([-.4 -.4 .4 .4]+I(jj),y([1 2 2 1]),[-1 -1 -1 -1],[.9 .9 .9],'edgecolor',[.9 .9 .9])
+        end
+        ylabel('log2 fold change (norm.)','fontsize',8)
+        xlabel('Gaussian number','fontsize',8)
+        set(gca,'xtick',1:length(fold_raw))
+        
+        
         sf = [figdir '/IndividualProteins/' rep_protName '_foldchange.png'];
         saveas(gcf, sf);
       catch ME

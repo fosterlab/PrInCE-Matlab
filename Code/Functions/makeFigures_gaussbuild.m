@@ -246,76 +246,77 @@ if user.fastgaussbuild==0
   h = figure;
   
   for ii = 1:Nproteins
-    
-    if sum(isnan(rawdata{1}(ii,:)))==length(rawdata{1}(ii,:))
-      continue;
-    end
-    
-    set(0, 'CurrentFigure', h);
-    clf reset;
-    
-    % plot the raw data
-    subplot(3,1,1),hold on
-    for jj = 1:Nchannels
-      plot(xraw,rawdata{jj}(ii,:),'s',...
-        'MarkerFaceColor',colour_to_use(jj,:),'MarkerSize',4);
-    end
-    for jj = 1:Nchannels
-      plot(xraw,rawdata{jj}(ii,:),'color',colour_to_use(jj,:));
-    end
-    xlim([xraw(1)-1 xraw(end)+1])
-    y = ylim;
-    if y(1)>0
-      y(1) = 0.01;
-    end
-    ylim(y)
-    xlabel('Fraction','fontsize',10)
-    ylabel('Isotopologue ratio','FontSize', 10);
-    legend(user.silacratios,'location','best')
-    title('Raw chromatogram','fontsize',10)
-    ax = axis;
-    
-    % plot the clean data
-    subplot(3,1,2),hold on
-    for jj = 1:Nchannels
-      plot(xclean,cleandata{jj}(ii,:),'s',...
-        'MarkerFaceColor',colour_to_use(jj,:),'MarkerSize',4);
-      plot(xclean,cleandata{jj}(ii,:),'color',colour_to_use(jj,:));
-    end
-    xlabel('Fraction','fontsize',10)
-    ylabel('Isotopologue ratio','FontSize', 10);
-    title('Cleaned chromatogram','fontsize',10)
-    axis(ax)
-    
-    % plot the Gaussians
-    subplot(3,1,3),hold on
-    xfit = linspace(xraw(1)-1,xraw(end)+1,101);
-    yfit = zeros(Nchannels,length(xfit));
-    Ngauss = nan(Nchannels,1);
-    for jj = 1:Nchannels
-      Ngauss(jj) = length(Coef{jj,ii})/3;
-      if Ngauss(jj) == 0; continue;end
-      for kk = 1:Ngauss(jj)
-        H = Coef{jj,ii}(1 + (kk-1)*3);
-        C = Coef{jj,ii}(2 + (kk-1)*3);
-        W = Coef{jj,ii}(3 + (kk-1)*3);
-        yfit(jj,:) = yfit(jj,:) + H*exp(-((xfit-C)/W).^2);
-      end
-      plot(xfit,yfit(jj,:),'color',colour_to_use(jj,:),'linewidth',2);
-      if Ngauss(jj)>0
-        s1 = [num2str(Ngauss(jj)) ' Gauss, R^2=' num2str(round(adjrsquare(jj,ii)*100)/100)];
-        text(ax(1)+diff(ax(1:2))*.75, ax(3)+diff(ax(3:4))*(1-.1*jj), s1)
-      end
-    end
-    if sum(Ngauss(:))>0
-      legend(user.silacratios,'location','northwest')
-    end
-    xlabel('Fraction','fontsize',10)
-    ylabel('Isotopologue ratio','FontSize', 10);
-    title('Fitted Gaussians','fontsize',10)
-    axis(ax)
-    
     try
+      
+      if sum(isnan(rawdata{1}(ii,:)))==length(rawdata{1}(ii,:))
+        continue;
+      end
+      
+      set(0, 'CurrentFigure', h);
+      clf reset;
+      
+      % plot the raw data
+      subplot(3,1,1),hold on
+      for jj = 1:Nchannels
+        plot(xraw,rawdata{jj}(ii,:),'s',...
+          'MarkerFaceColor',colour_to_use(jj,:),'MarkerSize',4);
+      end
+      for jj = 1:Nchannels
+        plot(xraw,rawdata{jj}(ii,:),'color',colour_to_use(jj,:));
+      end
+      xlim([xraw(1)-1 xraw(end)+1])
+      y = ylim;
+      if y(1)>0
+        y(1) = 0.01;
+      end
+      ylim(y)
+      xlabel('Fraction','fontsize',10)
+      ylabel('Isotopologue ratio','FontSize', 10);
+      legend(user.silacratios,'location','best')
+      title('Raw chromatogram','fontsize',10)
+      ax = axis;
+      
+      % plot the clean data
+      subplot(3,1,2),hold on
+      for jj = 1:Nchannels
+        plot(xclean,cleandata{jj}(ii,:),'s',...
+          'MarkerFaceColor',colour_to_use(jj,:),'MarkerSize',4);
+        plot(xclean,cleandata{jj}(ii,:),'color',colour_to_use(jj,:));
+      end
+      xlabel('Fraction','fontsize',10)
+      ylabel('Isotopologue ratio','FontSize', 10);
+      title('Cleaned chromatogram','fontsize',10)
+      axis(ax)
+      
+      % plot the Gaussians
+      subplot(3,1,3),hold on
+      xfit = linspace(xraw(1)-1,xraw(end)+1,101);
+      yfit = zeros(Nchannels,length(xfit));
+      Ngauss = nan(Nchannels,1);
+      for jj = 1:Nchannels
+        Ngauss(jj) = length(Coef{jj,ii})/3;
+        if Ngauss(jj) == 0; continue;end
+        for kk = 1:Ngauss(jj)
+          H = Coef{jj,ii}(1 + (kk-1)*3);
+          C = Coef{jj,ii}(2 + (kk-1)*3);
+          W = Coef{jj,ii}(3 + (kk-1)*3);
+          yfit(jj,:) = yfit(jj,:) + H*exp(-((xfit-C)/W).^2);
+        end
+        plot(xfit,yfit(jj,:),'color',colour_to_use(jj,:),'linewidth',2);
+        if Ngauss(jj)>0
+          s1 = [num2str(Ngauss(jj)) ' Gauss, R^2=' num2str(round(adjrsquare(jj,ii)*100)/100)];
+          text(ax(1)+diff(ax(1:2))*.75, ax(3)+diff(ax(3:4))*(1-.1*jj), s1)
+        end
+      end
+      if sum(Ngauss(:))>0
+        legend(user.silacratios,'location','northwest')
+      end
+      xlabel('Fraction','fontsize',10)
+      ylabel('Isotopologue ratio','FontSize', 10);
+      title('Fitted Gaussians','fontsize',10)
+      axis(ax)
+      
+    
       sf = [figdir '/Chromatograms/' mat2str(replicate(ii)),'_',txt_val{1}{ii+1,1},'.png'];
       saveas(gcf, sf);
     catch ME
