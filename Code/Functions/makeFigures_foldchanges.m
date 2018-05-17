@@ -155,9 +155,13 @@ if user.fastcomparison==0
       ylabel('log2 fold change (norm.)','fontsize',8)
       xlabel('Gaussian number','fontsize',8)
       set(gca,'xtick',1:length(fold_raw))
-
-      sf = [figdir '/IndividualProteins/' rep_protName '_foldchange.png'];
-      saveas(gcf, sf);
+      
+      try
+        sf = [figdir '/IndividualProteins/' rep_protName '_foldchange.png'];
+        saveas(gcf, sf);
+      catch ME
+        disp(ME.message)
+      end
       
     end
   end

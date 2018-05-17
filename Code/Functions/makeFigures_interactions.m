@@ -293,10 +293,13 @@ for ii = 1:nplots
   ax = axis;
   s = ['Prec=' num2str(round(interaction_final.precisionDropout(intI)*100)) '%'];
   text(ax(1)+(ax(2)-ax(1))*.2,ax(3)+(ax(4)-ax(3))*.5,s)
-  % Save figure
-  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 7],'units','inches','position',[.25 2.5 12 7])
-  sf=[f1 'Interactions_' num2str(ii) '_' protA '_' protB];
-  saveas(gcf, sf, 'png');
-  
+  try
+    % Save figure
+    sf=[f1 'Interactions_' num2str(ii) '_' protA '_' protB];
+    set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 7],'units','inches','position',[.25 2.5 12 7])
+    saveas(gcf, sf, 'png');
+  catch ME
+    disp(ME.message);
+  end
 end
 
