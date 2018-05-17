@@ -730,7 +730,7 @@ if ~skipflag
   
   %Create array to store values
   interaction_final.unique_interactions=cell(length_unique_inter,0);
-  interaction_final.replicate_numbers=nan(length_unique_inter,0);
+  interaction_final.replicate_numbers=nan(length_unique_inter,number_of_channels);
   interaction_final.proteinA=cell(length_unique_inter,0);
   interaction_final.proteinB=cell(length_unique_inter,0);
   interaction_final.CenterA=cell(length_unique_inter,0);
@@ -874,23 +874,6 @@ if ~skipflag
     end
   end
   
-  %Create list of scores, note ensure strjoin function is avalible
-  % interaction_final.scores_formated = cell(size(interaction_final.score,1),1);
-  % for format_loop=1:Total_unique_interactions
-  %   tmp = interaction_final.score(format_loop,:);
-  %   tmp(isnan(tmp)) = [];
-  %   stringout = cell(length(tmp),1);
-  %   for jj= 1:length(tmp)
-  %     stringout{jj} = num2str(tmp(jj));
-  %   end
-  %   interaction_final.scores_formated{format_loop} = strjoin(stringout,' ; ');
-  % end
-  
-  % Create scoreRank, scorePrctile
-  %[~, ~, rankDescend] = unique(interaction_final.score);
-  %interaction_final.scoreRank = (1-rankDescend) + max(rankDescend);
-  %interaction_final.scorePrctile = interaction_final.scoreRank/length(interaction_final.scoreRank);
-  
   % Create precision-dropout
   interaction_final.precisionDropout = nan(size(interaction_final.score));
   interaction_final.precisionDropoutavg = nan(Total_unique_interactions,1);
@@ -907,7 +890,8 @@ if ~skipflag
       chan = tmp2(jj);
       Ithischan = interaction_final.replicate_numbers == chan;
       Igoodscore = interaction_final.score >= cutoff;
-      Iinteract = sum(Ithischan,2)>0 & sum(Igoodscore,2)>0;
+      %Iinteract = sum(Ithischan,2)>0 & sum(Igoodscore,2)>0;
+      Iinteract = sum(Ithischan & Igoodscore,2)>0;
       TP = sum(interaction_final.proteinInCorum(Iinteract)==1 & interaction_final.interactionInCorum(Iinteract)==1);
       FP = sum(interaction_final.proteinInCorum(Iinteract)==1 & interaction_final.interactionInCorum(Iinteract)==0);
       if TP==0 && FP==0

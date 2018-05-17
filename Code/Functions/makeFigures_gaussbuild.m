@@ -315,9 +315,12 @@ if user.fastgaussbuild==0
     title('Fitted Gaussians','fontsize',10)
     axis(ax)
     
-    
-    sf = [figdir '/Chromatograms/' mat2str(replicate(ii)),'_',txt_val{1}{ii+1,1},'.png'];
-    saveas(gcf, sf);
+    try
+      sf = [figdir '/Chromatograms/' mat2str(replicate(ii)),'_',txt_val{1}{ii+1,1},'.png'];
+      saveas(gcf, sf);
+    catch ME
+      disp(ME.message)
+    end
     
   end
 end
