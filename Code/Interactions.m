@@ -549,9 +549,9 @@ if ~skipflag
     ff = rand(1,15);
     kk = 0;
     for ii = 1:length(replicatesThisChannel)
-      %replicate_counter = replicatesThisChannel(ii);
-      %sf = [maindir '/Output/tmp/' 'data_rep' num2str(replicate_counter) '_chan' num2str(channel_counter) '.mat'];
-      %load(sf,'Dist','TP_Matrix','possibleInts','Protein','inverse_self')
+      replicate_counter = replicatesThisChannel(ii);
+      sf = [maindir '/Output/tmp/' 'data_rep' num2str(replicate_counter) '_chan' num2str(channel_counter) '.mat'];
+      load(sf,'Dist','TP_Matrix','possibleInts','Protein','inverse_self')
       
       fn = fieldnames(Dist);
       NDistFields = length(fn);
