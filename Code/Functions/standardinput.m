@@ -72,7 +72,7 @@ else
         num2str(user_new.Nfraction),num2str(user_new.Nfraction));
     warning(ss);
     hh = warndlg(sprintf(ss));
-    uiwait(hh)
+    %uiwait(hh)
 end
 
 % Count how many replicates were detected

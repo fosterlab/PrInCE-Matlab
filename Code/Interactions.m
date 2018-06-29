@@ -447,7 +447,7 @@ if ~skipflag
       % Make Corum_Dataset, which is all interactions that are in corum and our dataset
       cc = 0;
       Corum_Dataset = cell(1000,1);
-      for jj = 1:length(Corum_Protein_names); %Write out values as i
+      for jj = 1:length(Corum_Protein_names) %Write out values as i
         Prot1 = Corum_Protein_names(jj,1);
         Prot2 = Corum_Protein_names(jj,2);
         
@@ -549,9 +549,9 @@ if ~skipflag
     ff = rand(1,15);
     kk = 0;
     for ii = 1:length(replicatesThisChannel)
-      replicate_counter = replicatesThisChannel(ii);
-      sf = [maindir '/Output/tmp/' 'data_rep' num2str(replicate_counter) '_chan' num2str(channel_counter) '.mat'];
-      load(sf,'Dist','TP_Matrix','possibleInts','Protein','inverse_self')
+      %replicate_counter = replicatesThisChannel(ii);
+      %sf = [maindir '/Output/tmp/' 'data_rep' num2str(replicate_counter) '_chan' num2str(channel_counter) '.mat'];
+      %load(sf,'Dist','TP_Matrix','possibleInts','Protein','inverse_self')
       
       fn = fieldnames(Dist);
       NDistFields = length(fn);
