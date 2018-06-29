@@ -46,12 +46,14 @@ for ii = 1:size(csplit,1)
     predComplex_connections = CL(ii).Connections{jj};
     
     % find closest reference complex
-    I = find(corumMatches{ii}(:,1)==jj & corumMatches{ii}(:,3)==1);
     refComplex = [];
-    if ~isempty(I)
-      refComplex = corumComplex2{corumMatches{ii}(I,2)};
+    if not(isempty(corumMatches{ii}))
+      I = find(corumMatches{ii}(:,1)==jj & corumMatches{ii}(:,3)==1);
+      if ~isempty(I)
+        refComplex = corumComplex2{corumMatches{ii}(I,2)};
+      end
+      sizeCorum = length(refComplex);
     end
-    sizeCorum = length(refComplex);
     
     set(0, 'CurrentFigure', h);
     clf reset;
@@ -97,12 +99,14 @@ cc = 0;
 for jj = 1:length(CL(ii).Members)
   predComplex_members = CL(ii).Members{jj};
   predComplex_connections = CL(ii).Connections{jj};
+  
   % find closest reference complex
-  % find closest reference complex
-  I = find(corumMatches{ii}(:,1)==jj & corumMatches{ii}(:,3)==1);
   refComplex = [];
-  if ~isempty(I)
-    refComplex = corumComplex2{corumMatches{ii}(I,2)};
+  if not(isempty(corumMatches{ii}))
+    I = find(corumMatches{ii}(:,1)==jj & corumMatches{ii}(:,3)==1);
+    if ~isempty(I)
+      refComplex = corumComplex2{corumMatches{ii}(I,2)};
+    end
   end
   
   allProteins = unique([refComplex predComplex_members]);
