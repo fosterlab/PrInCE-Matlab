@@ -69,6 +69,9 @@ if ~skipflag
   % Import data from all input files
   rawdata = cell(size(experimental_channels));
   txt_val = cell(size(experimental_channels));
+  replicate = cell(size(experimental_channels));
+  Nfractions = 0;
+  Nproteins = 0;
   for ii = 1:Nchannels
     %[rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
     tmp = readchromatogramfile2(user.MQfiles{ii},user.Nfraction);
@@ -103,16 +106,17 @@ if ~skipflag
     if sum(mod(rawdata{ii}(:,1),1)~=0)>0
       disp('Warning: Gauss_Build: Replicate column in chromatogram tables is badly formatted.')
       disp('Warning: Gauss_Build: Assuming all chromatograms are from a single replicate...')
-      replicate = ones(size(rawdata{ii},1),1);
+      replicate{ii} = ones(size(rawdata{ii},1),1);
     else
-      replicate = rawdata{ii}(:,1);
+      replicate{ii} = rawdata{ii}(:,1);
       rawdata{ii} = rawdata{ii}(:,2:end);
     end
     
+    % Count the number of proteins and fractions
+    [tmp1, tmp2] = size(rawdata{ii});
+    Nproteins = max(Nproteins,tmp1);
+    Nfractions = max(Nfractions,tmp2);
   end
-  
-  % How many proteins and fractions are there?
-  [Nproteins, Nfractions] = size(rawdata{1});
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
@@ -138,7 +142,7 @@ if ~skipflag
   
   for ci = 1:Nchannels % loop over channels
     cleandata{ci} = zeros(size(rawdata{ci},1),size(rawdata{ci},2)+10);
-    for ri = 1:Nproteins % loop over proteins
+    for ri = 1:size(rawdata{ci},1) % loop over proteins
       
       raw_chromatogram = rawdata{ci}(ri,1:Nfractions);
       clean_chromatogram = cleanProfile(raw_chromatogram,1);
@@ -170,7 +174,7 @@ if ~skipflag
     cleandata_nonbc = cleandata{ci};
     rawdata_nonbc = rawdata{ci};
     txt_val_nonbc = txt_val{1};
-    parfor ri = 1:Nproteins % loop over proteins
+    parfor ri = 1:size(cleandata_nonbc,1) % loop over proteins
       
       % get a single clean chromatogram
       clean_chromatogram = cleandata_nonbc(ri,:);
@@ -230,11 +234,11 @@ if ~skipflag
   for ci = 1:Nchannels
     protgausI{ci} = zeros(100,3);
     gausscount = 0;
-    for ri = 1:Nproteins % loop over proteins
+    for ri = 1:size(cleandata{ci},1) % loop over proteins
       % don't fit Gaussians if there are less than 5 good data points in the chromatogram
       if sum(cleandata{ci}(ri,:) > 0.05)>5
         Ng = length(Coef{ci,ri})/3;
-        rep = replicate(ri);
+        rep = replicate{ci}(ri);
         for gi = 1:Ng
           gausscount = gausscount+1;
           protgausI{ci}(gausscount,:) = [ri, gi, rep];

@@ -618,6 +618,7 @@ if ~skipflag
     % Classifier method
     [scoreMatrix, feats_new] = scorenb(DistList,possList,classList);
     score = nanmedian(scoreMatrix,2);
+    score(isnan(score)) = 0;
     
     tt = toc;
     fprintf('  ...  %.2f seconds\n',tt)

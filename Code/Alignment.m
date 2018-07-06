@@ -155,6 +155,14 @@ if ~skipflag
   for ci = 1:Nchannels
     for replicates= 1:Nreplicates
       Gaus_import{ci,replicates} = importdata(GaussInputFile{ci,replicates});
+      if not(isstruct(Gaus_import{ci,replicates}))
+          Gaus_import{ci,replicates} = struct();
+          Gaus_import{ci,replicates}.data = nan(1,4);
+          Gaus_import{ci,replicates}.textdata = {''};
+          Gaus_import{ci,replicates}.header = '';
+          Nfit{ci,replicates} = 0;
+          continue
+      end
       
       % Ensure Gaus_import.textdata is a single column of protein names
       % simple rule: protein names are the column with the most letters
@@ -280,6 +288,7 @@ if ~skipflag
       
       % iii) Fit a line
       I = abs(Ca - Cb)<User_alignment_window1;
+      if sum(I)<=1 continue; end
       pfit(ci,rr,:) = robustfit(Cb(I), Ca(I));
       
     end
@@ -346,13 +355,13 @@ if ~skipflag
   
   x = 1:user.Nfraction+10;
   
-  for ci = 1:Nchannels,
+  for ci = 1:Nchannels
     for rr1 = 1:Nreplicates
       for rr2 = 1:Nreplicates
         
         % i) Find the overlapping proteins
         overlap = intersect(summerised_names_G1{ci,rr1},summerised_names_G1{ci,rr2});
-        overlap([1 2]) = [];
+        try overlap([1 2]) = [];end
         Ia = find(ismember(Gaus_import{ci,rr1}.textdata(:,1),overlap));
         Ib = find(ismember(Gaus_import{ci,rr2}.textdata(:,1),overlap));
         
