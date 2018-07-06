@@ -53,7 +53,7 @@ for ci = 1:length(Experimental_channels)
   Experimental_channel = Experimental_channels{ci};
   for rr = 1:Nreplicates
     
-    Irawdata=zeros(1,1);
+    Irawdata=[];
     %find location of protein to write out
     for ii = 1:size(Gaus_import{ci,rr}.textdata,1)
       %find location of protein to write out
@@ -62,6 +62,7 @@ for ci = 1:length(Experimental_channels)
       %locations_of_protein_data(Roc_counter) = location_Protein_in_Raw(1);
       protName = Gaus_import{ci,rr}.textdata{ii};
       I = find(ismember(txt_val{ci}(2:end),protName) & replicates==rr);
+      if isempty(I); continue; end
       Irawdata(ii) = I(1);
     end
     

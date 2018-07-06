@@ -180,7 +180,7 @@ for ci = 1:Nchannels
     subplot(Nreplicates,1,ri),hold on
     plot([0 55],[0 55],'--r')
     overlap = intersect(summerised_names_G1{ci,ri},summerised_names_G1{ci,RR});
-    overlap([1 2]) = [];
+    try overlap([1 2]) = [];end
     Ia = find(ismember(Gaus_import{ci,ri}.textdata(:,1),overlap));
     Ib = find(ismember(Gaus_import{ci,RR}.textdata(:,1),overlap));
     x = Gaus_import{ci,ri}.data(Ia,2);
