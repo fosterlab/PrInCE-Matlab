@@ -108,9 +108,6 @@ if ~skipflag
       disp('Warning: Gauss_Build: Replicate column in chromatogram tables is badly formatted.')
       disp('Warning: Gauss_Build: Assuming all chromatograms are from a single replicate...')
       replicate{ii} = ones(size(rawdata{ii},1),1);
-    else
-      replicate{ii} = rawdata{ii}(:,1);
-      rawdata{ii} = rawdata{ii}(:,2:end);
     end
     
     % Count the number of proteins and fractions
