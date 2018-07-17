@@ -88,7 +88,7 @@ if ~skipflag
         for jj = 1:length(dd)
             dd_name_length(jj) = length(dd(jj).name);
         end
-        if sum(dd_name_length==40)>0
+        if sum(dd_name_length==40 | dd_name_length==39)>0
             I = find(dd_name_length==40,1,'last');
             warning('\n    Complexes: Could not find %s',['Final_Interactions_list_' num2str(desiredPrecision(ii)*100) '_precision.csv'])
             warning('\n    Using %s instead. Continuing...\n\n',dd(I).name)

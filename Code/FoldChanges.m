@@ -231,7 +231,7 @@ if ~skipflag
     replicate_num = length(unique(a));
     
     % The data is nan-padded. Find where the real data starts and stops.
-    nanmax = size(num_val{ii},1);
+    nan_max = size(num_val{ii},1);
     tmp = find(sum(isnan(num_val{ii}))==size(num_val{ii},1));
     if isempty(tmp)
       tmp = -1;
