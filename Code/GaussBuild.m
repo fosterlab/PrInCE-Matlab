@@ -90,6 +90,7 @@ if ~skipflag
     
     rawdata{ii} = tmp.data;
     txt_val{ii} = tmp.textdata;
+    replicate{ii} = tmp.replicate;
     
     % if txt_val includes protein groups, reduce it to the first protein in each group
     for jj = 1:size(txt_val{ii},1)
@@ -103,7 +104,7 @@ if ~skipflag
     end
     
     % Remove first column of rawdata as the replicate
-    if sum(mod(rawdata{ii}(:,1),1)~=0)>0
+    if sum(mod(replicate{ii},1)~=0)>0
       disp('Warning: Gauss_Build: Replicate column in chromatogram tables is badly formatted.')
       disp('Warning: Gauss_Build: Assuming all chromatograms are from a single replicate...')
       replicate{ii} = ones(size(rawdata{ii},1),1);
