@@ -44,6 +44,9 @@ for ii = 1:size(csplit,1)
     
     predComplex_members = CL(ii).Members{jj};
     predComplex_connections = CL(ii).Connections{jj};
+    if isempty(predComplex_members) | isempty(predComplex_connections)
+      continue;
+    end
     
     % find closest reference complex
     refComplex = [];
@@ -113,7 +116,7 @@ for jj = 1:length(CL(ii).Members)
   allProteins = unique([refComplex predComplex_members]);
   Nproteins1 = length(allProteins);
   I = cc+1 : cc+Nproteins1;
-
+  
   Ipred = (ismember(allProteins,predComplex_members)); % indices of predicted complex members
   Iref = (ismember(allProteins,refComplex));% indices of reference complex members
   %Iref_only = Iref(~ismember(Iref,Ipred));
@@ -131,6 +134,7 @@ for jj = 1:length(CL(ii).Members)
 end
 connectionMatrix = connectionMatrix(1:cc,1:cc);
 conMatrixProteins = conMatrixProteins(1:cc);
+
 Ipred_all = Ipred_all(1:cc);
 Iref_all = Iref_all(1:cc);
 Iref_only = Iref_all==1 & Ipred_all==0;
@@ -142,41 +146,42 @@ LWidths = G.Edges.Weight;
 LWidths = (LWidths - min(LWidths) + 0.1).^2;
 LWidths = sqrt(LWidths / max(LWidths)) * .5;
 
-figure
-p = plot(G,'Layout','force','LineWidth',LWidths);
-p.MarkerSize = 0.5;
-
-% Highlight Edges
-Edges = table2array(G.Edges);
-% turn prediction-to-anything edges purple
-Ipred_edge = ismember(Edges(:,1),find(Ipred_all)) | ismember(Edges(:,2),find(Ipred_all));
-highlight(p,Edges(Ipred_edge,1),Edges(Ipred_edge,2),'EdgeColor',[143 108 169]/255)
-% turn reference-only-to-anything edges black
-Iref_edge = ismember(Edges(:,1),find(Iref_only)) | ismember(Edges(:,2),find(Iref_only));
-highlight(p,Edges(Iref_edge,1),Edges(Iref_edge,2),'EdgeColor','k')
-% turn prediction-only edges orange
-Ipredonly = ismember(Edges(:,1),find(Ipred_only)) | ismember(Edges(:,2),find(Ipred_only));
-highlight(p,Edges(Ipredonly,1),Edges(Ipredonly,2),'EdgeColor',[245 141 98]/255)
-
-
-% Highlight Nodes
-% turn reference-only nodes black
-highlight(p,find(Iref_only),'NodeColor',[.3 .3 .3])
-% turn prediction-only nodes orange
-highlight(p,find(Ipred_only),'NodeColor',[245 141 98]/255)
-% turn overlapping (reference+prediction) nodes purple
-I = 1:cc;
-Iboth = I(~ismember(I,[find(Iref_only); find(Ipred_only)]));
-highlight(p,Iboth,'NodeColor',[143 108 169]/255)
-
-set(gca,'LooseInset',get(gca,'TightInset'));
-set(gcf,'paperunits','inches','paperposition',[.25 .25 7 7],...
- 'units','inches','position',[.25 .25 15 15])
-axis square
-%axis([0.6688   54.5981    1.0965   51.4244])
-%axis([0 0 78 75])
-set(gca,'Visible','off','xtick',[],'ytick',[])
-sf=[figdir '/Hairball2_redicted_vs_corum'];
-saveas(gcf, sf, 'svg');
-print([sf '.png'], '-dpng', '-r1000');
-
+if not(isempty(G.Edges))
+  figure
+  p = plot(G,'Layout','force','LineWidth',LWidths);
+  p.MarkerSize = 0.5;
+  
+  % Highlight Edges
+  Edges = table2array(G.Edges);
+  % turn prediction-to-anything edges purple
+  Ipred_edge = ismember(Edges(:,1),find(Ipred_all)) | ismember(Edges(:,2),find(Ipred_all));
+  highlight(p,Edges(Ipred_edge,1),Edges(Ipred_edge,2),'EdgeColor',[143 108 169]/255)
+  % turn reference-only-to-anything edges black
+  Iref_edge = ismember(Edges(:,1),find(Iref_only)) | ismember(Edges(:,2),find(Iref_only));
+  highlight(p,Edges(Iref_edge,1),Edges(Iref_edge,2),'EdgeColor','k')
+  % turn prediction-only edges orange
+  Ipredonly = ismember(Edges(:,1),find(Ipred_only)) | ismember(Edges(:,2),find(Ipred_only));
+  highlight(p,Edges(Ipredonly,1),Edges(Ipredonly,2),'EdgeColor',[245 141 98]/255)
+  
+  
+  % Highlight Nodes
+  % turn reference-only nodes black
+  highlight(p,find(Iref_only),'NodeColor',[.3 .3 .3])
+  % turn prediction-only nodes orange
+  highlight(p,find(Ipred_only),'NodeColor',[245 141 98]/255)
+  % turn overlapping (reference+prediction) nodes purple
+  I = 1:cc;
+  Iboth = I(~ismember(I,[find(Iref_only); find(Ipred_only)]));
+  highlight(p,Iboth,'NodeColor',[143 108 169]/255)
+  
+  set(gca,'LooseInset',get(gca,'TightInset'));
+  set(gcf,'paperunits','inches','paperposition',[.25 .25 7 7],...
+    'units','inches','position',[.25 .25 15 15])
+  axis square
+  %axis([0.6688   54.5981    1.0965   51.4244])
+  %axis([0 0 78 75])
+  set(gca,'Visible','off','xtick',[],'ytick',[])
+  sf=[figdir '/Hairball2_redicted_vs_corum'];
+  saveas(gcf, sf, 'svg');
+  print([sf '.png'], '-dpng', '-r1000');
+end
