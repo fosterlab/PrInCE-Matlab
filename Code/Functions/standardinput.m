@@ -1,4 +1,4 @@
-function user_new = standardinput(user)
+function user = standardinput(user)
 % This function checks that input files specified by user have the correct format.
 % - Check csv format.
 % - Check header.
@@ -7,7 +7,7 @@ function user_new = standardinput(user)
 
 numeric_chars = [num2str(0:10) '-' '.'];
 
-user_new = user;
+%user = user;
 
 
 %% user.MQfiles
@@ -16,7 +16,7 @@ countedFraction = nan(10^5,1); % number of fractions in each row
 replicate = nan(10^5,1); % replicate seen in each row
 for ii = 1:length(user.MQfiles)
   fid = fopen(user.MQfiles{ii});
-    
+  
   % Check csv format.
   if ~strcmpi(user.MQfiles{ii}(end-2:end),'csv')
     error('The following MQ file is not in .csv format:\n %s', user.MQfiles{ii})
@@ -53,7 +53,6 @@ for ii = 1:length(user.MQfiles)
     end
   end
   
-    
   fclose(fid);
 end
 
@@ -62,17 +61,17 @@ countedFraction = countedFraction(1:cc);
 fractionCounts = unique(countedFraction);
 goodFractions = 0;
 if length(fractionCounts)==1
-    % If all rows had the same number of fractions
-    user_new.Nfraction = fractionCounts;
-    goodFractions = 1;
+  % If all rows had the same number of fractions
+  user.Nfraction = fractionCounts;
+  goodFractions = 1;
 else
-    % If there were different fraction numbers
-    user_new.Nfraction = max(fractionCounts);
-    ss = sprintf('The number of FRACTIONS is not consistent in condition files. \nUsing the max number of fractions (%s). \nIf %s is incorrect, check that files are correctly formatted.',...
-        num2str(user_new.Nfraction),num2str(user_new.Nfraction));
-    warning(ss);
-    hh = warndlg(sprintf(ss));
-    %uiwait(hh)
+  % If there were different fraction numbers
+  user.Nfraction = max(fractionCounts);
+  ss = sprintf('The number of FRACTIONS is not consistent in condition files. \nUsing the max number of fractions (%s). \nIf %s is incorrect, check that files are correctly formatted.',...
+    num2str(user.Nfraction),num2str(user.Nfraction));
+  warning(ss);
+  hh = warndlg(sprintf(ss));
+  %uiwait(hh)
 end
 
 % Count how many replicates were detected
@@ -80,36 +79,36 @@ replicate = replicate(1:cc);
 replicate = unique(replicate);
 replicate(isnan(replicate)) = [];
 replicate(isempty(replicate)) = [];
-user_new.Nreplicate = length(replicate);
+user.Nreplicate = length(replicate);
 goodReplicates = 0;
-if user_new.Nreplicate>15
-    % If too many replicates were detected
-    ss = sprintf('%s REPLICATES detected in %s. Thats a lot! \nCheck file to ensure replicate column is correctly formatted.',...
-        num2str(user_new.Nreplicate), [user_new.silacratios{ii} '.csv']);
-    warning(ss);
-    hh = warndlg(sprintf(ss));
-    uiwait(hh)
+if user.Nreplicate>15
+  % If too many replicates were detected
+  ss = sprintf('%s REPLICATES detected in %s. Thats a lot! \nCheck file to ensure replicate column is correctly formatted.',...
+    num2str(user.Nreplicate), [user.silacratios{ii} '.csv']);
+  warning(ss);
+  hh = warndlg(sprintf(ss));
+  uiwait(hh)
 else
-    % If a reasonable number were detected
-    goodReplicates = 1;
+  % If a reasonable number were detected
+  goodReplicates = 1;
 end
 
 % Tell the user how many replicates/fractions were detected
 if goodReplicates==1 && goodFractions ==1
-    ss = sprintf('Detected %s FRACTIONS and %s REPLICATES in condition files. If that is not correct, check that condition files are correctly formatted.',...
-        num2str(user_new.Nfraction), num2str(user_new.Nreplicate));
-    sprintf(ss)
-    msgbox(ss, 'Replicates and fractions');
+  ss = sprintf('Detected %s FRACTIONS and %s REPLICATES in condition files. If that is not correct, check that condition files are correctly formatted.',...
+    num2str(user.Nfraction), num2str(user.Nreplicate));
+  sprintf(ss)
+  msgbox(ss, 'Replicates and fractions');
 elseif goodReplicates==1 && goodFractions == 0
-    ss = sprintf('Detected %s REPLICATES in condition files. If that is not correct, check that condition files are correctly formatted.',...
-        num2str(user_new.Nreplicate));
-    sprintf(ss)
-    msgbox(ss, 'Replicates');
+  ss = sprintf('Detected %s REPLICATES in condition files. If that is not correct, check that condition files are correctly formatted.',...
+    num2str(user.Nreplicate));
+  sprintf(ss)
+  msgbox(ss, 'Replicates');
 elseif goodReplicates==0 && goodFractions == 1
-    ss = sprintf('Detected %s FRACTIONS in condition files. If that is not correct, check that condition files are correctly formatted.',...
-        num2str(user_new.Nfraction));
-    sprintf(ss)
-    msgbox(ss, 'Fractions');
+  ss = sprintf('Detected %s FRACTIONS in condition files. If that is not correct, check that condition files are correctly formatted.',...
+    num2str(user.Nfraction));
+  sprintf(ss)
+  msgbox(ss, 'Fractions');
 end
 
 
@@ -174,4 +173,108 @@ if ~isempty(user.corumfile)
   
   fclose(fid);
 end
+
+
+%% user.MQfiles - are they identically ordered?
+% This needs to done after setting user.Nfraction
+
+% Check that condition files have identical proteins in the same order
+% For now, read in entire protein ID list
+clear chromdata
+for ii = 1:length(user.MQfiles)
+  chromdata(ii) = readchromatogramfile2(user.MQfiles{ii}, user.Nfraction);
+  chromdata(ii).textdata = chromdata(ii).textdata(2:end,:);
+end
+
+% Check that condition files have identical proteins in the same order
+protPairIdentical = nan(length(user.MQfiles));
+for ii = 1:length(user.MQfiles)
+  for jj = 1:length(user.MQfiles)
+    if ii>=jj; continue; end
+    protPairIdentical(ii,jj) = isequal(chromdata(ii).textdata, chromdata(jj).textdata);
+  end
+end
+if nansum(protPairIdentical(:)) < (length(user.MQfiles) * (length(user.MQfiles)-1)) / 2
+  disp('Writing temporary condition files.')
+  
+  % Condition files are not identically ordered by protein
+  % Solution: Make temporary condition files with identical protein order
+  
+  % find all unique proteins
+  for ii = 1:length(user.MQfiles)
+    if ii==1
+      allProts = unique(chromdata(ii).textdata);
+    else
+      allProts = unique([allProts; chromdata(ii).textdata]);
+    end
+  end
+  
+  % find all unique replicates
+  for ii = 1:length(user.MQfiles)
+    if ii==1
+      allReps = unique(chromdata(ii).replicate);
+    else
+      allReps = unique([allReps; chromdata(ii).replicate]);
+    end
+  end
+  
+  % Write condition files
+  for ii = 1:length(user.MQfiles)
+    % make data
+    nrows = length(allReps) * length(allProts);
+    data2write.data = nan(nrows, user.Nfraction+1);
+    data2write.text = cell(nrows,1);
+    cc = 0;
+    for jj = 1:length(allReps)
+      rep = allReps(jj);
+      I1 = chromdata(ii).replicate == rep;
+      for kk = 1:length(allProts)
+        cc = cc+1;
+        prot = allProts{kk};
+        data2write.text{cc} = prot;
+        data2write.data(cc,1) = rep;
+        
+        % get chromatogram from original data
+        I = ismember(chromdata(ii).textdata, prot) & I1;
+        if sum(I)==0; continue; end
+        if sum(I)~=1; error(['Duplicate protein IDs in the same replicate: ' user.MQfiles{ii}]); end
+        
+        data2write.data(cc,:) = [chromdata(ii).replicate(I) chromdata(ii).data(I,:)];
+      end
+    end
+    
+    % get original header
+    fid = fopen(user.MQfiles{ii});
+    head = fgetl(fid);
+    fclose(fid);
+    
+    % write output
+    fn = [user.maindir '/Output/tmp/tmp_' user.silacratios{ii} '.csv'];
+    fid = fopen(fn,'w');
+    fprintf(fid,'%s\n',head);
+    for jj = 1:size(data2write.data,1)
+      fprintf(fid,'%s,%d,', data2write.text{jj}, data2write.data(jj,1));
+      for kk = 1:size(data2write.data,2)-1
+        fprintf(fid,'%6.4f,', data2write.data(jj,kk+1));
+      end
+      fprintf(fid,'\n');
+    end
+    
+    % rename user.MQfiles{ii}
+    user.MQfiles{ii} = fn;
+  end
+end
+
+
+% Are there duplicate protein IDs in the same replicate
+for ii = 1:length(user.MQfiles)
+  reps = unique(chromdata(ii).replicate);
+  for jj = 1:length(reps)
+    I = chromdata(ii).replicate==reps(jj);
+    if length(unique(chromdata(ii).textdata)) < sum(I)
+      error(['Duplicate protein IDs in the same replicate: ' user.MQfiles{ii}])
+    end
+  end
+end
+
 

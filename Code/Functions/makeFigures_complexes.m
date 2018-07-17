@@ -47,6 +47,7 @@ for ii = 1:size(csplit,1)
     
     % find closest reference complex
     refComplex = [];
+    sizeCorum = length(refComplex);
     if not(isempty(corumMatches{ii}))
       I = find(corumMatches{ii}(:,1)==jj & corumMatches{ii}(:,3)==1);
       if ~isempty(I)

@@ -46,13 +46,26 @@ end
 y = TP_Matrix(:);
 y(y>0) = 1;
 y(y~=1) = -1;
-Nd = size(X,2);
 
 % Impute missing values
+Igood = ones(size(X,2),1);
 for ii = 1:size(X,2)
   im = isnan(X(:,ii)); % rows with missing values
+  if sum(~im & y==1)<=2 || sum(~im & y==-1)<=2
+      Igood(ii) = 0;
+      continue;
+  end
   X(im & y==1,ii) = randsample(X(~im & y==1,ii),sum(im & y==1),1);
   X(im & y==-1,ii) = randsample(X(~im & y==-1,ii),sum(im & y==-1),1);
+end
+X = X(:,Igood==1); % remove columns with 0 non-nan labels
+Nd = size(X,2);
+
+% Is there enough data to classify?
+% If X is empty at this point, return score=nan
+if Nd==0
+  score = nan(size(X,1), 1);
+  return
 end
 
 % Soft whiten data
