@@ -647,11 +647,11 @@ if ~skipflag
     
     % Run the remaining interactions through MCL
     intMatrix2 = intMatrix;
-    for jj = 1:length(CL(1).Members)
-      for kk = 1:length(CL(1).Members{jj})
-        for mm = 1:length(CL(1).Members{jj})
+    for jj = 1:length(CL(ii).Members)
+      for kk = 1:length(CL(ii).Members{jj})
+        for mm = 1:length(CL(ii).Members{jj})
           if kk==mm; continue; end
-          intMatrix2(CL(1).Members{jj}(kk),CL(1).Members{jj}(mm)) = 0;
+          intMatrix2(CL(ii).Members{jj}(kk),CL(ii).Members{jj}(mm)) = 0;
         end
       end
     end
@@ -677,6 +677,8 @@ if ~skipflag
     tmp = size(CL(ii).Members);
     if tmp(2)==0
       NN = 0;
+    elseif tmp(1)==1 & tmp(2)>1
+      NN = tmp(2);
     else
       NN = tmp(1);
     end
@@ -696,6 +698,11 @@ if ~skipflag
     CL(ii).Density(I) = [];
     CL(ii).nn(I) = [];
     NN = sum(~I);
+    
+    if NN==0
+      NN(ii) = 0;
+      continue;
+    end
     
     % Merge complexes with Jaccard==1
     if not(isequal(CL(ii).Members{1}, CL(ii).Members))

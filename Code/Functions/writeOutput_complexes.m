@@ -37,7 +37,7 @@ for ci = 1:size(csplit,1)
     'ID','Predicted complex', 'Complex size', 'Complex density', 'Novel complex?', ...
     'Best CORUM match', 'Overlapping proteins', 'N overlap', 'CORUM coverage');
   
-  for ii = 1:size(CL(ci).Members,1)    
+  for ii = 1:Ncomplex(ci)  
     predComplex = strjoin(uniqueProteins(CL(ci).Members{ii}), ' ');
     sizePredComplex = length(CL(ci).Members{ii});
 
