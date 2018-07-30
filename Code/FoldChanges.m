@@ -933,7 +933,11 @@ if ~skipflag
   tic
   fprintf('    6. Make figures\n')
   
-  makeFigures_foldchanges
+  try
+    makeFigures_foldchanges
+  catch
+    warning('makeFigures_foldchanges failed.')
+  end
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)

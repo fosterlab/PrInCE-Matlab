@@ -406,7 +406,13 @@ if ~skipflag
   tic
   fprintf('    6. Make figures')
   
-  makeFigures_alignment
+  
+  try
+    makeFigures_alignment
+  catch
+    warning('makeFigures_alignment failed.')
+  end
+  
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
