@@ -117,106 +117,118 @@ end
 
 %% Distribution of # of Gaussians
 
-Ngauss = nan(Nchannels,Nproteins);
-for ci = 1:Nchannels
-  for ri = 1:Nproteins
-    Ngauss(ci,ri) = length(Coef{ci,ri})/3;
+try
+  Ngauss = nan(Nchannels,Nproteins);
+  for ci = 1:Nchannels
+    for ri = 1:Nproteins
+      Ngauss(ci,ri) = length(Coef{ci,ri})/3;
+    end
   end
+  Ngauss(Ngauss<1) = nan;
+  
+  figure,hold on
+  h1 = hist(Ngauss(:),1:5);
+  bar(1:5,h1,'barwidth',0.9)
+  xlabel('Number of Gaussians used to model the chromatogram','fontsize',12)
+  ylabel('Count, number of chromatograms')
+  ylim([0 max(h1(:))*1.05])
+  
+  set(gca,'xtick',1:5,'fontsize',12)
+  
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+  sf=[figdir '/Hist_NumberOfGaussians'];
+  saveas(gcf, sf, 'png');
+catch
+  warning('Failed to plot Hist_NumberOfGaussians.')
 end
-Ngauss(Ngauss<1) = nan;
-
-figure,hold on
-h1 = hist(Ngauss(:),1:5);
-bar(1:5,h1,'barwidth',0.9)
-xlabel('Number of Gaussians used to model the chromatogram','fontsize',12)
-ylabel('Count, number of chromatograms')
-ylim([0 max(h1(:))*1.05])
-
-set(gca,'xtick',1:5,'fontsize',12)
-
-set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir '/Hist_NumberOfGaussians'];
-saveas(gcf, sf, 'png');
 
 
 
 %% Distribution of Gaussian coefficients
 
-Hall = cell(Nchannels,1);
-Call = cell(Nchannels,1);
-Wall = cell(Nchannels,1);
-for ci = 1:Nchannels
-  Hall{ci} = [];
-  Call{ci} = [];
-  Wall{ci} = [];
-  for ri = 1:Nproteins
-    H = Coef{ci,ri}(1:3:end);
-    Hall{ci} = [Hall{ci} H];
+try
+  Hall = cell(Nchannels,1);
+  Call = cell(Nchannels,1);
+  Wall = cell(Nchannels,1);
+  for ci = 1:Nchannels
+    Hall{ci} = [];
+    Call{ci} = [];
+    Wall{ci} = [];
+    for ri = 1:Nproteins
+      H = Coef{ci,ri}(1:3:end);
+      Hall{ci} = [Hall{ci} H];
+      
+      C = Coef{ci,ri}(2:3:end);
+      Call{ci} = [Call{ci} C];
+      
+      W = Coef{ci,ri}(3:3:end);
+      Wall{ci} = [Wall{ci} W];
+    end
     
-    C = Coef{ci,ri}(2:3:end);
-    Call{ci} = [Call{ci} C];
-    
-    W = Coef{ci,ri}(3:3:end);
-    Wall{ci} = [Wall{ci} W];
+    % clean up parameters
+    Hall{ci} = Hall{ci}(Hall{ci}>0 & Hall{ci}<250);
+    Call{ci} = Call{ci}(Call{ci}>-10);
+    Wall{ci} = Wall{ci}(Wall{ci}>0 & Wall{ci}<100);
   end
   
-  % clean up parameters
-  Hall{ci} = Hall{ci}(Hall{ci}>0 & Hall{ci}<250);
-  Call{ci} = Call{ci}(Call{ci}>-10);
-  Wall{ci} = Wall{ci}(Wall{ci}>0 & Wall{ci}<100);
-end
-
-
-figure,hold on
-for ci = 1:Nchannels
-  subplot(Nchannels,3,1 + (ci-1)*3)
-  hist(Hall{ci},25)
-  title(['H, ' user.silacratios{ci}])
-  ylabel('Count','fontsize',10)
-  xlabel('H, Height','fontsize',10)
   
-  subplot(Nchannels,3,2 + (ci-1)*3)
-  hist(Call{ci},25)
-  title(['C, ' user.silacratios{ci}])
-  ylabel('Count','fontsize',10)
-  xlabel('C, Center fraction','fontsize',10)
+  figure,hold on
+  for ci = 1:Nchannels
+    subplot(Nchannels,3,1 + (ci-1)*3)
+    hist(Hall{ci},25)
+    title(['H, ' user.silacratios{ci}])
+    ylabel('Count','fontsize',10)
+    xlabel('H, Height','fontsize',10)
+    
+    subplot(Nchannels,3,2 + (ci-1)*3)
+    hist(Call{ci},25)
+    title(['C, ' user.silacratios{ci}])
+    ylabel('Count','fontsize',10)
+    xlabel('C, Center fraction','fontsize',10)
+    
+    subplot(Nchannels,3,3 + (ci-1)*3)
+    hist(Wall{ci},25)
+    title(['W, ' user.silacratios{ci}])
+    ylabel('Count','fontsize',10)
+    xlabel('W, Width','fontsize',10)
+  end
   
-  subplot(Nchannels,3,3 + (ci-1)*3)
-  hist(Wall{ci},25)
-  title(['W, ' user.silacratios{ci}])
-  ylabel('Count','fontsize',10)
-  xlabel('W, Width','fontsize',10)
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+  sf=[figdir '/Hist_GaussianParameters'];
+  saveas(gcf, sf, 'png');
+catch
+  warning('Failed to plot Hist_GaussianParameters.')
 end
-
-set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir '/Hist_GaussianParameters'];
-saveas(gcf, sf, 'png');
 
 
 
 %% Distribution of R^2
 
-x = linspace(0,1,Nproteins/10);
-
-figure,hold on
-h1 = hist(adjrsquare(:),x);
-bar(x,h1,'barwidth',0.9)
-xlabel('R^2 between Guassian model and cleaned raw data','fontsize',12)
-ylabel('Count, number of chromatograms')
-xlim([-.01 1.01])
-
-ax = axis;
-x = ax(1) + diff(ax(1:2))*.35;
-y1 = ax(3) + diff(ax(3:4))*.9;
-y2 = ax(3) + diff(ax(3:4))*.8;
-text(x,y1,['Average R^2 = ' num2str(nanmean(adjrsquare(:)))],'fontsize',12)
-text(x,y2,['Median R^2 = ' num2str(nanmedian(adjrsquare(:)))],'fontsize',12)
-
-set(gca,'fontsize',12)
-
-set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
-sf=[figdir '/Hist_R2'];
-saveas(gcf, sf, 'png');
+try
+  x = linspace(0,1,Nproteins/10);
+  
+  figure,hold on
+  h1 = hist(adjrsquare(:),x);
+  bar(x,h1,'barwidth',0.9)
+  xlabel('R^2 between Guassian model and cleaned raw data','fontsize',12)
+  ylabel('Count, number of chromatograms')
+  xlim([-.01 1.01])
+  
+  ax = axis;
+  x = ax(1) + diff(ax(1:2))*.35;
+  y1 = ax(3) + diff(ax(3:4))*.9;
+  y2 = ax(3) + diff(ax(3:4))*.8;
+  text(x,y1,['Average R^2 = ' num2str(nanmean(adjrsquare(:)))],'fontsize',12)
+  text(x,y2,['Median R^2 = ' num2str(nanmedian(adjrsquare(:)))],'fontsize',12)
+  
+  set(gca,'fontsize',12)
+  
+  set(gcf,'paperunits','inches','paperposition',[.25 2.5 9 9])
+  sf=[figdir '/Hist_R2'];
+  saveas(gcf, sf, 'png');
+catch
+  warning('Failed to plot Hist_R2.')
+end
 
 
 %% Raw chromatograms, cleaned chromatograms, fits
@@ -261,97 +273,97 @@ if user.fastgaussbuild==0
   end
   
   for ii = 1:1:length(proteins2plot)
-      for ii2 = 1:length(reps2plot)
-          try
-              % where is this protein in the data?
-              prot = proteins2plot{ii};
-              Icond = nan(length(txt_val),1);
-              for jj = 1:length(txt_val)
-                  Icond(jj) = find(ismember(txt_val{jj}(2:end), prot) & replicate{jj}==reps2plot(ii2));
-              end
-              
-              if sum(isnan(rawdata{1}(ii,:)))==length(rawdata{1}(ii,:))
-                  continue;
-              end
-              
-              set(0, 'CurrentFigure', h);
-              clf reset;
-              
-              % plot the raw data
-              subplot(3,1,1),hold on
-              for jj = 1:Nchannels % for the legend
-                  plot(-3,-3,'s',...
-                      'MarkerFaceColor',colour_to_use(jj,:),'MarkerSize',4);
-              end
-              for jj = 1:Nchannels
-                  plot(xraw,rawdata{jj}(Icond(jj),:),'s',...
-                      'MarkerFaceColor',colour_to_use(jj,:),'MarkerSize',4);
-              end
-              for jj = 1:Nchannels
-                  plot(xraw,rawdata{jj}(Icond(jj),:),'color',colour_to_use(jj,:));
-              end
-              xlim([xraw(1)-1 xraw(end)+1])
-              y = ylim;
-              if y(1)>0
-                  y(1) = 0.01;
-              end
-              ylim(y)
-              xlabel('Fraction','fontsize',10)
-              ylabel('Isotopologue ratio','FontSize', 10);
-              legend(user.silacratios,'location','best')
-              title('Raw chromatogram','fontsize',10)
-              ax = axis;
-              
-              % plot the clean data
-              subplot(3,1,2),hold on
-              for jj = 1:Nchannels
-                  plot(xclean,cleandata{jj}(Icond(jj),:),'s',...
-                      'MarkerFaceColor',colour_to_use(jj,:),'MarkerSize',4);
-                  plot(xclean,cleandata{jj}(Icond(jj),:),'color',colour_to_use(jj,:));
-              end
-              xlabel('Fraction','fontsize',10)
-              ylabel('Isotopologue ratio','FontSize', 10);
-              title('Cleaned chromatogram','fontsize',10)
-              axis(ax)
-              
-              % plot the Gaussians
-              subplot(3,1,3),hold on
-              xfit = linspace(xraw(1)-1,xraw(end)+1,101);
-              yfit = zeros(Nchannels,length(xfit));
-              Ngauss = nan(Nchannels,1);
-              for jj = 1:Nchannels % for the legend
-                  plot(-3,-3,'color',colour_to_use(jj,:),'linewidth',2);
-              end
-              for jj = 1:Nchannels
-                  Ngauss(jj) = length(Coef{jj,Icond(jj)})/3;
-                  if Ngauss(jj) == 0; continue;end
-                  for kk = 1:Ngauss(jj)
-                      H = Coef{jj,Icond(jj)}(1 + (kk-1)*3);
-                      C = Coef{jj,Icond(jj)}(2 + (kk-1)*3);
-                      W = Coef{jj,Icond(jj)}(3 + (kk-1)*3);
-                      yfit(jj,:) = yfit(jj,:) + H*exp(-((xfit-C)/W).^2);
-                  end
-                  plot(xfit,yfit(jj,:),'color',colour_to_use(jj,:),'linewidth',2);
-                  if Ngauss(jj)>0
-                      s1 = [num2str(Ngauss(jj)) ' Gauss, R^2=' num2str(round(adjrsquare(jj,Icond(jj))*100)/100)];
-                      text(ax(1)+diff(ax(1:2))*.75, ax(3)+diff(ax(3:4))*(1-.1*jj), s1)
-                  end
-              end
-              if sum(Ngauss(:))>0
-                  legend(user.silacratios,'location','northwest')
-              end
-              xlabel('Fraction','fontsize',10)
-              ylabel('Isotopologue ratio','FontSize', 10);
-              title('Fitted Gaussians','fontsize',10)
-              axis(ax)
-              
-              
-              sf = [figdir '/Chromatograms/Replicate' num2str(reps2plot(ii2)) ,'_',txt_val{1}{ii+1,1},'.png'];
-              saveas(gcf, sf);
-          catch ME
-              disp(ME.message)
+    for ii2 = 1:length(reps2plot)
+      try
+        % where is this protein in the data?
+        prot = proteins2plot{ii};
+        Icond = nan(length(txt_val),1);
+        for jj = 1:length(txt_val)
+          Icond(jj) = find(ismember(txt_val{jj}(2:end), prot) & replicate{jj}==reps2plot(ii2));
+        end
+        
+        if sum(isnan(rawdata{1}(ii,:)))==length(rawdata{1}(ii,:))
+          continue;
+        end
+        
+        set(0, 'CurrentFigure', h);
+        clf reset;
+        
+        % plot the raw data
+        subplot(3,1,1),hold on
+        for jj = 1:Nchannels % for the legend
+          plot(-3,-3,'s',...
+            'MarkerFaceColor',colour_to_use(jj,:),'MarkerSize',4);
+        end
+        for jj = 1:Nchannels
+          plot(xraw,rawdata{jj}(Icond(jj),:),'s',...
+            'MarkerFaceColor',colour_to_use(jj,:),'MarkerSize',4);
+        end
+        for jj = 1:Nchannels
+          plot(xraw,rawdata{jj}(Icond(jj),:),'color',colour_to_use(jj,:));
+        end
+        xlim([xraw(1)-1 xraw(end)+1])
+        y = ylim;
+        if y(1)>0
+          y(1) = 0.01;
+        end
+        ylim(y)
+        xlabel('Fraction','fontsize',10)
+        ylabel('Isotopologue ratio','FontSize', 10);
+        legend(user.silacratios,'location','best')
+        title('Raw chromatogram','fontsize',10)
+        ax = axis;
+        
+        % plot the clean data
+        subplot(3,1,2),hold on
+        for jj = 1:Nchannels
+          plot(xclean,cleandata{jj}(Icond(jj),:),'s',...
+            'MarkerFaceColor',colour_to_use(jj,:),'MarkerSize',4);
+          plot(xclean,cleandata{jj}(Icond(jj),:),'color',colour_to_use(jj,:));
+        end
+        xlabel('Fraction','fontsize',10)
+        ylabel('Isotopologue ratio','FontSize', 10);
+        title('Cleaned chromatogram','fontsize',10)
+        axis(ax)
+        
+        % plot the Gaussians
+        subplot(3,1,3),hold on
+        xfit = linspace(xraw(1)-1,xraw(end)+1,101);
+        yfit = zeros(Nchannels,length(xfit));
+        Ngauss = nan(Nchannels,1);
+        for jj = 1:Nchannels % for the legend
+          plot(-3,-3,'color',colour_to_use(jj,:),'linewidth',2);
+        end
+        for jj = 1:Nchannels
+          Ngauss(jj) = length(Coef{jj,Icond(jj)})/3;
+          if Ngauss(jj) == 0; continue;end
+          for kk = 1:Ngauss(jj)
+            H = Coef{jj,Icond(jj)}(1 + (kk-1)*3);
+            C = Coef{jj,Icond(jj)}(2 + (kk-1)*3);
+            W = Coef{jj,Icond(jj)}(3 + (kk-1)*3);
+            yfit(jj,:) = yfit(jj,:) + H*exp(-((xfit-C)/W).^2);
           end
+          plot(xfit,yfit(jj,:),'color',colour_to_use(jj,:),'linewidth',2);
+          if Ngauss(jj)>0
+            s1 = [num2str(Ngauss(jj)) ' Gauss, R^2=' num2str(round(adjrsquare(jj,Icond(jj))*100)/100)];
+            text(ax(1)+diff(ax(1:2))*.75, ax(3)+diff(ax(3:4))*(1-.1*jj), s1)
+          end
+        end
+        if sum(Ngauss(:))>0
+          legend(user.silacratios,'location','northwest')
+        end
+        xlabel('Fraction','fontsize',10)
+        ylabel('Isotopologue ratio','FontSize', 10);
+        title('Fitted Gaussians','fontsize',10)
+        axis(ax)
+        
+        
+        sf = [figdir '/Chromatograms/Replicate' num2str(reps2plot(ii2)) ,'_',txt_val{1}{ii+1,1},'.png'];
+        saveas(gcf, sf);
+      catch ME
+        disp(ME.message)
       end
+    end
   end
 end
 

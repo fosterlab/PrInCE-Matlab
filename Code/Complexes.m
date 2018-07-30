@@ -814,7 +814,11 @@ if ~skipflag
   tic
   fprintf('    7. Make figures')
   
-  makeFigures_complexes
+  try
+    makeFigures_complexes
+  catch
+    warning('makeFigures_complexes failed.')
+  end
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)

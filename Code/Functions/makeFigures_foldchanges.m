@@ -174,84 +174,92 @@ end
 %% Log2 changes, normalized + non-normalized
 % Use Finalised_Master_Gaussian_list
 
-figure, hold on
-log2_sorted = sort(Finalised_Master_Gaussian_list.foldChange_normalized(:));
-title('Log2 changes','FontSize', 10);
-ylabel('Normalised Log2 ratio','FontSize', 10);
-xlabel('Gaussians identified','FontSize', 10);
-scatter(1:length(log2_sorted(:)),log2_sorted(:),8,[27,158,119]/255,'fill');
-
-log2_sorted = sort(Finalised_Master_Gaussian_list.foldChange(:));
-title('Log2 changes','FontSize', 10);
-ylabel('Log2 ratio','FontSize', 10);
-xlabel('Gaussians identified','FontSize', 10);
-scatter(1:length(log2_sorted(:)),log2_sorted(:),8,[217,95,2]/255,'fill');
-
-plot([-100 length(log2_sorted(:))+100],[1 1],'--','color', [.7 .7 0]);
-plot([-100 length(log2_sorted(:))+100],[-1 -1],'--r');
-xlim([-10,sum(~isnan(log2_sorted(:)))+10]);
-y1 = min(log2_sorted)*1.1;
-y2 = max(log2_sorted)*1.1;
-ylim([min([-1.1 y1]) max([1.1 y2])]);
-grid on
-
-legend('Normalized (median = 0)','Raw','location','northwest')
-
-saveas(gcf, [figdir '/Fold_changes_Gaussians.png']);
+try
+  figure, hold on
+  log2_sorted = sort(Finalised_Master_Gaussian_list.foldChange_normalized(:));
+  title('Log2 changes','FontSize', 10);
+  ylabel('Normalised Log2 ratio','FontSize', 10);
+  xlabel('Gaussians identified','FontSize', 10);
+  scatter(1:length(log2_sorted(:)),log2_sorted(:),8,[27,158,119]/255,'fill');
+  
+  log2_sorted = sort(Finalised_Master_Gaussian_list.foldChange(:));
+  title('Log2 changes','FontSize', 10);
+  ylabel('Log2 ratio','FontSize', 10);
+  xlabel('Gaussians identified','FontSize', 10);
+  scatter(1:length(log2_sorted(:)),log2_sorted(:),8,[217,95,2]/255,'fill');
+  
+  plot([-100 length(log2_sorted(:))+100],[1 1],'--','color', [.7 .7 0]);
+  plot([-100 length(log2_sorted(:))+100],[-1 -1],'--r');
+  xlim([-10,sum(~isnan(log2_sorted(:)))+10]);
+  y1 = min(log2_sorted)*1.1;
+  y2 = max(log2_sorted)*1.1;
+  ylim([min([-1.1 y1]) max([1.1 y2])]);
+  grid on
+  
+  legend('Normalized (median = 0)','Raw','location','northwest')
+  
+  saveas(gcf, [figdir '/Fold_changes_Gaussians.png']);
+catch
+  warning('Failed to plot Fold_changes_Gaussians.')
+end
 
 
 
 %% Histograms of changes per fraction
 
-x = 1:fraction_to_plot;
-ttest_sig = nan(length(x),3);
-ranksum_sig = nan(length(x),3);
-fold_sig = nan(length(x),3);
-for xi = 1:length(x)
-  I = Finalised_Master_Gaussian_list.Center>x(xi)-.5 & Finalised_Master_Gaussian_list.Center<x(xi)+.5;
-  D1 = Finalised_Master_Gaussian_list.Ttest_p_values(I);
-  D2 = Finalised_Master_Gaussian_list.MWW_p_values(I);
-  D3 = Finalised_Master_Gaussian_list.foldChange_normalized(I);
+try
+  x = 1:fraction_to_plot;
+  ttest_sig = nan(length(x),3);
+  ranksum_sig = nan(length(x),3);
+  fold_sig = nan(length(x),3);
+  for xi = 1:length(x)
+    I = Finalised_Master_Gaussian_list.Center>x(xi)-.5 & Finalised_Master_Gaussian_list.Center<x(xi)+.5;
+    D1 = Finalised_Master_Gaussian_list.Ttest_p_values(I);
+    D2 = Finalised_Master_Gaussian_list.MWW_p_values(I);
+    D3 = Finalised_Master_Gaussian_list.foldChange_normalized(I);
+    
+    % significant t-test
+    ttest_sig(xi,2) = sum(D1(:)<.05 & D3(:)<0);
+    ttest_sig(xi,3) = sum(D1(:)<.05 & D3(:)>0);
+    ttest_sig(xi,1) = sum(I(:)) - sum(ttest_sig(xi,2:3));
+    
+    % significant t-test
+    ranksum_sig(xi,2) = sum(D2(:)<.05 & D3(:)<0);
+    ranksum_sig(xi,3) = sum(D2(:)<.05 & D3(:)>0);
+    ranksum_sig(xi,1) = sum(I(:)) - sum(ranksum_sig(xi,2:3));
+    
+    % "significant" fold change
+    fold_sig(xi,2) = sum(D3(:)<-1);
+    fold_sig(xi,3) = sum(D3(:)>1);
+    fold_sig(xi,1) = sum(I(:)) - sum(fold_sig(xi,2:3));
+  end
   
-  % significant t-test
-  ttest_sig(xi,2) = sum(D1(:)<.05 & D3(:)<0);
-  ttest_sig(xi,3) = sum(D1(:)<.05 & D3(:)>0);
-  ttest_sig(xi,1) = sum(I(:)) - sum(ttest_sig(xi,2:3));
+  figure
+  subplot(2,1,1)
+  b1 = bar(fold_sig,.6,'stacked');
+  for kk = 1:length(b1)
+    set(b1(kk),'facecolor', colour_to_use(kk,:), 'EdgeColor', colour_to_use(kk,:) )
+  end
+  legend('No change', 'Decrease', 'Increase', 'Location', 'northeast');
+  xlim([-1,frac2+3]);
+  title('Change detected (normalized fold > 2)');
+  xlabel('Fractions');
+  ylabel('# of Guassian centers');
   
-  % significant t-test
-  ranksum_sig(xi,2) = sum(D2(:)<.05 & D3(:)<0);
-  ranksum_sig(xi,3) = sum(D2(:)<.05 & D3(:)>0);
-  ranksum_sig(xi,1) = sum(I(:)) - sum(ranksum_sig(xi,2:3));
+  subplot(2,1,2)
+  b2 = bar(ttest_sig,.6,'stacked');
+  for kk = 1:length(b1)
+    set(b2(kk),'facecolor', colour_to_use(kk,:), 'EdgeColor', colour_to_use(kk,:))
+  end
+  legend('No change', 'Decrease', 'Increase', 'Location', 'northeast');
+  xlim([-1,frac2+3]);
+  title('Change detected, t-test (p<0.05)');
+  xlabel('Fractions');
+  ylabel('# of Guassian centers');
   
-  % "significant" fold change
-  fold_sig(xi,2) = sum(D3(:)<-1);
-  fold_sig(xi,3) = sum(D3(:)>1);
-  fold_sig(xi,1) = sum(I(:)) - sum(fold_sig(xi,2:3));
+  saveas(gcf, [figdir '/Histogram_changes_per_fraction.png']);
+catch
+  warning('Failed to plot Histogram_changes_per_fraction.')
 end
-
-figure
-subplot(2,1,1)
-b1 = bar(fold_sig,.6,'stacked');
-for kk = 1:length(b1)
-  set(b1(kk),'facecolor', colour_to_use(kk,:), 'EdgeColor', colour_to_use(kk,:) )
-end
-legend('No change', 'Decrease', 'Increase', 'Location', 'northeast');
-xlim([-1,frac2+3]);
-title('Change detected (normalized fold > 2)');
-xlabel('Fractions');
-ylabel('# of Guassian centers');
-
-subplot(2,1,2)
-b2 = bar(ttest_sig,.6,'stacked');
-for kk = 1:length(b1)
-  set(b2(kk),'facecolor', colour_to_use(kk,:), 'EdgeColor', colour_to_use(kk,:))
-end
-legend('No change', 'Decrease', 'Increase', 'Location', 'northeast');
-xlim([-1,frac2+3]);
-title('Change detected, t-test (p<0.05)');
-xlabel('Fractions');
-ylabel('# of Guassian centers');
-
-saveas(gcf, [figdir '/Histogram_changes_per_fraction.png']);
 
 

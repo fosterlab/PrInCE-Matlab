@@ -955,7 +955,13 @@ if ~skipflag
   
   tic
   fprintf('    12. Make figures')
-  makeFigures_interactions
+  
+  try
+    makeFigures_interactions
+  catch
+    warning('makeFigures_interactions failed.')
+  end
+  
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   

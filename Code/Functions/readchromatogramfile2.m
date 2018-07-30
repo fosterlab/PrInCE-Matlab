@@ -29,7 +29,7 @@ while ~feof(fid)
   t1 = strsplit(t,',');
   cc = cc+1;
   
-  Nfractions_this_row = min([Nfraction, length(t1)-1]);
+  Nfractions_this_row = min([Nfraction, length(t1)-2]);
   
   txt_val{cc+1} = strrep(t1{1},'"','');
   rep(cc) = str2double(t1{2});

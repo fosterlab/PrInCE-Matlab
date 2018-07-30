@@ -267,7 +267,11 @@ if ~skipflag
   tic
   fprintf('\n    5. Make figures')
   
-  makeFigures_gaussbuild
+  try
+    makeFigures_gaussbuild
+  catch
+    warning('makeFigures_gaussbuild failed.')
+  end
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
