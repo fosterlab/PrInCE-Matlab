@@ -120,30 +120,34 @@ if ~skipflag
   
   
   % Import MaxQuant data files
-  %[rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
-  tmp = readchromatogramfile2(user.MQfiles{ii},user.Nfraction);
-  
-  % remove 'sheet1' fields
-  if isfield(tmp,'Sheet1')
-      tmp = tmp.Sheet1;
-  end
-  fn = fieldnames(tmp);
-  for jj = 1:length(fn)
-      tmp1 = tmp.(fn{jj});
-      if isfield(tmp1,'Sheet1')
-          tmp.(fn{jj}) = tmp.(fn{jj}).Sheet1;
+  num_val = cell(size(user.MQfiles));
+  txt_val = cell(size(user.MQfiles));
+  for ii = 1:length(user.MQfiles)
+      %[rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
+      tmp = readchromatogramfile2(user.MQfiles{ii},user.Nfraction);
+      
+      % remove 'sheet1' fields
+      if isfield(tmp,'Sheet1')
+          tmp = tmp.Sheet1;
+      end
+      fn = fieldnames(tmp);
+      for jj = 1:length(fn)
+          tmp1 = tmp.(fn{jj});
+          if isfield(tmp1,'Sheet1')
+              tmp.(fn{jj}) = tmp.(fn{jj}).Sheet1;
+          end
+      end
+      
+      num_val{ii} = tmp.data;
+      txt_val{ii} = tmp.textdata;
+      replicates = tmp.replicate;
+      
+      % if txt_val includes protein groups, reduce it to the first protein in each group
+      for jj = 1:size(txt_val{ii},1)
+          tmp = strsplit(txt_val{ii}{jj},';');
+          txt_val{ii}{jj} = tmp{1};
       end
   end
-  
-  num_val{ii} = tmp.data;
-  txt_val{ii} = tmp.textdata;
-  replicates = tmp.replicate;
-  
-  % if txt_val includes protein groups, reduce it to the first protein in each group
-  for jj = 1:size(txt_val{ii},1)
-      tmp = strsplit(txt_val{ii}{jj},';');
-      txt_val{ii}{jj} = tmp{1};
-  end  
   
   % Import Gauss fits for each replicate
   %   Gaus_import: mx6, where m is the number of proteins with a fitted Gaussian
@@ -190,7 +194,6 @@ if ~skipflag
   
   %Number of fractions
   [~, fraction_number]=size(num_val{1});
-  fraction_number = fraction_number-1;
   if fraction_number~= user.Nfraction
     disp('Alignment: user.Nfraction does not equal detected number of fractions')
   end
@@ -324,9 +327,9 @@ if ~skipflag
   x = -4:fraction_number+5;
   adjusted_raw_data = cell(Nchannels,1);
   for ii = 1:Nchannels
-    adjusted_raw_data{ii} = nan(size(cleandata{ii},1),size(cleandata{ii},2)-1);
+    adjusted_raw_data{ii} = nan(size(cleandata{ii},1),size(cleandata{ii},2));
     for ri=1:size(num_val{1})
-      y = cleandata{ii}(ri,2:end);
+      y = cleandata{ii}(ri,:);
       y(isnan(y)) = 0;
       rr = replicates(ri);
       b = pfit(ci,rr,1); % intercept
