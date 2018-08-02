@@ -18,7 +18,7 @@ end
 if ~license('test','signal_toolbox')
   reqtoolbox = [reqtoolbox '   - Signal processing toolbox\n'];
 end
-if ~license('test','distrib_com2puting_toolbox')
+if ~license('test','distrib_computing_toolbox')
   reqtoolbox = [reqtoolbox '   - Parallel computing toolbox\n'];
 end
 if ~license('test','Identification_Toolbox')
