@@ -37,6 +37,9 @@ if user.skipalignment==1 && skipflag==0
   skipflag = 1;
 end
 
+% check toolboxes
+checktoolbox;
+
 if ~skipflag
   
   %% 0. Initialize
@@ -117,33 +120,30 @@ if ~skipflag
   
   
   % Import MaxQuant data files
-  num_val = cell(Nchannels,1);
-  txt_val = cell(Nchannels,1);
-  for ii = 1:Nchannels
-    tmp = importdata(user.MQfiles{ii});
-    
-    % remove 'sheet1' fields
-    if isfield(tmp,'Sheet1')
+  %[rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
+  tmp = readchromatogramfile2(user.MQfiles{ii},user.Nfraction);
+  
+  % remove 'sheet1' fields
+  if isfield(tmp,'Sheet1')
       tmp = tmp.Sheet1;
-    end
-    fn = fieldnames(tmp);
-    for jj = 1:length(fn)
+  end
+  fn = fieldnames(tmp);
+  for jj = 1:length(fn)
       tmp1 = tmp.(fn{jj});
       if isfield(tmp1,'Sheet1')
-        tmp.(fn{jj}) = tmp.(fn{jj}).Sheet1;
+          tmp.(fn{jj}) = tmp.(fn{jj}).Sheet1;
       end
-    end
-    
-    num_val{ii} = tmp.data;
-    txt_val{ii} = tmp.textdata(:,1);
-    
-    % if txt_val includes protein groups, reduce it to the first protein in each group
-    for jj = 1:size(txt_val{ii},1)
-      tmp = strsplit(txt_val{ii}{jj},';');
-      txt_val{ii}{jj} = tmp{1};
-    end
   end
   
+  num_val{ii} = tmp.data;
+  txt_val{ii} = tmp.textdata;
+  replicates = tmp.replicate;
+  
+  % if txt_val includes protein groups, reduce it to the first protein in each group
+  for jj = 1:size(txt_val{ii},1)
+      tmp = strsplit(txt_val{ii}{jj},';');
+      txt_val{ii}{jj} = tmp{1};
+  end  
   
   % Import Gauss fits for each replicate
   %   Gaus_import: mx6, where m is the number of proteins with a fitted Gaussian
@@ -153,36 +153,36 @@ if ~skipflag
   LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   Nfit = cell(Nchannels,Nreplicates);
   for ci = 1:Nchannels
-    for replicates= 1:Nreplicates
-      Gaus_import{ci,replicates} = importdata(GaussInputFile{ci,replicates});
-      if not(isstruct(Gaus_import{ci,replicates}))
-          Gaus_import{ci,replicates} = struct();
-          Gaus_import{ci,replicates}.data = nan(1,4);
-          Gaus_import{ci,replicates}.textdata = {''};
-          Gaus_import{ci,replicates}.header = '';
-          Nfit{ci,replicates} = 0;
+    for jj = 1:Nreplicates
+      Gaus_import{ci,jj} = importdata(GaussInputFile{ci,jj});
+      if not(isstruct(Gaus_import{ci,jj}))
+          Gaus_import{ci,jj} = struct();
+          Gaus_import{ci,jj}.data = nan(1,4);
+          Gaus_import{ci,jj}.textdata = {''};
+          Gaus_import{ci,jj}.header = '';
+          Nfit{ci,jj} = 0;
           continue
       end
       
       % Ensure Gaus_import.textdata is a single column of protein names
       % simple rule: protein names are the column with the most letters
-      a = (cellfun(@(x) ismember(x,LETTERS),Gaus_import{ci,replicates}.textdata(2:end,:),'uniformoutput',0));
+      a = (cellfun(@(x) ismember(x,LETTERS),Gaus_import{ci,jj}.textdata(2:end,:),'uniformoutput',0));
       nLETTERS = sum(cell2mat(cellfun(@(x) sum(x),a,'uniformoutput',0)));
-      a = (cellfun(@(x) ismember(x,letters),Gaus_import{ci,replicates}.textdata(2:end,:),'uniformoutput',0));
+      a = (cellfun(@(x) ismember(x,letters),Gaus_import{ci,jj}.textdata(2:end,:),'uniformoutput',0));
       nletters = sum(cell2mat(cellfun(@(x) sum(x),a,'uniformoutput',0)));
       [~,I] = max(nLETTERS + nletters);
-      Gaus_import{ci,replicates}.textdata = Gaus_import{ci,replicates}.textdata(:,I);
-      if size(Gaus_import{ci,replicates}.textdata,1) == size(Gaus_import{ci,replicates}.data,1)+1
-        Gaus_import{ci,replicates}.header = Gaus_import{ci,replicates}.textdata{1};
-        Gaus_import{ci,replicates}.textdata = Gaus_import{ci,replicates}.textdata(2:end);
+      Gaus_import{ci,jj}.textdata = Gaus_import{ci,jj}.textdata(:,I);
+      if size(Gaus_import{ci,jj}.textdata,1) == size(Gaus_import{ci,jj}.data,1)+1
+        Gaus_import{ci,jj}.header = Gaus_import{ci,jj}.textdata{1};
+        Gaus_import{ci,jj}.textdata = Gaus_import{ci,jj}.textdata(2:end);
       end
       
       % Count how many Gaussians were fit to each protein name
       % Needed to identify which proteins have a single Gaussian fit
-      Nfit{ci,replicates} = size(Gaus_import{ci,replicates}.textdata,1);
-      for ii = 1:size(Gaus_import{ci,replicates}.textdata,1)
-        protName = Gaus_import{ci,replicates}.textdata{ii};
-        Nfit{ci,replicates}(ii) = sum(ismember(Gaus_import{ci,replicates}.textdata,protName));
+      Nfit{ci,jj} = size(Gaus_import{ci,jj}.textdata,1);
+      for ii = 1:size(Gaus_import{ci,jj}.textdata,1)
+        protName = Gaus_import{ci,jj}.textdata{ii};
+        Nfit{ci,jj}(ii) = sum(ismember(Gaus_import{ci,jj}.textdata,protName));
       end
       
     end
@@ -196,7 +196,7 @@ if ~skipflag
   end
   
   % replicates
-  replicates =  num_val{1}(:,1);
+  %replicates =  num_val{1}(:,1);
   
   % Clean chromatograms
   cleandata = cell(Nchannels,1);
@@ -406,13 +406,7 @@ if ~skipflag
   tic
   fprintf('    6. Make figures')
   
-  
-  try
-    makeFigures_alignment
-  catch
-    warning('makeFigures_alignment failed.')
-  end
-  
+  makeFigures_alignment
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)

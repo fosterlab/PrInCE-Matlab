@@ -42,6 +42,8 @@ if user.skipcomparison==1 && skipflag==0
   skipflag = 1;
 end
 
+% check toolboxes
+checktoolbox;
 
 if ~skipflag
   

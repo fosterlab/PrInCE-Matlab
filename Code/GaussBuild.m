@@ -30,6 +30,9 @@ if user.skipgaussbuild==1
   skipflag = 1;
 end
 
+% check toolboxes
+checktoolbox;
+
 if ~skipflag
   
   %% 0. Initialize
