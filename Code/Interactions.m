@@ -135,6 +135,15 @@ if ~skipflag
   end
   
   number_of_replicates = length(ChromatogramIn) / number_of_channels;
+  % If >1 dataset are analyzed in same folder, GaussIn can have extra reps
+  goodreps = cell(user.Nreplicate,1);
+  for ii = 1:user.Nreplicate
+      goodreps{ii} = ['rep' num2str(ii)];
+  end
+  I = contains(ChromatogramIn, goodreps);
+  ChromatogramIn = ChromatogramIn(I);
+  I = contains(GaussIn, goodreps);
+  GaussIn = GaussIn(I);
   
   % Map each rep*channel to a channel
   rep2channel = zeros(1,length(GaussIn));
