@@ -531,10 +531,10 @@ if ~skipflag
       % vb) choose parameters. in case of ties, take most complexes
       [~,Iopt] = max(best_list.opt);
       if isempty(Iopt)
-        Iopt = 1;
+        Ibest = 1;
       else
-        Iopt = find(best_list.opt == best_list.opt(Iopt));
-        if sum(Iopt)>1
+        Ibest = find(best_list.opt == best_list.opt(Iopt));
+        if length(Ibest)>1
           Ilongest = best_list.NN(Iopt) == nanmax(best_list.NN(Iopt));
           Ibest = Iopt(find(Iopt(Ilongest),1,'first'));
         end
