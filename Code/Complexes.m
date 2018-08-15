@@ -63,6 +63,7 @@ checktoolbox;
 
 if ~skipflag
   
+  try
   
   %% 0. Initialize
   tic
@@ -826,6 +827,9 @@ if ~skipflag
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   
+
+  catch ME
+    disp(ME.message)
 end
 
 diary('off')
