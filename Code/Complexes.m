@@ -830,6 +830,7 @@ if ~skipflag
 
   catch ME
     disp(ME.message)
+  end
 end
 
 diary('off')
