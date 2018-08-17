@@ -377,6 +377,7 @@ if ~skipflag
   best_dens = nan(1,size(csplit,1));
   best_prec = nan(1,size(csplit,1));
   best_I = nan(1,size(csplit,1));
+  Ibest = 1;
   user.optimizeHyperParameters = 1;
   if user.optimizeHyperParameters ==1
     for ii = 1:1%size(csplit,1)
