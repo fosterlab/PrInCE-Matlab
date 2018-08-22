@@ -1,4 +1,4 @@
-function reqtoolbox = checktoolbox()
+function checktoolbox()
 
 % CHECKTOOLBOX Test if required toolboxes are installed.
 %
