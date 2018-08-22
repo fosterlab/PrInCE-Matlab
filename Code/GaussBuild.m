@@ -223,6 +223,7 @@ if ~skipflag
         
       catch
         Try_Fit(ci,ri)=0;
+        fprintf(['\n    failed to fit fit ' txt_val_nonbc{ri+1}])
       end
       
     end

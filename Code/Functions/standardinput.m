@@ -123,6 +123,7 @@ if ~isempty(user.majorproteingroupsfile)
   end
   
   % Check all lines
+  fgetl(fid); % header
   while ~feof(fid)
     current_line = fgetl(fid);
     current_line = strsplit(current_line,',');

@@ -9,7 +9,7 @@
 try
   SEC_fit=polyfit(SEC_size_alignment(1,:),SEC_size_alignment(2,:),1);
 catch
-  disp('Gauss_Build: writeOutput: SEC fitting failed. Size of Complex will be zero.')
+  %disp('Gauss_Build: writeOutput: SEC fitting failed. Size of Complex will be zero.')
   SEC_fit = [0 0];
 end
 
