@@ -13,8 +13,8 @@ xclean = (1:n2) - (n2-n1)/2;
 try
   for ii = 1:Nchannels
     
-    I = find(diff(replicate)>0);
-    I = [I; length(replicate)];
+    I = find(diff(replicate{ii})>0);
+    I = [I; length(replicate{ii})];
     clear I2
     A = cell(length(I),1);
     A{1} = rawdata{ii}(1:I(1),:);
@@ -61,8 +61,8 @@ try
     
     ax = axis;
     
-    I = find(diff(replicate)>0);
-    I = [I; length(replicate)];
+    I = find(diff(replicate{ii})>0);
+    I = [I; length(replicate{ii})];
     clear I2
     A = cell(length(I),1);
     A{1} = cleandata{ii}(1:I(1),:);
