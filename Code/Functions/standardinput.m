@@ -97,7 +97,7 @@ end
 if goodReplicates==1 && goodFractions ==1
   ss = sprintf('Detected %s FRACTIONS and %s REPLICATES in condition files. If that is not correct, check that condition files are correctly formatted.',...
     num2str(user.Nfraction), num2str(user.Nreplicate));
-  sprintf(ss)
+  disp(ss);
   msgbox(ss, 'Replicates and fractions');
 elseif goodReplicates==1 && goodFractions == 0
   ss = sprintf('Detected %s REPLICATES in condition files. If that is not correct, check that condition files are correctly formatted.',...
