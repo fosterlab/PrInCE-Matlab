@@ -19,6 +19,10 @@ fid = fopen(fn);
 header = fgetl(fid);
 header = strsplit(header,',');
 
+if nargin<2
+  Nfraction = sum(~cellfun('isempty', header));
+end
+
 cc = 0;
 txt_val = cell(10^6,1);
 txt_val{1} = header{1};
@@ -31,7 +35,10 @@ while ~feof(fid)
   
   Nfractions_this_row = min([Nfraction, length(t1)-2]);
   
+  % remove quotes and trailing white space
   txt_val{cc+1} = strrep(t1{1},'"','');
+  txt_val{cc+1} = strtrim(txt_val{cc+1});
+  
   rep(cc) = str2double(t1{2});
   for kk = 1:Nfractions_this_row
     num_val(cc,kk) = str2double(t1{kk+2});

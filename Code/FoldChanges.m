@@ -726,6 +726,8 @@ if ~skipflag
         %locate protein to compare
         Iraw = find(strcmp(protName,txt_val{1}(:,2)) & num_val{1}(:,1)==rep);
         rounded_center = floor(Finalised_Master_Gaussian_list.Center(ii,hh)); % determine the center of the Gaussian
+        % skip if not found in this condition/replicate
+        if sum(Iraw)==0; continue; end
         
         %Reset rounded_center if Gaussian found in replicate
         %Check if a Gaussian peak was detected within two fractions of this master Gaussian value?
