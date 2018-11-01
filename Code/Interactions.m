@@ -76,62 +76,32 @@ if ~skipflag
   dd = dir([maindir '/Output/tmp/Adjusted_*_Combined_OutputGaus.csv']);
   
   % Define Raw SILAC ratios data. Dynamically find filenames
-  if user.skipalignment==1 || isempty(dd)
-    % If Alignment was skipped, use raw data + Gauss_Build output
-    
-    dd = dir([maindir 'Output/tmp/*_Raw_data_maxquant_rep*.csv']);
-    isgood = zeros(size(dd));
-    for ii = 1:length(dd)
-      for jj = 1:length(user.silacratios)
-        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
-      end
+  % ALWAYS skip alignment for Interactions.m
+  
+  dd = dir([maindir 'Output/tmp/*_Raw_data_maxquant_rep*.csv']);
+  isgood = zeros(size(dd));
+  for ii = 1:length(dd)
+    for jj = 1:length(user.silacratios)
+      isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
     end
-    dd = dd(isgood==1);
-    ChromatogramIn = cell(size(dd));
-    for di = 1:length(dd)
-      ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
+  end
+  dd = dd(isgood==1);
+  ChromatogramIn = cell(size(dd));
+  for di = 1:length(dd)
+    ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
+  end
+  
+  dd = dir([maindir 'Output/tmp/*Combined_OutputGaus_rep*csv']);
+  isgood = zeros(size(dd));
+  for ii = 1:length(dd)
+    for jj = 1:length(user.silacratios)
+      isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
     end
-    
-    dd = dir([maindir 'Output/tmp/*Combined_OutputGaus_rep*csv']);
-    isgood = zeros(size(dd));
-    for ii = 1:length(dd)
-      for jj = 1:length(user.silacratios)
-        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
-      end
-    end
-    dd = dd(isgood==1);
-    GaussIn = cell(size(dd));
-    for di = 1:length(dd)
-      GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
-    end
-  else
-    % If Alignment was not skipped, use Alignment output
-    
-    dd = dir([maindir 'Output/tmp/Adjusted*Raw_for_ROC_analysis*rep*csv']);
-    isgood = zeros(size(dd));
-    for ii = 1:length(dd)
-      for jj = 1:length(user.silacratios)
-        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
-      end
-    end
-    dd = dd(isgood==1);
-    ChromatogramIn = cell(size(dd));
-    for di = 1:length(dd)
-      ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
-    end
-    
-    GaussIn = cell(size(dd));
-    dd = dir([maindir 'Output/tmp/Adjusted_Combined_OutputGaus*rep*csv']);
-    isgood = zeros(size(dd));
-    for ii = 1:length(dd)
-      for jj = 1:length(user.silacratios)
-        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
-      end
-    end
-    dd = dd(isgood==1);
-    for di = 1:length(dd)
-      GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
-    end
+  end
+  dd = dd(isgood==1);
+  GaussIn = cell(size(dd));
+  for di = 1:length(dd)
+    GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
   end
   
   number_of_replicates = length(ChromatogramIn) / number_of_channels;
