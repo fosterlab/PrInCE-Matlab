@@ -357,8 +357,7 @@ if user.fastgaussbuild==0
         title('Fitted Gaussians','fontsize',10)
         axis(ax)
         
-        
-        sf = [figdir '/Chromatograms/Replicate' num2str(reps2plot(ii2)) ,'_',txt_val{1}{ii+1,1},'.png'];
+        sf = [figdir '/Chromatograms/Replicate' num2str(reps2plot(ii2)) ,'_',proteins2plot{ii},'.png'];
         saveas(gcf, sf);
       catch ME
         disp(ME.message)
