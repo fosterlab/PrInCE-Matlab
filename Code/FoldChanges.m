@@ -164,6 +164,7 @@ if ~skipflag
     while ~feof(fid)
       cc = cc+1;
       t = fgetl(fid);
+      t = strrep(t,'"','');
       t1 = strsplit(t,',');
       if cc ==1
         num_val{ii} = nan(10^6,length(t1)-1);
