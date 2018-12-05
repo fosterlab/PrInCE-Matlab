@@ -91,6 +91,7 @@ for ii = 1:cc
   end
   
   cmplx = complexes{ii};
+  cmplx = strrep(cmplx,'"',' ');
   cmplx = strrep(cmplx,',',' ');
   cmplx = strrep(cmplx,';',' ');
   cmplx = strsplit(cmplx,' ');
