@@ -5,3 +5,4 @@
 *.pdf -crlf -diff -merge
 *.jpg -crlf -diff -merge
 *.png -crlf -diff -merge
+./Standalone/Windows/PrInCEInstaller_web.exe filter=lfs diff=lfs merge=lfs -text

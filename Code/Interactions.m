@@ -245,10 +245,12 @@ if ~skipflag
       frac1 = max([1 tmp(find(tmp<user.Nfraction/2,1,'last'))]); % start of real data
       frac2 = min([size(Chromatograms_raw,2) tmp(find(tmp>user.Nfraction/2,1,'first'))]); % end of real data
       
-      % Replace NaN values with 0.05
+      % Replace NaN values with lowestGoodValue
+      bottomPercentile = prctile(Chromatograms_raw(Chromatograms_raw > 0), 1);
       Chromatograms = Chromatograms_raw;
       I = find(isnan(Chromatograms));
-      Chromatograms(I)= 0.05 * rand(size(I));
+      Chromatograms(I)= bottomPercentile * rand(size(I)) * 5;
+      %Chromatograms(I) = rand(size(I)) * .5;
       
       % remove gaussian with centers below frac1
       Ibad = zeros(size(C_raw));

@@ -168,7 +168,7 @@ for ii = 1:size(Members)
   n = length(I);
   Density(ii) = sum(m(:)) / n / n;
 end
-I = Density(ii)<density_threshold;
+I = Density<density_threshold;
 Density(I) = [];
 Members(I) = [];
 Members = Members(~cellfun('isempty',Members));

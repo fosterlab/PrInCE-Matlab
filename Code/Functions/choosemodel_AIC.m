@@ -102,6 +102,7 @@ for ii=1:Ngaussmax
     iter = iter+1;
 
     ics = makeics(coFracProfile,ii); % make initial conditions
+    ics(2:3:end) = ics(2:3:end) + x(1);
     set(fo{ii},'startpoint',ics(1:3*ii)); % Include ICs in fit options
     curveFit{ii} = fit(x,coFracProfile,ft{ii},fo{ii}); 
     yhat = feval(curveFit{ii},x);
@@ -111,7 +112,7 @@ for ii=1:Ngaussmax
     
     %fitAgain = R2(ii)<0.5 & iter<=MaxIter;
     cf = coeffvalues(curveFit{ii});
-    fitAgain = sum(cf(1:3:end))<0.5 & iter<=MaxIter;
+    fitAgain = sum(cf(1:3:end))<nanmax(coFracProfile)/10 & iter<=MaxIter;
   end
 end
 
@@ -161,7 +162,7 @@ model.AICc = AICc;
 model.BIC = BIC;
 
 % Throw out Gaussians whose height is less than 15% of the max?
-if 1
+if 0
   % height < 15% of max | Center is out of bounds
   I = find(model.coeffs(1:3:end) < max(coFracProfile)*0.15 ...
       | model.coeffs(2:3:end)<x(1) | model.coeffs(2:end:end)>x(end)) * 3 - 2;
@@ -182,6 +183,46 @@ if 1
   end
   tmp = corrcoef(yfit,coFracProfile);
   model.adjrsquare = tmp(1,2).^2;
+end
+
+% Throw out Gaussians if they don't change R^2? or H<0?
+if 0
+    new_R2 = zeros(1,Ngauss);
+    xfit = x;
+    for ii = 1:Ngauss
+        yfit = zeros(size(xfit));
+        for kk = 1:Ngauss
+            if kk==ii; continue; end
+            H = model.coeffs(1 + (kk-1)*3);
+            C = model.coeffs(2 + (kk-1)*3);
+            W = model.coeffs(3 + (kk-1)*3);
+            yfit = yfit + H*exp(-((xfit-C)/W).^2);
+        end
+        tmp = corrcoef(yfit,coFracProfile);
+        new_R2(ii) = tmp(1,2).^2;
+    end
+    H = model.coeffs(1:3:end);
+    % does the removal change R^2 by less than 1%?
+    Iremove = find(abs(new_R2 - model.adjrsquare) / model.adjrsquare < 0.01 | ...
+        H<0);
+    
+    I2 = zeros(length(Iremove)*3,1);
+    for ii = 1:length(Iremove)
+        I2((ii-1)*3 + 1 : ii*3) = Iremove(ii)*3 + [-2 -1 0];
+    end
+    model.coeffs(I2) = [];
+    model.CIs(:,I2) = [];
+    Ngauss = Ngauss - length(Iremove);
+    xfit = x;
+    yfit = zeros(size(xfit));
+    for kk = 1:Ngauss
+        H = model.coeffs(1 + (kk-1)*3);
+        C = model.coeffs(2 + (kk-1)*3);
+        W = model.coeffs(3 + (kk-1)*3);
+        yfit = yfit + H*exp(-((xfit-C)/W).^2);
+    end
+    tmp = corrcoef(yfit,coFracProfile);
+    model.adjrsquare = tmp(1,2).^2;
 end
 
 model.Ngauss = Ngauss;
@@ -208,11 +249,11 @@ ss = 2;
 ics = nan(1,15);
 for ii=1:5
   if ii<=length(pks)
-    ics((ii-1)*3 + 1) = pks(ii) + rand-.5; % A, height
+    ics((ii-1)*3 + 1) = pks(ii) * (.5 + rand); % A, height
     ics((ii-1)*3 + 2) = pksI(ii) + rand*3-1.5; % mu, center
     ics((ii-1)*3 + 3) = ss + rand-.5; % sigma, width
   else
-    ics((ii-1)*3 + 1) = max(coFracProfile) + rand-.5; % A, height
+    ics((ii-1)*3 + 1) = max(coFracProfile) * (.5 + rand); % A, height
     ics((ii-1)*3 + 2) = rand*length(coFracProfile) + rand*3-1.5; % mu, center
     ics((ii-1)*3 + 3) = ss + rand-.5; % sigma, width
   end
