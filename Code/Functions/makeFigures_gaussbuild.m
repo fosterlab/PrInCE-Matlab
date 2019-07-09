@@ -305,7 +305,11 @@ if user.fastgaussbuild==0
         xlim([xraw(1)-1 xraw(end)+1])
         y = ylim;
         if y(1)>0
+<<<<<<< HEAD
           y(1) = lowestGoodValue;
+=======
+          y(1) = 0.01;
+>>>>>>> d22d0e270100e489492f88d054aca5edfc6c7fed
         end
         ylim(y)
         xlabel('Fraction','fontsize',10)
