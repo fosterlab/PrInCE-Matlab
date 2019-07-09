@@ -20,11 +20,8 @@ if nargin<5
     iterMax = 20;
 end
 
-<<<<<<< HEAD
 % Remove self interactions
 %M(eye(size(M,1))==1) = 0;
-=======
->>>>>>> d22d0e270100e489492f88d054aca5edfc6c7fed
 
 % Reduce M to remove rows/columns with zero sum
 Inotzero = find(not(sum(M)==0));
@@ -58,7 +55,6 @@ M(Inotzero, Inotzero) = Mnozeros;
 
 
 % Turn MCL-matrix M into a cell array of clusters
-<<<<<<< HEAD
 M2 = M>0;
 cc = 0;
 Icomps = find(sum(M2,2)>2);
@@ -85,13 +81,3 @@ end
 Iremove = cell2mat(cellfun(@(x) isequal(x,'-1'),clusters, 'UniformOutput', 0));
 clusters(Iremove) = [];
 
-=======
-M = M>0;
-cc = 0;
-Icomps = find(sum(M,2)>2);
-clusters = cell(length(Icomps),1);
-for uu = 1:length(Icomps)
-    cc = cc+1;
-    clusters{cc} = find(M(Icomps(uu),:)>0);
-end
->>>>>>> d22d0e270100e489492f88d054aca5edfc6c7fed

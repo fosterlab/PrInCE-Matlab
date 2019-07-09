@@ -52,19 +52,11 @@ end
 
 
 % 1. write M to file
-<<<<<<< HEAD
 [ia,ib] = find(triu(M)>0);
 fn_tmpM = [this_path '/.Mtmp.txt'];
 fid = fopen(fn_tmpM, 'w');
 for ii = 1:length(ia)
   fprintf(fid,'%d %d %6.4f\n',ia(ii),ib(ii),M(ia(ii),ib(ii)));
-=======
-[ia,ib] = find(M>0);
-fn_tmpM = [this_path '/.Mtmp.txt'];
-fid = fopen(fn_tmpM, 'w');
-for ii = 1:length(ia)
-  fprintf(fid,'%d %d %6.4f\n',ia,ib,M(ia(ii),ib(ii)));
->>>>>>> d22d0e270100e489492f88d054aca5edfc6c7fed
 end
 fclose(fid);
 
@@ -83,11 +75,7 @@ cc = 0;
 while ~feof(fid)
   cc = cc+1;
   t1 = strsplit(fgetl(fid),'\t');
-<<<<<<< HEAD
   Members{cc} = nan(1,length(t1));
-=======
-  Members{cc} = nan(length(t1));
->>>>>>> d22d0e270100e489492f88d054aca5edfc6c7fed
   for ii = 1:length(t1)
     Members{cc}(ii) = str2double(t1{ii});
   end

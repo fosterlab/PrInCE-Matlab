@@ -75,7 +75,6 @@ if ~skipflag
   replicate = cell(size(experimental_channels));
   Nfractions = 0;
   Nproteins = 0;
-<<<<<<< HEAD
   lowestGoodValue = 10^12;
   for ii = 1:Nchannels
     %[rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
@@ -122,50 +121,6 @@ if ~skipflag
     
     % Find the minimum non-zero value
     lowestGoodValue = min(lowestGoodValue, min(rawdata{ii}(rawdata{ii}(:) > 0)));
-=======
-  for ii = 1:Nchannels
-    %[rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
-    tmp = readchromatogramfile2(user.MQfiles{ii},user.Nfraction);
-    
-    % remove 'sheet1' fields
-    if isfield(tmp,'Sheet1')
-      tmp = tmp.Sheet1;
-    end
-    fn = fieldnames(tmp);
-    for jj = 1:length(fn)
-      tmp1 = tmp.(fn{jj});
-      if isfield(tmp1,'Sheet1')
-        tmp.(fn{jj}) = tmp.(fn{jj}).Sheet1;
-      end
-    end
-    
-    rawdata{ii} = tmp.data;
-    txt_val{ii} = tmp.textdata;
-    replicate{ii} = tmp.replicate;
-    
-    % if txt_val includes protein groups, reduce it to the first protein in each group
-    for jj = 1:size(txt_val{ii},1)
-      tmp = strsplit(txt_val{ii}{jj},';');
-      txt_val{ii}{jj} = tmp{1};
-    end
-    
-    % if rawdata & txt_val are the same length, assume they both have headers, remove rawdata header
-    if size(rawdata{ii},1)==size(txt_val{ii},1)
-      rawdata{ii} = rawdata{ii}(2:end,:);
-    end
-    
-    % Remove first column of rawdata as the replicate
-    if sum(mod(replicate{ii},1)~=0)>0
-      disp('Warning: Gauss_Build: Replicate column in chromatogram tables is badly formatted.')
-      disp('Warning: Gauss_Build: Assuming all chromatograms are from a single replicate...')
-      replicate{ii} = ones(size(rawdata{ii},1),1);
-    end
-    
-    % Count the number of proteins and fractions
-    [tmp1, tmp2] = size(rawdata{ii});
-    Nproteins = max(Nproteins,tmp1);
-    Nfractions = max(Nfractions,tmp2);
->>>>>>> d22d0e270100e489492f88d054aca5edfc6c7fed
   end
   
   tt = toc;
@@ -228,27 +183,17 @@ if ~skipflag
       
       % get a single clean chromatogram
       clean_chromatogram = cleandata_nonbc(ri,:);
-<<<<<<< HEAD
       raw_chromatogram = rawdata_nonbc(ri,1:Nfractions);
       
       % don't fit Gaussians if there are less than 5 good data points in the chromatogram
       if sum(raw_chromatogram > lowestGoodValue) < minGoodValues
-=======
-      
-      % don't fit Gaussians if there are less than 5 good data points in the chromatogram
-      if sum(clean_chromatogram > 0.05)<minGoodValues
->>>>>>> d22d0e270100e489492f88d054aca5edfc6c7fed
         continue
       end
       Try_Fit(ci,ri)=1;
       
       % Throw out any models where the number of non-imputed data points, i.e. the real data, is less than
       % the number of parameters.
-<<<<<<< HEAD
       Ngaussmax = floor(sum(rawdata_nonbc(ri,1:Nfractions)>lowestGoodValue)/3);
-=======
-      Ngaussmax = floor(sum(rawdata_nonbc(ri,1:Nfractions)>0.01)/3);
->>>>>>> d22d0e270100e489492f88d054aca5edfc6c7fed
       Ngaussmax = min([5 Ngaussmax]);
       
       % fit 5 models and chose the best one
@@ -298,11 +243,7 @@ if ~skipflag
     gausscount = 0;
     for ri = 1:size(cleandata{ci},1) % loop over proteins
       % don't fit Gaussians if there are less than 5 good data points in the chromatogram
-<<<<<<< HEAD
       if sum(cleandata{ci}(ri,:) > lowestGoodValue)>5
-=======
-      if sum(cleandata{ci}(ri,:) > 0.05)>5
->>>>>>> d22d0e270100e489492f88d054aca5edfc6c7fed
         Ng = length(Coef{ci,ri})/3;
         rep = replicate{ci}(ri);
         for gi = 1:Ng
