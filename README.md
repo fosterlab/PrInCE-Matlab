@@ -21,7 +21,7 @@ Original versions of the analysis were written by Anders Kristensen<sup>1</sup> 
 
 ### 1. Download PrInCE.
 
-In a browser, go to to [https://github.com/fosterlab/PrInCE](https://github.com/fosterlab/PRInCE). Click the green "Clone or Download" button in the top right. Then click "Download ZIP".
+Click the green "Clone or Download" button in the top right of the github page ([https://github.com/fosterlab/PrInCE-Matlab](https://github.com/fosterlab/PRInCE-Matlab)). Then click "Download ZIP".
 
 ![Download pipeline from github](/ReadmeFigures/01download.jpg?raw=true)
 
