@@ -103,7 +103,7 @@ Mac and PC users can run PrInCE without owning Matlab. This requires downloading
 2. Move prince.exe (Windows) or prince.app and run_prince.sh (Mac) to the same folder as prince.m (i.e. the PrInCE-master folder).
     - These files are in the "application" folder created by PrInCEInstaller_web.
 4. Run the standalone prince application.
-    - Mac: Open a Terminal window. Navigate to the PrInCE-master folder by typing 'cd /path/to/PrInCE-master/', where "/path/to/PrInCE-master/" is the first path copied from the Confirmation screen (see above). Run prince by typing './run_prince.sh /path/to/Matlab/Runtime/', where "/path/to/Matlab/Runtime/" is the second path copied from the Confirmation screen. Typical location is /Applications/MATLAB/MATLAB_Runtime/v92/. i.e. in Terminal, after navigating to the PrInCE-master folder, type './run_prince.sh /Applications/MATLAB/MATLAB_Runtime/v92/'.
+    - Mac: Open a Terminal window. Navigate to the PrInCE-master folder by typing `cd /path/to/PrInCE-master/`, where "/path/to/PrInCE-master/" is the first path copied from the Confirmation screen (see above). Run prince by typing `./run_prince.sh /path/to/Matlab/Runtime/`, where "/path/to/Matlab/Runtime/" is the second path copied from the Confirmation screen. Typical location is /Applications/MATLAB/MATLAB_Runtime/v92/. e.g. in Terminal, after navigating to the PrInCE-master folder, type `./run_prince.sh /Applications/MATLAB/MATLAB_Runtime/v92/`.
     - Windows: Run prince.exe (double-click the prince.exe icon). __N.B. Only double-click prince.exe once!__ There's a lag of 5-10 seconds. __A common mistake is to start prince.exe multiple times.__
 
 Important: Windows users may have to turn off the "check apps and files" in Windows Defender.
