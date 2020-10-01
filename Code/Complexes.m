@@ -57,13 +57,9 @@ if user.skipcomplexes==1
   skipflag = 1;
 end
 
-% check toolboxes
-checktoolbox;
-
 
 if ~skipflag
   
-  try
   
   %% 0. Initialize
   tic
@@ -92,7 +88,7 @@ if ~skipflag
     for jj = 1:length(dd)
       dd_name_length(jj) = length(dd(jj).name);
     end
-    if sum(dd_name_length==40 | dd_name_length==39)>0
+    if sum(dd_name_length==40)>0
       I = find(dd_name_length==40,1,'last');
       warning('\n    Complexes: Could not find %s',['Final_Interactions_list_' num2str(desiredPrecision(ii)*100) '_precision.csv'])
       warning('\n    Using %s instead. Continuing...\n\n',dd(I).name)
@@ -208,7 +204,7 @@ if ~skipflag
     end
     
     if ismember(corumComplex{ii}(end),',')
-      corumComplex{ii} = corumComplex{ii}(1:end-1);
+      corumComplex{ii} = corumComplex{ii}(1:end-1); 
     end
   end
   
@@ -265,7 +261,6 @@ if ~skipflag
   end
   
   corumComplex2 = cell(size(corumComplex));
-  Icor = 1:length(corumComplex);
   for ii = 1:length(corumComplex)
     cmplx = corumComplex{ii};
     
@@ -287,7 +282,6 @@ if ~skipflag
       corumComplex2{ii} = I;
     end
   end
-  Icor(cellfun('isempty',corumComplex2)) = [];
   corumComplex2(cellfun('isempty',corumComplex2)) = [];
   
   % Determine how to split up files
@@ -354,36 +348,22 @@ if ~skipflag
   tic
   fprintf('    3. Optimize parameters for complex-building')
   
-  pRange = [1 50 100 500 5000];
-  precRange = [.5 .6 .8];
-  Irange = [2 4 10 20];
-  densRange = [0.001 .1 .2 .3 .4];
+  pRange = [0 100 500 2000 10000 50000 10^6];
+  %densRange = [0 0.1 0.2 0.3 0.4 0.5 0.75 1];
+  precRange = linspace(min(interactionPairs2(:,3)),1,8);
   
-  sn = nan(length(pRange),length(precRange),length(Irange),length(densRange));
-  mr = nan(size(sn));
-  ga = nan(size(sn));
-  ppv = nan(size(sn));
-  opt_Ncomplex = nan(size(sn));
-  opt_prctSize = nan(size(sn));
-  dens = nan(size(sn));
-  
-  best_list.Members = {''};
-  best_list.opt = [];
-  best_list.NN = [];
-  best_list.params = {[precRange(1) pRange(1) Irange(1) densRange(1)]};
-  iter_best = 0;
+  ga = nan(length(pRange),length(precRange));
+  mr = nan(length(pRange),length(precRange));
+  Ncomplex = nan(length(pRange),length(precRange));
+  dens = nan(length(pRange),length(precRange));
   
   best_p = nan(1,size(csplit,1));
   best_dens = nan(1,size(csplit,1));
   best_prec = nan(1,size(csplit,1));
-  best_I = nan(1,size(csplit,1));
-  Ibest = 1;
   user.optimizeHyperParameters = 1;
   if user.optimizeHyperParameters ==1
-    for ii = 1:1%size(csplit,1)
+    for ii = 1:size(csplit,1)
       for mm = 1:length(precRange)
-        s = ['\nprec=' num2str(precRange(mm))];
-        fprintf(s)
         
         if csplit(ii,1) == 0
           I1 = ones(size(interactionPairs2,1),1);
@@ -408,151 +388,65 @@ if ~skipflag
           intMatrix(x(1),x(2)) = intMatrix(x(1),x(2)) + nrep;  % add nrep
           intMatrix(x(2),x(1)) = intMatrix(x(2),x(1)) + nrep;
         end
-        intMatrix(intMatrix<0) = 0;
-        intMatrix = (intMatrix - nanmin(intMatrix(:))) / (nanmax(intMatrix(:)) - nanmin(intMatrix(:)));
+        %intMatrix(intMatrix>0) = 1;
         
         for jj = 1:length(pRange)
-          s = ['\n  p=' num2str(pRange(jj))];
+          s = ['\n    p=' num2str(pRange(jj))];
           fprintf(s)
           
-          % First round: ClusterONE
-          COne_members = myclusterone(intMatrix, pRange(jj), 0);
-          if isempty(COne_members); continue; end
+          % ii) make complexes
+          [Members, Density] = myclusterone(intMatrix, pRange(jj), 0);
+          if isempty(Members); continue; end
           
-          % Second round: MCL
-          for yy = 1:length(Irange)
-            s = ['\n    I=' num2str(Irange(yy))];
-            fprintf(s)
-            
-            inflate_param = Irange(yy);
-            cc = 0;
-            MCL_members = cell(10^5,1);
-            for kk = 1:length(COne_members)
-              tmp = intMatrix(COne_members{kk},COne_members{kk});
-              tmp2 = mymcl(tmp, inflate_param);
-              Icomps = find(sum(tmp2,2)>2);
-              for uu = 1:length(Icomps)
-                cc = cc+1;
-                MCL_members{cc} = COne_members{kk}(tmp2(Icomps(uu),:)>0);
-              end
-            end
-            MCL_members = MCL_members(1:cc);
-            
-            % Remove small or low-density complexes
-            for bb = 1:length(densRange)
-              Members2 = MCL_members;
-              s = ['\n      dens=' num2str(densRange(bb))];
-              fprintf(s)
-              
-              dens_comp = nan(size(Members2));
-              for kk = 1:size(Members2)
-                I = Members2{kk};
-                m = intMatrix(I,I);
-                n = length(I);
-                dens_comp(kk) = sum(m(:)) / (n * (n-1)/2);
-                if n<3 || dens_comp(kk) < densRange(bb)
-                  Members2{kk} = [];
-                end
-              end
-              Members2(cellfun('isempty',Members2)) = [];
-              if isempty(Members2); continue; end
-              
-              % Run the remaining interactions through MCL
-              Iincomplex = unique([Members2{:}]);
-              intMatrix2 = intMatrix;
-              intMatrix2(Iincomplex,Iincomplex)=0;
-              % need to remove columns/rows with 0 interactions
-              Inot0 = find(nansum(intMatrix2)>0);
-              intMatrix2 = intMatrix2(Inot0,Inot0);
-              tmp2 = mymcl(intMatrix2, inflate_param);
-              Icomps = find(sum(tmp2,2)>2);
-              cc = length(Members2);
-              for uu = 1:length(Icomps)
-                cc = cc+1;
-                Members2{cc} = Inot0(tmp2(Icomps(uu),:)>0);
-              end
-              
-              % Final removal of low density complexes
-              dens_comp = nan(size(Members2));
-              for kk = 1:size(Members2,1)
-                I = Members2{kk};
-                m = intMatrix(I,I);
-                n = length(I);
-                dens_comp(kk) = sum(m(:)) / (n * (n-1));
-                if n<3 || dens_comp(kk) < densRange(bb)
-                  Members2{kk} = [];
-                end
-              end
-              Members2(cellfun('isempty',Members2)) = [];
-              if isempty(Members2); continue; end
-              
-              % Merge complexes with Jaccard>.9
-              if not(isequal(Members2{1}, Members2))
-                JJ = nan(length(Members2), length(Members2));
-                for kk = 1:length(Members2)
-                  for rr = 1:length(Members2)
-                    if kk>=rr; continue; end
-                    JJ(rr,kk) = length(intersect(Members2{kk}, Members2{rr})) / ...
-                      length(unique( [Members2{kk},Members2{rr}] ));
-                    if JJ(rr,kk)==1
-                      Members2{kk} = [];
-                      JJ(rr,kk) = 0;
-                    end
-                  end
-                end
-                % Remove empty complexes
-                I = cellfun('isempty',Members2);
-                Members2(I) = [];
-              end
-              
-              % iv) assess how good the complexes are
-              [ga(jj,mm,yy,bb),sn(jj,mm,yy,bb),ppv(jj,mm,yy,bb)] = geomacc(Members2,corumComplex2);
-              mr(jj,mm,yy,bb) = matchingratio(Members2,corumComplex2);
-              opt_Ncomplex(jj,mm,yy,bb) = length(Members2);
-              tmp = nan(size(Members2));
-              for kk = 1:length(Members2)
-                tmp(kk) = length(Members2{kk});
-              end
-              opt_prctSize(jj,mm,yy,bb) = prctile(tmp,95);
-              
-              % v) save the best list for  later
-              %optMatrix = mr .* sn;
-              optMatrix = mr;
-              if optMatrix(jj,mm,yy,bb) >= nanmax(optMatrix(:))
-                iter_best = iter_best + 1
-                best_list.Members{iter_best} = Members2;
-                best_list.opt(iter_best) = optMatrix(jj,mm,yy,bb);
-                best_list.NN(iter_best) = length(Members2);
-                best_list.params{iter_best} = [precRange(mm) pRange(jj) Irange(yy) densRange(bb)];
-              end
+          %for mm = 1:length(densRange)
+          %s = ['\n        densThresh=' num2str(densRange(mm))];
+          %fprintf(s)
+          
+          Members2 = Members;
+          
+          % Remove small or low-density complexes
+          dens_comp = nan(size(Members2));
+          for kk = 1:size(Members2)
+            I = Members2{kk};
+            m = intMatrix(I,I);
+            n = length(I);
+            dens_comp(kk) = sum(m(:)) / (n * (n-1)/2);
+            if n<3 || dens_comp(kk) < 0.1
+              Members2{kk} = [];
             end
           end
+          Members2(cellfun('isempty',Members2)) = [];
+          if isempty(Members2); continue; end
+          
+          % iv) assess how good the complexes are
+          %ga(jj,mm) = geomacc(Members2,corumComplex2);
+          mr(jj,mm) = matchingratio(Members2,corumComplex2);
+          Ncomplex(jj,mm) = length(Members2);
+          %dens(jj,mm) = mean(Density);
+          
+          %end
         end
       end
       
-      % vb) choose parameters. in case of ties, take most complexes
-      [~,Iopt] = max(best_list.opt);
-      if isempty(Iopt)
-        Ibest = 1;
-      else
-        Ibest = find(best_list.opt == best_list.opt(Iopt));
-        if length(Ibest)>1
-          Ilongest = best_list.NN(Iopt) == nanmax(best_list.NN(Iopt));
-          Ibest = Iopt(find(Iopt(Ilongest),1,'first'));
-        end
-      end
-      best_prec = best_list.params{Ibest}(1);
-      best_p = best_list.params{Ibest}(2);
-      best_I = best_list.params{Ibest}(3);
-      best_dens = best_list.params{Ibest}(4);
-      Members2_keep = best_list.Members{Ibest};
+      % va) Make matrix to optimize on
+      %ga = (ga - min(ga(:))) / (max(ga(:)) - min(ga(:)));
+      %mr = (mr - min(mr(:))) / (max(mr(:)) - min(mr(:)));
+      %dens = (dens - min(dens(:))) / (max(dens(:)) - min(dens(:)));
+      optMatrix = mr;
+      
+      % vb) choose parameters
+      [~,I] = max(optMatrix(:));
+      [i1, i2] = ind2sub(size(optMatrix),I);
+      best_p(ii) = pRange(i1);
+      %best_dens(ii) =  densRange(i2);
+      best_prec(ii) = precRange(i2);
+      best_dens(ii) = 0;
     end
   else
     fprintf(' ... skipping optimization ')
-    best_p = 500;
-    best_dens = 0.1;
-    best_prec = 0.6;
-    best_I = 4;
+    best_p = 500 * ones(size(csplit,1),1);
+    best_dens = 0.1 * ones(size(csplit,1),1);
+    best_prec = 0.6 * ones(size(csplit,1),1);
   end
   
   
@@ -566,16 +460,9 @@ if ~skipflag
   tic
   fprintf('    4. Build final complex list')
   
-  Ncomplex = zeros(size(csplit,1),1);
-  clear CL
+  Ncomplex = zeros(countPrec,1);
   for ii = 1:size(csplit,1)
-    ii
-    CL(ii).Members = {''};
-    CL(ii).Density = 0;
-    CL(ii).nn = 0;
-    CL(ii).Connections = {0};
-    CL(ii).GeomAcc = 0;
-    CL(ii).MatchRatio = 0;
+    
     if csplit(ii,1) == 0
       I1 = ones(size(interactionPairs2,1),1);
     else
@@ -588,7 +475,7 @@ if ~skipflag
     end
     I = I1==1 & I2==1;
     ip2_subset = interactionPairs2(I,:);
-    I = ip2_subset(:,3)>best_prec;
+    I = ip2_subset(:,3)>best_prec(ii);
     ip2_subset = ip2_subset(I,:);
     
     % This makes intMatrix from interactionPairs2.
@@ -599,34 +486,14 @@ if ~skipflag
       intMatrix(x(1),x(2)) = nrep;  % add nrep
       intMatrix(x(2),x(1)) = nrep;
     end
+    intMatrix = intMatrix - user.desiredPrecision;
     intMatrix(intMatrix<0) = 0;
-    intMatrix = (intMatrix - nanmin(intMatrix(:))) / (nanmax(intMatrix(:)) - nanmin(intMatrix(:)));
+    %intMatrix = intMatrix-0.75;
+    %intMatrix(intMatrix<0) = 0;
+    %intMatrix = intMatrix.^10;
     
-    % First round: ClusterONE
-    clustONE_members = myclusterone(intMatrix, best_p, 0);
-    if isempty(clustONE_members); continue; end
-    
-    % Second round: MCL
-    cc = 0;
-    CL(ii).Members = cell(10^5,1);
-    for jj = 1:length(clustONE_members)
-      clustONE_intMat = intMatrix(clustONE_members{jj},clustONE_members{jj});
-      tmp2 = mymcl(clustONE_intMat, best_I);
-      if sum(isnan(tmp2(:)))>0; warning('MCL predicted complex with density = 0'); end
-      Icomps = find(sum(tmp2,2)>2);
-      for uu = 1:length(Icomps)
-        cc = cc+1;
-        CL(ii).Members{cc} = clustONE_members{jj}(tmp2(Icomps(uu),:)>0);
-        
-        % are there any unconnected members?
-        Nconnections = nansum(clustONE_intMat(tmp2(Icomps(uu),:)>0,tmp2(Icomps(uu),:)>0));
-        if ismember(0,Nconnections)
-          Iempty = Nconnections==0;
-          CL(ii).Members{cc}(Iempty) = [];
-        end
-      end
-    end
-    CL(ii).Members = CL(ii).Members(1:cc);
+    % Make complex list
+    [CL(ii).Members,CL(ii).Density] = myclusterone(intMatrix, best_p(ii), 0);
     
     % Remove small or low-density complexes
     tmp = size(CL(ii).Members);
@@ -635,103 +502,30 @@ if ~skipflag
     else
       NN = tmp(1);
     end
-    CL(ii).Density = nan(NN,1);
-    CL(ii).nn = nan(NN,1);
     for kk = 1:NN
       I = CL(ii).Members{kk};
       m = intMatrix(I,I);
-      nn = length(I);
-      CL(ii).Density(kk) = sum(m(:)) / (nn * (nn-1));
-      CL(ii).nn(kk) = nn;
+      n = length(I);
+      dens_comp = sum(m(:)) / (n * (n-1)/2);
+      if n<3 || dens_comp<best_dens(ii)
+        CL(ii).Members{kk} = [];
+      end
     end
-    I = CL(ii).nn<2 | CL(ii).Density<best_dens;
+    I = cellfun('isempty',CL(ii).Members);
     CL(ii).Members(I) = [];
     CL(ii).Density(I) = [];
-    CL(ii).nn(I) = [];
     NN = sum(~I);
     
-    % Run the remaining interactions through MCL
-    intMatrix2 = intMatrix;
-    for jj = 1:length(CL(ii).Members)
+    % make mini-interaction matrices
+    for jj = 1:NN
+      CL(ii).Connections{jj} = zeros(length(CL(ii).Members{jj}),length(CL(ii).Members{jj}));
       for kk = 1:length(CL(ii).Members{jj})
         for mm = 1:length(CL(ii).Members{jj})
-          if kk==mm; continue; end
-          intMatrix2(CL(ii).Members{jj}(kk),CL(ii).Members{jj}(mm)) = 0;
+          CL(ii).Connections{jj}(kk,mm) = intMatrix(CL(ii).Members{jj}(kk),CL(ii).Members{jj}(mm));
         end
       end
     end
-    % need to remove columns/rows with 0 interactions
-    Inot0 = find(nansum(intMatrix2)>0);
-    intMatrix2 = intMatrix2(Inot0,Inot0);
-    tmp2 = mymcl(intMatrix2, best_I);
-    Icomps = find(sum(tmp2,2)>2);
-    cc = length(CL(ii).Members);
-    for uu = 1:length(Icomps)
-      cc = cc+1;
-      CL(ii).Members{cc} = Inot0(tmp2(Icomps(uu),:)>0);
-      
-      % are there any unconnected members?
-      Nconnections = nansum(intMatrix2(tmp2(Icomps(uu),:)>0,tmp2(Icomps(uu),:)>0));
-      if ismember(0,Nconnections)
-        Iempty = Nconnections==0;
-        CL(ii).Members{cc}(Iempty) = [];
-      end
-    end
-    
-    % Final removal of low density complexes
-    tmp = size(CL(ii).Members);
-    if tmp(2)==0
-      NN = 0;
-    elseif tmp(1)==1 & tmp(2)>1
-      NN = tmp(2);
-    else
-      NN = tmp(1);
-    end
-    CL(ii).Density = nan(NN,1);
-    CL(ii).nn = nan(NN,1);
-    for kk = 1:NN
-      I = CL(ii).Members{kk};
-      m = intMatrix(I,I);
-      nn = length(I);
-      CL(ii).Density(kk) = sum(m(:)) / (nn * (nn-1));
-      CL(ii).nn(kk) = nn;
-      CL(ii).Connections{kk} = m;
-    end
-    I = CL(ii).nn<2 | CL(ii).Density<best_dens;
-    CL(ii).Members(I) = [];
-    CL(ii).Connections(I) = [];
-    CL(ii).Density(I) = [];
-    CL(ii).nn(I) = [];
-    NN = sum(~I);
-    
-    if NN==0
-      NN(ii) = 0;
-      continue;
-    end
-    
-    % Merge complexes with Jaccard==1
-    if not(isequal(CL(ii).Members{1}, CL(ii).Members))
-      JJ = nan(length(CL(ii).Members), length(CL(ii).Members));
-      for kk = 1:length(CL(ii).Members)
-        for rr = 1:length(CL(ii).Members)
-          if kk>=rr; continue; end
-          JJ(rr,kk) = length(intersect(CL(ii).Members{kk}, CL(ii).Members{rr})) / ...
-            length(unique( [CL(ii).Members{kk},CL(ii).Members{rr}] ));
-          if JJ(rr,kk)==1
-            CL(ii).Members{kk} = [];
-            JJ(rr,kk) = 0;
-          end
-        end
-      end
-      % Remove empty complexes
-      I = cellfun('isempty',CL(ii).Members);
-      CL(ii).Members(I) = [];
-      CL(ii).Connections(I) = [];
-      CL(ii).Density(I) = [];
-      CL(ii).nn(I) = [];
-    end
-    
-    [CL(ii).GeomAcc,CL(ii).Sn] = geomacc(CL(ii).Members,corumComplex2);
+    CL(ii).GeomAcc = geomacc(CL(ii).Members,corumComplex2);
     CL(ii).MatchRatio = matchingratio(CL(ii).Members,corumComplex2);
     Ncomplex(ii) = length(CL(ii).Members);
   end
@@ -751,7 +545,7 @@ if ~skipflag
   
   corumMatches = cell(countPrec,1);
   for ii = 1:size(csplit,1)
-    ii
+    
     % columns: 1. predicted complex number (Members),
     %          2. corum complex number (corumComplex2),
     %          3. match rank (e.g. best, 2nd best),
@@ -819,19 +613,11 @@ if ~skipflag
   tic
   fprintf('    7. Make figures')
   
-  try
-    makeFigures_complexes
-  catch
-    warning('makeFigures_complexes failed.')
-  end
+  makeFigures_complexes
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   
-
-  catch ME
-    disp(ME.message)
-  end
 end
 
 diary('off')

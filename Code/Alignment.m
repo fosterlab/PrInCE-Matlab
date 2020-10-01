@@ -37,9 +37,6 @@ if user.skipalignment==1 && skipflag==0
   skipflag = 1;
 end
 
-% check toolboxes
-checktoolbox;
-
 if ~skipflag
   
   %% 0. Initialize
@@ -120,34 +117,33 @@ if ~skipflag
   
   
   % Import MaxQuant data files
-  num_val = cell(size(user.MQfiles));
-  txt_val = cell(size(user.MQfiles));
-  for ii = 1:length(user.MQfiles)
-      %[rawdata{ii},txt_val{ii}] = xlsread(user.MQfiles{ii});
-      tmp = readchromatogramfile2(user.MQfiles{ii},user.Nfraction);
-      
-      % remove 'sheet1' fields
-      if isfield(tmp,'Sheet1')
-          tmp = tmp.Sheet1;
+  num_val = cell(Nchannels,1);
+  txt_val = cell(Nchannels,1);
+  for ii = 1:Nchannels
+    tmp = readchromatogramfile2(user.MQfiles{ii});
+    
+    % remove 'sheet1' fields
+    if isfield(tmp,'Sheet1')
+      tmp = tmp.Sheet1;
+    end
+    fn = fieldnames(tmp);
+    for jj = 1:length(fn)
+      tmp1 = tmp.(fn{jj});
+      if isfield(tmp1,'Sheet1')
+        tmp.(fn{jj}) = tmp.(fn{jj}).Sheet1;
       end
-      fn = fieldnames(tmp);
-      for jj = 1:length(fn)
-          tmp1 = tmp.(fn{jj});
-          if isfield(tmp1,'Sheet1')
-              tmp.(fn{jj}) = tmp.(fn{jj}).Sheet1;
-          end
-      end
-      
-      num_val{ii} = tmp.data;
-      txt_val{ii} = tmp.textdata;
-      replicates = tmp.replicate;
-      
-      % if txt_val includes protein groups, reduce it to the first protein in each group
-      for jj = 1:size(txt_val{ii},1)
-          tmp = strsplit(txt_val{ii}{jj},';');
-          txt_val{ii}{jj} = tmp{1};
-      end
+    end
+    
+    num_val{ii} = tmp.data;
+    txt_val{ii} = tmp.textdata(:,1);
+    
+    % if txt_val includes protein groups, reduce it to the first protein in each group
+    for jj = 1:size(txt_val{ii},1)
+      tmp = strsplit(txt_val{ii}{jj},';');
+      txt_val{ii}{jj} = tmp{1};
+    end
   end
+  
   
   % Import Gauss fits for each replicate
   %   Gaus_import: mx6, where m is the number of proteins with a fitted Gaussian
@@ -157,36 +153,28 @@ if ~skipflag
   LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   Nfit = cell(Nchannels,Nreplicates);
   for ci = 1:Nchannels
-    for jj = 1:Nreplicates
-      Gaus_import{ci,jj} = importdata(GaussInputFile{ci,jj});
-      if not(isstruct(Gaus_import{ci,jj}))
-          Gaus_import{ci,jj} = struct();
-          Gaus_import{ci,jj}.data = nan(1,4);
-          Gaus_import{ci,jj}.textdata = {''};
-          Gaus_import{ci,jj}.header = '';
-          Nfit{ci,jj} = 0;
-          continue
-      end
+    for replicates= 1:Nreplicates
+      Gaus_import{ci,replicates} = importdata(GaussInputFile{ci,replicates});
       
       % Ensure Gaus_import.textdata is a single column of protein names
       % simple rule: protein names are the column with the most letters
-      a = (cellfun(@(x) ismember(x,LETTERS),Gaus_import{ci,jj}.textdata(2:end,:),'uniformoutput',0));
+      a = (cellfun(@(x) ismember(x,LETTERS),Gaus_import{ci,replicates}.textdata(2:end,:),'uniformoutput',0));
       nLETTERS = sum(cell2mat(cellfun(@(x) sum(x),a,'uniformoutput',0)));
-      a = (cellfun(@(x) ismember(x,letters),Gaus_import{ci,jj}.textdata(2:end,:),'uniformoutput',0));
+      a = (cellfun(@(x) ismember(x,letters),Gaus_import{ci,replicates}.textdata(2:end,:),'uniformoutput',0));
       nletters = sum(cell2mat(cellfun(@(x) sum(x),a,'uniformoutput',0)));
       [~,I] = max(nLETTERS + nletters);
-      Gaus_import{ci,jj}.textdata = Gaus_import{ci,jj}.textdata(:,I);
-      if size(Gaus_import{ci,jj}.textdata,1) == size(Gaus_import{ci,jj}.data,1)+1
-        Gaus_import{ci,jj}.header = Gaus_import{ci,jj}.textdata{1};
-        Gaus_import{ci,jj}.textdata = Gaus_import{ci,jj}.textdata(2:end);
+      Gaus_import{ci,replicates}.textdata = Gaus_import{ci,replicates}.textdata(:,I);
+      if size(Gaus_import{ci,replicates}.textdata,1) == size(Gaus_import{ci,replicates}.data,1)+1
+        Gaus_import{ci,replicates}.header = Gaus_import{ci,replicates}.textdata{1};
+        Gaus_import{ci,replicates}.textdata = Gaus_import{ci,replicates}.textdata(2:end);
       end
       
       % Count how many Gaussians were fit to each protein name
       % Needed to identify which proteins have a single Gaussian fit
-      Nfit{ci,jj} = size(Gaus_import{ci,jj}.textdata,1);
-      for ii = 1:size(Gaus_import{ci,jj}.textdata,1)
-        protName = Gaus_import{ci,jj}.textdata{ii};
-        Nfit{ci,jj}(ii) = sum(ismember(Gaus_import{ci,jj}.textdata,protName));
+      Nfit{ci,replicates} = size(Gaus_import{ci,replicates}.textdata,1);
+      for ii = 1:size(Gaus_import{ci,replicates}.textdata,1)
+        protName = Gaus_import{ci,replicates}.textdata{ii};
+        Nfit{ci,replicates}(ii) = sum(ismember(Gaus_import{ci,replicates}.textdata,protName));
       end
       
     end
@@ -194,12 +182,13 @@ if ~skipflag
   
   %Number of fractions
   [~, fraction_number]=size(num_val{1});
+  fraction_number = fraction_number-1;
   if fraction_number~= user.Nfraction
     disp('Alignment: user.Nfraction does not equal detected number of fractions')
   end
   
   % replicates
-  %replicates =  num_val{1}(:,1);
+  replicates =  num_val{1}(:,1);
   
   % Clean chromatograms
   cleandata = cell(Nchannels,1);
@@ -291,7 +280,6 @@ if ~skipflag
       
       % iii) Fit a line
       I = abs(Ca - Cb)<User_alignment_window1;
-      if sum(I)<=1 continue; end
       pfit(ci,rr,:) = robustfit(Cb(I), Ca(I));
       
     end
@@ -327,9 +315,9 @@ if ~skipflag
   x = -4:fraction_number+5;
   adjusted_raw_data = cell(Nchannels,1);
   for ii = 1:Nchannels
-    adjusted_raw_data{ii} = nan(size(cleandata{ii},1),size(cleandata{ii},2));
+    adjusted_raw_data{ii} = nan(size(cleandata{ii},1),size(cleandata{ii},2)-1);
     for ri=1:size(num_val{1})
-      y = cleandata{ii}(ri,:);
+      y = cleandata{ii}(ri,2:end);
       y(isnan(y)) = 0;
       rr = replicates(ri);
       b = pfit(ci,rr,1); % intercept
@@ -358,13 +346,13 @@ if ~skipflag
   
   x = 1:user.Nfraction+10;
   
-  for ci = 1:Nchannels
+  for ci = 1:Nchannels,
     for rr1 = 1:Nreplicates
       for rr2 = 1:Nreplicates
         
         % i) Find the overlapping proteins
         overlap = intersect(summerised_names_G1{ci,rr1},summerised_names_G1{ci,rr2});
-        try overlap([1 2]) = [];end
+        overlap([1 2]) = [];
         Ia = find(ismember(Gaus_import{ci,rr1}.textdata(:,1),overlap));
         Ib = find(ismember(Gaus_import{ci,rr2}.textdata(:,1),overlap));
         
@@ -409,7 +397,7 @@ if ~skipflag
   tic
   fprintf('    6. Make figures')
   
-  makeFigures_alignment
+  %makeFigures_alignment
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)

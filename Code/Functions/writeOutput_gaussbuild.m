@@ -9,7 +9,7 @@
 try
   SEC_fit=polyfit(SEC_size_alignment(1,:),SEC_size_alignment(2,:),1);
 catch
-  %disp('Gauss_Build: writeOutput: SEC fitting failed. Size of Complex will be zero.')
+  disp('Gauss_Build: writeOutput: SEC fitting failed. Size of Complex will be zero.')
   SEC_fit = [0 0];
 end
 
@@ -124,9 +124,11 @@ end
 % Divide up MvsL_Combined_OutputGaus.csv
 %disp('        Writing *_Combined_OutputGaus_rep*.csv...')
 
+
+Unique_replicate = unique(replicate);
+
 for ci = 1:Nchannels
   Experimental_channel = user.silacratios{ci};
-  Unique_replicate = unique(replicate{ci});
   for divider_counter1 = 1:length(Unique_replicate)
     %Create name of gaussian file to output divided gaus data to
     Process_Gaus_import_Name= [maindir '/Output/tmp/' Experimental_channel '_Combined_OutputGaus_rep' mat2str(divider_counter1) '.csv'];
@@ -138,12 +140,13 @@ for ci = 1:Nchannels
     
     for kk = 1:Ngauss(ci)
       ri = protgausI{ci}(kk,1);
-      if replicate{ci}(ri) == divider_counter1
+      if replicate(ri) == divider_counter1
         gn = protgausI{ci}(kk,2);
         Height = Coef{ci,ri}((gn-1)*3 + 1);
         Center = Coef{ci,ri}((gn-1)*3 + 2) - 5;
         Width = Coef{ci,ri}((gn-1)*3 + 3);
         Size_of_complex=SEC_fit(1)*Center+SEC_fit(2);
+        %fprintf(fid_processing,'%6.4f,%6.4f,%6.4f,',kk,ri,replicate(ri)); % index information
         fprintf(fid_processing,'%s,',txt_val{ci}{ri+1}); % protein name
         fprintf(fid_processing,'%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,%6.4f,\n',...
           Height, Center, Width, SSE(ci,ri), adjrsquare(ci,ri), round(Size_of_complex/10)*10); % Gaussian fitting information
@@ -154,13 +157,46 @@ for ci = 1:Nchannels
 end
 
 
+%% *_Summary_Gausians_for_individual_proteins_rep*.csv
+% Divide up *_Summary_Gausians_for_individual_proteins.csv
+%disp('        Writing *_Summary_Gausians_for_individual_proteins_rep*.csv...')
+
+Unique_replicate = unique(replicate);
+if 0
+  for ci = 1:Nchannels
+    Experimental_channel = user.silacratios{ci};
+    for divider_counter1 = 1:length(Unique_replicate)
+      %Create name of gaussian file to output divided gaus data to
+      Process_Summary_gausian_info_Name= [datadir Experimental_channel,'_Summary_Gausians_for_individual_proteins_rep',mat2str(divider_counter1),'.csv'];
+      
+      fid_processing= fopen(Process_Summary_gausian_info_Name,'wt'); % create the output file with the header infromation
+      fprintf (fid_processing,'%s,%s,%s,%s,%s\n',... %header for OutputGaus output
+        'Protein_number', 'Protein_name','Number_of_Gausians_detected',...
+        'Number_of_Gausians_within_defined_boundaries',...
+        'Number_of_Gausians_filtered'); %Write Header
+      
+      for kk = 1:size(protgausI{ci},1)
+        ri = protgausI{ci}(kk,1);
+        if replicate(ri) == divider_counter1
+          fprintf(fid_processing, '%s,%s,%s,%s,%s\n', num2str(ri),...
+            txt_val{ci}{ri+1},...  % Protein_names
+            num2str(No_Gaus(ri)),...
+            num2str(length(Coef{ci,ri})/3),...
+            num2str(Gaussians_excluded_from_analysis_counter(ci,ri)));
+        end
+      end
+      fclose(fid_processing);
+    end
+  end
+end
+
+
 %% *_Raw_data_maxquant_rep*.csv
 % Divide up *_Raw_data_maxquant.csv
 %disp('        Writing *_Raw_data_maxquant_rep*.csv...')
 
 for ci = 1:Nchannels
-  Unique_replicate = unique(replicate{ci});
-
+  
   %Divid up Summary_Gausians_for_individual_proteins_rep
   for divider_counter1 = 1:length(Unique_replicate)
     
@@ -173,8 +209,8 @@ for ci = 1:Nchannels
     
     for kk = 1:Ngauss(ci)
       ri = protgausI{ci}(kk,1);
-      if replicate{ci}(ri) == divider_counter1
-        fprintf(fid_processing3,'%s, %6.4f,', txt_val{ci}{ri+1}, replicate{ci}(ri));
+      if replicate(ri) == divider_counter1
+        fprintf(fid_processing3,'%s, %6.4f,', txt_val{ci}{ri+1}, replicate(ri));
         fprintf(fid_processing3,'%6.4g,',rawdata{ci}(ri,:)); %Chromatogram information
         fprintf(fid_processing3,'\n');
       end

@@ -37,31 +37,25 @@ for ci = 1:size(csplit,1)
     'ID','Predicted complex', 'Complex size', 'Complex density', 'Novel complex?', ...
     'Best CORUM match', 'Overlapping proteins', 'N overlap', 'CORUM coverage');
   
-  for ii = 1:Ncomplex(ci)  
+  for ii = 1:size(CL(ci).Members,1)    
     predComplex = strjoin(uniqueProteins(CL(ci).Members{ii}), ' ');
     sizePredComplex = length(CL(ci).Members{ii});
 
+    Icorummatch = find(corumMatches{ci}(:,1)==ii & corumMatches{ci}(:,3)==1);
     corumComplex = '';
     overlap = '';
-    Noverlap = '';
-    corcoverage = '';
     novel = 1;
-    if not(isempty(corumMatches{ci}))
-      Icorummatch = find(corumMatches{ci}(:,1)==ii & corumMatches{ci}(:,3)==1);
-      if ~isempty(Icorummatch)
-        novel = 0;
-        Icorummatch = Icorummatch(1);
-        corumI = corumMatches{ci}(Icorummatch,2);
-        corumComplex = strjoin(uniqueProteins(corumComplex2{corumI}), ' ');
-        overlap = strjoin(uniqueProteins(intersect(CL(ci).Members{ii},corumComplex2{corumI})));
-        Noverlap = corumMatches{ci}(Icorummatch,4);
-        corcoverage = corumMatches{ci}(Icorummatch,5);
-      end
+    if ~isempty(Icorummatch)
+      novel = 0;
+      Icorummatch = Icorummatch(1);
+      corumI = corumMatches{ci}(Icorummatch,2);
+      corumComplex = strjoin(uniqueProteins(corumComplex2{corumI}), ' ');
+      overlap = strjoin(uniqueProteins(intersect(CL(ci).Members{ii},corumComplex2{corumI})));
     end
     
     fprintf (fid3,'%d, %s, %d, %6.3f, %d, %s, %s, %d, %6.3f,\n',...
       ii, predComplex, sizePredComplex, CL(ci).Density(ii), novel, corumComplex, overlap, ...
-      Noverlap, corcoverage);
+      corumMatches{ci}(Icorummatch,4), corumMatches{ci}(Icorummatch,5) );
   end
   fclose(fid3);
 end

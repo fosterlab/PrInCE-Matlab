@@ -43,9 +43,6 @@ if user.skipinteractions==1
   skipflag = 1;
 end
 
-% check toolboxes
-checktoolbox;
-
 
 if ~skipflag
   
@@ -76,44 +73,65 @@ if ~skipflag
   dd = dir([maindir '/Output/tmp/Adjusted_*_Combined_OutputGaus.csv']);
   
   % Define Raw SILAC ratios data. Dynamically find filenames
-  % ALWAYS skip alignment for Interactions.m
-  
-  dd = dir([maindir 'Output/tmp/*_Raw_data_maxquant_rep*.csv']);
-  isgood = zeros(size(dd));
-  for ii = 1:length(dd)
-    for jj = 1:length(user.silacratios)
-      isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
+  if user.skipalignment==1 || isempty(dd)
+    % If Alignment was skipped, use raw data + Gauss_Build output
+    
+    dd = dir([maindir 'Output/tmp/*_Raw_data_maxquant_rep*.csv']);
+    isgood = zeros(size(dd));
+    for ii = 1:length(dd)
+      for jj = 1:length(user.silacratios)
+        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
+      end
     end
-  end
-  dd = dd(isgood==1);
-  ChromatogramIn = cell(size(dd));
-  for di = 1:length(dd)
-    ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
-  end
-  
-  dd = dir([maindir 'Output/tmp/*Combined_OutputGaus_rep*csv']);
-  isgood = zeros(size(dd));
-  for ii = 1:length(dd)
-    for jj = 1:length(user.silacratios)
-      isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
+    dd = dd(isgood==1);
+    ChromatogramIn = cell(size(dd));
+    for di = 1:length(dd)
+      ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
     end
-  end
-  dd = dd(isgood==1);
-  GaussIn = cell(size(dd));
-  for di = 1:length(dd)
-    GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
+    
+    dd = dir([maindir 'Output/tmp/*Combined_OutputGaus_rep*csv']);
+    isgood = zeros(size(dd));
+    for ii = 1:length(dd)
+      for jj = 1:length(user.silacratios)
+        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
+      end
+    end
+    dd = dd(isgood==1);
+    GaussIn = cell(size(dd));
+    for di = 1:length(dd)
+      GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
+    end
+  else
+    % If Alignment was not skipped, use Alignment output
+    
+    dd = dir([maindir 'Output/tmp/Adjusted*Raw_for_ROC_analysis*rep*csv']);
+    isgood = zeros(size(dd));
+    for ii = 1:length(dd)
+      for jj = 1:length(user.silacratios)
+        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
+      end
+    end
+    dd = dd(isgood==1);
+    ChromatogramIn = cell(size(dd));
+    for di = 1:length(dd)
+      ChromatogramIn{di} = [maindir 'Output/tmp/' dd(di).name];
+    end
+    
+    GaussIn = cell(size(dd));
+    dd = dir([maindir 'Output/tmp/Adjusted_Combined_OutputGaus*rep*csv']);
+    isgood = zeros(size(dd));
+    for ii = 1:length(dd)
+      for jj = 1:length(user.silacratios)
+        isgood(ii) = ~isempty(strfind(dd(ii).name,user.silacratios{jj})) | isgood(ii)==1;
+      end
+    end
+    dd = dd(isgood==1);
+    for di = 1:length(dd)
+      GaussIn{di} = [maindir 'Output/tmp/' dd(di).name];
+    end
   end
   
   number_of_replicates = length(ChromatogramIn) / number_of_channels;
-  % If >1 dataset are analyzed in same folder, GaussIn can have extra reps
-  goodreps = cell(user.Nreplicate,1);
-  for ii = 1:user.Nreplicate
-      goodreps{ii} = ['rep' num2str(ii)];
-  end
-  I = contains(ChromatogramIn, goodreps);
-  ChromatogramIn = ChromatogramIn(I);
-  I = contains(GaussIn, goodreps);
-  GaussIn = GaussIn(I);
   
   % Map each rep*channel to a channel
   rep2channel = zeros(1,length(GaussIn));
@@ -245,12 +263,10 @@ if ~skipflag
       frac1 = max([1 tmp(find(tmp<user.Nfraction/2,1,'last'))]); % start of real data
       frac2 = min([size(Chromatograms_raw,2) tmp(find(tmp>user.Nfraction/2,1,'first'))]); % end of real data
       
-      % Replace NaN values with lowestGoodValue
-      bottomPercentile = prctile(Chromatograms_raw(Chromatograms_raw > 0), 1);
+      % Replace NaN values with 0.05
       Chromatograms = Chromatograms_raw;
       I = find(isnan(Chromatograms));
-      Chromatograms(I)= bottomPercentile * rand(size(I)) * 5;
-      %Chromatograms(I) = rand(size(I)) * .5;
+      Chromatograms(I)= 0.05 * rand(size(I));
       
       % remove gaussian with centers below frac1
       Ibad = zeros(size(C_raw));
@@ -431,7 +447,7 @@ if ~skipflag
       % Make Corum_Dataset, which is all interactions that are in corum and our dataset
       cc = 0;
       Corum_Dataset = cell(1000,1);
-      for jj = 1:length(Corum_Protein_names) %Write out values as i
+      for jj = 1:length(Corum_Protein_names); %Write out values as i
         Prot1 = Corum_Protein_names(jj,1);
         Prot2 = Corum_Protein_names(jj,2);
         
@@ -602,7 +618,6 @@ if ~skipflag
     % Classifier method
     [scoreMatrix, feats_new] = scorenb(DistList,possList,classList);
     score = nanmedian(scoreMatrix,2);
-    score(isnan(score)) = 0;
     
     tt = toc;
     fprintf('  ...  %.2f seconds\n',tt)
@@ -715,8 +730,7 @@ if ~skipflag
   
   %Create array to store values
   interaction_final.unique_interactions=cell(length_unique_inter,0);
-  %interaction_final.replicate_numbers=nan(length_unique_inter,number_of_channels);
-  interaction_final.replicate_numbers=nan(length_unique_inter,0);  
+  interaction_final.replicate_numbers=nan(length_unique_inter,0);
   interaction_final.proteinA=cell(length_unique_inter,0);
   interaction_final.proteinB=cell(length_unique_inter,0);
   interaction_final.CenterA=cell(length_unique_inter,0);
@@ -846,7 +860,7 @@ if ~skipflag
   interaction_final.channel_formatted = cell(Total_unique_interactions,1);
   for ii = 1:Total_unique_interactions
     tmp = interaction_final.replicate_numbers(ii,:);
-    tmp(tmp==0 | isnan(tmp)) = [];
+    tmp(tmp==0) = [];
     %interaction_final.channel{ii} = unique(rep2channel(tmp))';
     interaction_final.channel{ii} = tmp;
     tmp = cell(1,length(interaction_final.channel{ii}));
@@ -859,6 +873,23 @@ if ~skipflag
       interaction_final.channel_formatted{ii} = tmp{1};
     end
   end
+  
+  %Create list of scores, note ensure strjoin function is avalible
+  % interaction_final.scores_formated = cell(size(interaction_final.score,1),1);
+  % for format_loop=1:Total_unique_interactions
+  %   tmp = interaction_final.score(format_loop,:);
+  %   tmp(isnan(tmp)) = [];
+  %   stringout = cell(length(tmp),1);
+  %   for jj= 1:length(tmp)
+  %     stringout{jj} = num2str(tmp(jj));
+  %   end
+  %   interaction_final.scores_formated{format_loop} = strjoin(stringout,' ; ');
+  % end
+  
+  % Create scoreRank, scorePrctile
+  %[~, ~, rankDescend] = unique(interaction_final.score);
+  %interaction_final.scoreRank = (1-rankDescend) + max(rankDescend);
+  %interaction_final.scorePrctile = interaction_final.scoreRank/length(interaction_final.scoreRank);
   
   % Create precision-dropout
   interaction_final.precisionDropout = nan(size(interaction_final.score));
@@ -877,7 +908,6 @@ if ~skipflag
       Ithischan = interaction_final.replicate_numbers == chan;
       Igoodscore = interaction_final.score >= cutoff;
       Iinteract = sum(Ithischan,2)>0 & sum(Igoodscore,2)>0;
-      %Iinteract = sum(Ithischan & Igoodscore,2)>0;
       TP = sum(interaction_final.proteinInCorum(Iinteract)==1 & interaction_final.interactionInCorum(Iinteract)==1);
       FP = sum(interaction_final.proteinInCorum(Iinteract)==1 & interaction_final.interactionInCorum(Iinteract)==0);
       if TP==0 && FP==0
@@ -939,13 +969,7 @@ if ~skipflag
   
   tic
   fprintf('    12. Make figures')
-  
-  try
-    makeFigures_interactions
-  catch
-    warning('makeFigures_interactions failed.')
-  end
-  
+  %makeFigures_interactions
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
   

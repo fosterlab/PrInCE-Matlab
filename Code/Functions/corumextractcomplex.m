@@ -17,7 +17,6 @@ while not(feof(fid))
   t1 = strsplit(fgetl(fid),'\t','collapsedelimiters',0);
   cc = cc+1;
   organism{cc} = t1{3};
-  t1{6} = strrep(t1{6},' ', '');
   complexes{cc} = t1{6};
 end
 organism = organism(1:cc);

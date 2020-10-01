@@ -42,8 +42,6 @@ if user.skipcomparison==1 && skipflag==0
   skipflag = 1;
 end
 
-% check toolboxes
-checktoolbox;
 
 if ~skipflag
   
@@ -164,7 +162,6 @@ if ~skipflag
     while ~feof(fid)
       cc = cc+1;
       t = fgetl(fid);
-      t = strrep(t,'"','');
       t1 = strsplit(t,',');
       if cc ==1
         num_val{ii} = nan(10^6,length(t1)-1);
@@ -234,7 +231,7 @@ if ~skipflag
     replicate_num = length(unique(a));
     
     % The data is nan-padded. Find where the real data starts and stops.
-    nan_max = size(num_val{ii},1);
+    nanmax = size(num_val{ii},1);
     tmp = find(sum(isnan(num_val{ii}))==size(num_val{ii},1));
     if isempty(tmp)
       tmp = -1;
@@ -727,8 +724,6 @@ if ~skipflag
         %locate protein to compare
         Iraw = find(strcmp(protName,txt_val{1}(:,2)) & num_val{1}(:,1)==rep);
         rounded_center = floor(Finalised_Master_Gaussian_list.Center(ii,hh)); % determine the center of the Gaussian
-        % skip if not found in this condition/replicate
-        if sum(Iraw)==0; continue; end
         
         %Reset rounded_center if Gaussian found in replicate
         %Check if a Gaussian peak was detected within two fractions of this master Gaussian value?
@@ -938,11 +933,7 @@ if ~skipflag
   tic
   fprintf('    6. Make figures\n')
   
-  try
-    makeFigures_foldchanges
-  catch
-    warning('makeFigures_foldchanges failed.')
-  end
+  %makeFigures_foldchanges
   
   tt = toc;
   fprintf('  ...  %.2f seconds\n',tt)
