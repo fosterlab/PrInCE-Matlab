@@ -616,7 +616,8 @@ if ~skipflag
     DistList = DistList(1:kk,:);
     
     % Classifier method
-    [scoreMatrix, feats_new] = scorenb(DistList,possList,classList);
+    [scoreMatrix, feats_new] = scorenb2(DistList,possList,classList);
+    %[scoreMatrix, feats_new] = scorenb(DistList,possList,classList);
     score = nanmedian(scoreMatrix,2);
     
     tt = toc;

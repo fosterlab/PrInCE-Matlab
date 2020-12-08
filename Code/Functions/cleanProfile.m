@@ -75,9 +75,9 @@ end
 
 
 % 5. Smooth with a boxcar filter
-if ismember(5,steps)
-  tmpchrom = smooth(tmpchrom,4);
-end
+%if ismember(5,steps)
+%  tmpchrom = smooth(tmpchrom,4);
+%end
 
 cleandata = tmpchrom;
 

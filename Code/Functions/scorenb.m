@@ -50,10 +50,19 @@ Nd = size(X,2);
 
 % Impute missing values
 for ii = 1:size(X,2)
- I_missing = isnan(X(:,ii));
- MU = nanmean(X(:,ii));
- SD = nanstd(X(:,ii));
- X(I_missing,ii) = nanmedian(X(:,ii)) + normrnd(MU, SD*.05);
+  im = isnan(X(:,ii)); % rows with missing values
+  X(im & y==1,ii) = randsample(X(~im & y==1,ii),sum(im & y==1),1);
+  X(im & y==-1,ii) = randsample(X(~im & y==-1,ii),sum(im & y==-1),1);
+end
+
+% Soft whiten data
+eps = 2e-16;
+wmu = zeros(Nd,1);
+wstd = zeros(Nd,1);
+for ii = 1:Nd
+  wmu(ii) = nanmean(X(:,ii));
+  wstd(ii) = nanstd(X(:,ii));
+  X(:,ii) = (X(:,ii) - wmu(ii)) / 2 / (wstd(ii) + eps);
 end
 
 % what training length do we need to expect to get 5 class == 1?

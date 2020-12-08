@@ -48,7 +48,8 @@ fclose(fid);
 
 
 % Final interactions list, and channel-specific final interactions
-Final_list_Interactionsname=strcat(datadir,'Final_Interactions_list_',mat2str(Precision_values(precision_write_out_counter)),'_precision.csv');
+% Final_list_Interactionsname=strcat(datadir,'Final_Interactions_list_',mat2str(Precision_values(precision_write_out_counter)),'_precision.csv');
+Final_list_Interactionsname = user.ppifile;
 fid_final_1 = fopen(Final_list_Interactionsname,'w');
 fprintf (fid_final_1,'%s,%s,%s,%s,%s,%s,%s,%s,%s,\n',...
   'Unique interactions','Protein A','Protein B','Channel',...
