@@ -95,7 +95,7 @@ prince.m
 
 Mac and PC users can run PrInCE without owning Matlab. This requires downloading Matlab Runtime (~1GB) and setting up the appropriate folders, so is not recommended if a copy of Matlab is available. To run a standalone version of PrInCE:
 
-1. Run "PrInCEInstaller_web". _For Mac users, this is Standalone/Mac/PrInCEInstaller_web. PC users can download the standalone version [here](https://drive.google.com/file/d/1pKbna5_CCvxjzz9VFwBiIgjtqud6SeOP/view?usp=sharing) (file exceeds github's 100MB limit).
+1. Run "PrInCEInstaller_web". _For Mac users, this is Standalone/Mac/PrInCEInstaller_web. PC users can download the standalone version [here](https://drive.google.com/file/d/13g9JVLzelBZrfQJlN7PNBVHpvom7-Y3x/view?usp=sharing) (file exceeds github's 100MB limit).
 2. Complete the installation process.
     - When prompted to choose the first installation folder (prince standalone), choose the PrInCE-master folder.
     - For the second installation folder (Matlab runtime), keep the default.
